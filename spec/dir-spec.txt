@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.6 2003/06/26 03:20:07 nickm Exp $
+$Id: dir-spec.txt,v 1.7 2003/07/07 16:50:11 nickm Exp $
 
 				Mix3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -309,7 +309,12 @@ Table of Contents
         'Secure-Configuration': A boolean value.  If true, the server
             must not be running in an insecure operating mode. [XXXX
             list these modes.  Added in Mixminion 0.0.4]
-    
+
+        'Why-Insecure': A human-readable string.  This string SHOULD
+            be present if and only Secure-Configuration is 'no'.  If
+            present, it SHOULD contain an explanation of why the
+            operating mode is insecure. [Added in Mixminion 0.0.5]
+
    [Note: before computing the digest, all implementations must
    normalize CR and CR-LF style newlines to a single NL, and remove
    any spaces and tabs that may have been introduced at the ends of
@@ -355,6 +360,12 @@ Table of Contents
    
    These entries are order-significant; the first one to match wins.
    The default policy is 'Deny: *'.
+
+   The 'Testing' section MAY be generated some type III remailers to
+   describe other information about their configuration that may be
+   useful for debugging.  Implementations MUST NOT require any
+   specific entries or within 'Testing'; implementations also MUST
+   NOT require any specific format for entries that may be present.
    
    If this server supports outgoing delivery mechanisms, it MAY have
    corresponding delivery sections.  See 'E2E-spec.txt' for more details
