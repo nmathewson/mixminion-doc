@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.5 2003/05/17 00:29:22 nickm Exp $
+$Id: minion-spec.txt,v 1.6 2003/05/17 05:20:19 nickm Exp $
 
            Type III (Mixminion) Mix Protocol Specifications
 
@@ -769,16 +769,15 @@ Table of Contents
         if routing type is SWAP-FWD or FWD:
                 Put (H1, H2, P) in queue to be sent to the address in RI.
         Otherwise:
-                Give (RT, RI, HASH(SK, "APPLICATION KEY"), P) to
-                Module manager.
+                Give (RT, RI, P) to the delivery subsystem.
 
-   The "Application Key" is provided to the module as a shared secret
-   between the constructor of the header and the module that is in
-   charge of processing it.  The hash step above prevents the module
-   from using the master secret Sk in any way that could inadvertently
-   compromise its other functions (such as the decryption of the
-   unlinkability of the message).
-
+   The operation of the delivery subsystem is beyond the scope of this
+   document.  In general, "RT" will specify a means of message
+   delivery (such as 'SMTP') and thereby an interpretation of RI (such
+   as "RFC822 mailbox") and a correct disposition of P (such as
+   "decode and deliver via SMTP").  For more information, see section
+   2.2.1.1 and 'E2E-spec.txt'.
+ 
 3.2.5.1. Replay avoidance
 
    The nodes MUST implement a mechanism to make sure that messages
