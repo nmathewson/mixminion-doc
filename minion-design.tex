@@ -146,7 +146,7 @@ getting too long, it expires old entries. The adversary simply has to
 wait until the mix has forgotten about a
 message before replaying it. Mixminion counters this flaw by introducing
 key rotation: a message is addressed to a given key, and after the key
-changes no messages to the old key will be accepted; so the mix can forget
+changes no messages to the old key will be accepted, so the mix can forget
 about all the messages addressed to old keys. It turns out that the
 number of hashes a node needs to remember between key rotations is not
 too great a burden.
@@ -173,11 +173,8 @@ improves anonymity.
 We review mixes and mix-nets in Section \ref{sec:background},
 describe our goals and assumptions in Section \ref{sec:assumptions},
 and then address the above list of improvements in Sections
-\ref{sec:design}-\ref{sec:nymservers}. We conclude with a summary of how
-our design stands up to known attacks; a list of future
-work (remaining tasks we feel confident we can complete);
-and finally a list of open questions (unresolved issues for which the
-research community currently has no answer).
+\ref{sec:design}-\ref{sec:nymservers}. We conclude with a summary of
+how our design stands up to known attacks, and a list of future work.
 
 %The Mixminion Project aims to deploy a cleaner remailer design
 %in the same spirit as Mixmaster, with the goals of expanding
@@ -242,18 +239,20 @@ network, where senders choose from a set of fixed paths through the
 mix-net. Cascades can provide greater anonymity against an adversary
 who owns many mixes \cite{disad-free-routes}, but they are also more
 vulnerable to blending attacks \cite{batching-taxonomy} (see Section
-\ref{subsec:batching}). Further, cascade networks arguably have lower
-maximum anonymity because the number of people Alice can hide among (her
-\emph{anonymity set}) is limited to the number of messages the weakest
-node in her cascade can handle; a free-route network on the other hand
-can create a very high anonymity set because all the traffic does not
-need to go through each mix. Mix cascade research includes real-time
+\ref{subsec:batching}).
+Furthermore, cascade networks arguably have lower maximum anonymity because
+the number of people Alice can hide among (her anonymity set) is limited
+to the number of messages the weakest node in her cascade can handle.
+In a free-route network, larger anonymity sets are possible because no
+specific mix acts as a bottleneck: many mixes handle traffic in parallel as
+messages traverse the network.
+Mix cascade research includes real-time
 mixes \cite{realtime-mix} and web mixes \cite{web-mix}.
 
 More complex designs use zero-knowledge proofs and stronger assumptions
 to guarantee delivery or to detect and exclude misbehaving participants.
-These include flash mixes \cite{flash-mix} and attacks against them
-\cite{mitkuro}, hybrid mixes \cite{jakobsson-optimally}\cite{hybrid-mix},
+These include flash mixes \cite{flash-mix},
+hybrid mixes \cite{jakobsson-optimally}\cite{hybrid-mix},
 and provable shuffles \cite{PShuffle}\cite{shuffle}. The properties
 of these designs are appealing, but they are often not practical since
 they assume a lot of coordination and synchronization between the mixes,
@@ -400,7 +399,7 @@ anonymous web browsing, the low latency necessarily implies smaller
 anonymity sets than for slower message-based services. Indeed, we
 intentionally restrict the set of options for users: we provide only one
 cipher suite, and we avoid extensions that would help an adversary divide
-the anonymity set. These assumptions lead to the following design goals.
+the anonymity set. These assumptions lead to the following design goals:
 
 %While Mixminion protects against known \emph{traffic analysis} attacks
 %(where an adversary attempts to learn a given message's sender or receiver
@@ -416,25 +415,27 @@ the anonymity set. These assumptions lead to the following design goals.
 First of all, the system must be relatively simple to deploy. Past systems
 have never found it easy to get a reliable group of mix operators to
 run long-lived servers. Mixminion must add as few technical barriers as
-possible. Thus our protocol uses clock synchronization only to notice
-when a mix's key has expired; achieves acceptable performance on
-commodity hardware; requires little coordination between servers; and
-can automatically handle servers joining and leaving the system.
+possible.
+Thus our protocol uses clock
+synchronization only to notice when a mix's key has expired, achieves
+acceptable performance on commodity hardware, requires little
+coordination between servers, and can automatically handle servers
+joining and leaving the system.
 
 % Client requriements
 Furthermore, software adoption has also been a barrier to past
 systems. Thus, only users who receive anonymity from the system must run
 special software --- that is, users should be able to receive messages
 from anonymous senders and send messages to anonymous recipients with a
-standard email client. Users can also send and receive anonymous messages
+standard email client. Users must also be able to send and receive anonymous messages
 using only commodity hardware. Finally, although users with persistent
 network connections are necessarily more resistant to intersection
 attacks than users with intermittent connections, the system must offer
 the latter users as much anonymity as possible.
 
 We assume a well-funded adversary who can observe all traffic on the
-network, who can generate, modify, delete, or delay traffic on the
-network, who can operate mixes of its own, and who can compromise some
+network; who can generate, modify, delete, or delay traffic on the
+network; who can operate mixes of its own; and who can compromise some
 fraction of the mixes on the network. Our adversary tries to discover
 linkability between sender and receiver, to identify the sender or
 receiver of a given message, or to trace a sender forward (or a receiver
@@ -446,7 +447,7 @@ backward) to any messages.
 %about communicating partners.
 
 We choose to drop packet-level compatibility with Mixmaster and the
-Cypherpunk remailer systems, in order to provide a simple extensible
+Cypherpunk remailer systems in order to provide a simple extensible
 design. We can retain minimal backwards compatibility by ``remixing''
 Type II messages to be Type III messages, thus increasing anonymity sets
 in the Type III network. Type II messages travelling between Type III
@@ -458,10 +459,10 @@ The Mixminion network tries to make it as hard as possible for an
 adversary observing the network to gain any additional information
 about communicating partners beyond an \emph{a priori} belief. It does
 this by providing very little information to outside observers, and
-intermediate nodes, to avoid intersection attacks. In particular even
+intermediate nodes, to avoid intersection attacks. In particular, even
 intermediary nodes are not aware of the actual route length (which can
-be as long as 32 hops), or their position in the network. Furthermore
-the processing for replies is exactly the same as for normal messages
+be as long as 32 hops) or their position in the network. Furthermore,
+the processing for replies is exactly the same as for normal messages,
 and it is therefore difficult to partition the anonymity sets by
 distinguishing between them. 
 
@@ -1602,24 +1603,16 @@ and when they send them.
 % XXXX Mention our spec?  Cite our spec? -NM
 \end{itemize}
 
-As detailed in the introduction the principal aim has 
-been to include in Mixminion only techniques that are well
+While many people have speculated about the benefits of dummy traffic,
+we have not yet seen any convincing analysis. For this reason, while
+Mixminion is flexible enough to support them, we plan to leave dummies
+out of the current design (other than their minimal use in Section
+\ref{subsec:batching}) until their effects on anonymity are better
 understood.
-% XXXX Um... do we even still say that? -NM
-Although some people have speculated about the positive
-effects of the techniques described as open issues above we have not
-yet seen a thorough enough analysis to be convinced. For this reason
-while Mixminion is flexible enough to support them it does not use
-them until their effects on anonymity are better understood. As the
-engineering effort to implement the specification into a robust system
-proceeds, undoubtedly the researchers associated or inspired by this
-project will try to shine some light on the open questions above.
-
-% XXXX Mention code and performance? -NM
 
 We invite interested developers to join the {\tt mixminion-dev}
 mailing list and examine the more detailed Mixminion
-specification \cite{mixminion-spec}.
+specification \cite{mixminion-spec}. We have working alpha code
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
