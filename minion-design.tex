@@ -74,8 +74,8 @@ on the older and less secure cypherpunk type I remailer design
 \cite{cypherpunk-remailer}. By integrating reply capabilities into
 Mixminion, we can finally retire the type I remailer network.
 
-We go on in Section \ref{sec:rep-servers} to describe a design for
-Reputation Servers to track and distribute remailer availability,
+We go on in Section \ref{sec:dir-servers} to describe a design for
+Directory Servers to track and distribute remailer availability,
 performance, and key information, and then describe in Section
 \ref{sec:nymservers} how to build higher-level systems such as nymservers
 using SURBs. We introduce link-level encryption with ephemeral keys to
@@ -252,7 +252,14 @@ being transmitted and its recipient.
 This one is decided as well. Just needs to be written up.
 
 One issue: delivery information in header or in payload?
-There are tradeoffs to each. Describe both and we'll pick one down the road.
+There are tradeoffs to each. Describe both and we'll pick one down the
+road. (-Roger)
+
+Aaaaarg, no!  It NEEDS to be in the header, else nobody can receive
+reply messages without running a server for local delivery. -Nick.
+
+Make sure to describe capability blocks, and mention that they're
+certified.-Nick
 
 \subsection{Exit policies and abuse}
 
@@ -260,24 +267,100 @@ Looks quite straightforward. More generally, this should be a discussion
 about capabilities for each mix.
 
 How do clients communicate with a mix to learn its capabilities? Or does
-the mix communicate capabilities to the reputation server and the client
-gets them from there? Or both. Ties in with reputation server section
+the mix communicate capabilities to the directory server and the client
+gets them from there? Or both. Ties in with directory server section
 below.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Reputation Servers}
-\label{sec:rep-servers}
+\section{Directory Servers}
+\label{sec:dir-servers}
 
-initially the reputation servers are just to track participating
-mixes
-and then hand out keys for them
-and replace the pinging servers
-and then do pinging themselves
+Although the current Mixmaster protocol does not specify a means for
+clients to learn the locations, keys, capabilities, or performance
+records of participating mixes, several schemes have been implemented
+\cite{mix-stats} and adopted by some clients.  As an adjunct the
+Mixminion protocol, we specify such a system.
 
-reliability for paths, nodes, reply blocks
+We begin by discussing some attacks that system of directory servers
+must address, and then propose a secure but inefficient design.
 
-http://archives.seul.org/mixminion/dev/Apr-2002/msg00002.html
+\subsection{Directory-related attacks}
+\label{subsec:dir-server-attacks}
+
+A fairly broad category of vulnerabilities stems from differing
+knowledge among clients over time, and an adversary's ability to
+create or exploit such differences.
+
+In the most simple attack, an adversary who controls a directory
+server can provide a different information to clients it wishes to
+track.  For example, the compromised server might only list MIXes
+controlled by the adversary; or only inform certain clients about a
+given MIX. 
+
+Even without control of the a directory server, an adversary can still
+exploit differences among client knowledge.  If Eve knows that MIX M
+is listed on server D1 but not on D2, she can use this knowledge to
+link traffic through M to clients who have queried D2.  Eve can also
+distinguish traffic based on any differences between clients who use
+directory servers and those who don't; between clients who have
+up-to-date listings and those who have old listings; and (if the
+directory is partitioned) between clients who have different subsets
+of a complete directory.  In fact, even if Eve does not know the exact
+difference between Alice's knowledge and Bob's, the presence of such a
+difference can aid her traffic analysis. [[CAN WE HAVE A CITE HERE?]]
+
+Even with no differences in client knowledge, an attacker can mount a
+more subtle attack by delaying messages in a comprimised MIX.  If
+Alice sends a message at noon to a MIX controlled by Mallory, and he
+delays the message until directory servers remove some MIX M from
+their listings, he can conclude that any messages that are still
+addressed to M are likely to have originated from Alice's message.  If
+Mallory controls a large set of nodes, and can arrange for a large
+number of them to become unlisted, he can mount this attack with a
+fair probability of success. [[CAN WE DOCUMENT THIS?]]
+
+\subsection{A Directory Service for Mixminion}
+\label{subsec:dir-server-design}
+
+As we describe above, it is not merely a matter of convenience for
+clients to retrieve up-to-date MIX information; if some client
+software supports a static list of servers while other software is
+dynamic, this difference can help an attacker distinguish their
+traffic.  Thus, we must specify a directory service as a part of our
+standard.
+
+In the most basic design, we provide protocols for MIXes to advertise
+themselves to directory servers, and for clients to download
+\emph{complete} directories,
+  \footnote{We have considered, and rejected for performance reasons, 
+            PIR-based \cite{PIR} approaches that would allow clients
+            to retrieve a subset of the directory without the
+            server learning which subset.} 
+either directly or anonymously.  To prevent differences in client
+knowledge, servers must synchronize with one another, and must only
+update their exported data nightly.
+
+To mitigate the effects of changeover, clients should download new
+information regularly, but wait for a given time threshold (say, an
+hour) before using any newly-published nodes.  To address delaying
+attacks, clients should continue sending dummy traffic to de-listed
+nodes. [[IS THIS RIGHT?]]
+
+Directory servers compile availability information by sending traffic
+through MIXes in their directories. [[NEED TO SAY MORE.]] Future
+designs may include more sophisticated measures of reliability.
+
+We do not currently specify a means to detect and blacklist
+misbehaving directory servers.  Because the set of such servers is
+smaller and more static than the set of nodes, we have some hope for
+out-of-band detection.  Additionally, servers can work together to
+ensure correct and complete data by successively signing certificate
+bundles, so users can be sure that a given mix certificate has been
+seen by a threshold of directory servers.
+
+
+% See http://archives.seul.org/mixminion/dev/Apr-2002/msg00002.html
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -366,6 +449,33 @@ nick?
 my aim here is to do something akin to pages 13-15 of
 http://freehaven.net/doc/casc-rep/casc-rep.ps
 
+
+
+\subsection{Directory-based attacks}
+\label{subsec:attacks-dirbased}
+
+\begin{description}
+\item \emph{Comprimise a directory server.} Identical directory listings
+  are served by a large group of servers, and signed by all.
+\item \emph{Lie to a directory server.}  Signed capability blocks, and
+  the fact that a MIX's signing key is its identity, prevent this
+  attack.
+\item \emph{Exploit differences in client directory knowledge.}  By
+  only updating directory information nightly; by urging client
+  software to pull updates as soon as possible after their release;
+  and by 
+\item \emph{Delay MIX packets until directory information changes.}
+  The delay in clients' using new information, along with dummy
+  traffic sent to de-listed destinations and expired keys, should
+  mitigate this attack. However, a complete solution remains an
+  open problem.
+\item \emph{Flood the directories with nonfunctional MIX entries.}
+  Availability statistics should mitigate this problem.  Nevertheless,
+  it remains an area of active research. \cite{mix-acc} \cite{casc-rep}
+[[WHAT OTHER DIRECTORY ATTACKS?]]
+\end{description}
+%\item \emph{X} Y.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Future Directions}
@@ -380,4 +490,6 @@ http://freehaven.net/doc/casc-rep/casc-rep.ps
 \bibliographystyle{plain} \bibliography{minion-design}
 
 \end{document}
+
+
 
