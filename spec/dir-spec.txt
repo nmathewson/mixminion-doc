@@ -1,255 +1,589 @@
+$Id: dir-spec.txt,v 1.2 2003/06/20 06:05:28 nickm Exp $
+
+           Type III (Mixminion) Mix Directory Specifications
+
+                            George Danezis
+                           Roger Dingledine
+                            Nick Mathewson
+                             (who else?)
+
+Status of this Document
+
+   This draft document ("dir-spec.txt") describes a proposed
+   specification for Type III Mixes and directories to exchange
+   information about node capabilities.  It is not a final version.
+   It has not yet been submitted to any standards body.
+
+   TODO:
+      - See open issues section
+      - Resolve XXXXs
+      - Describe crossover and server operations
+      - Final directory operation.
+
+Abstract
+
+   This document describes the protocols and message formats used by
+   Type III mix servers and Type III directories compatible with the
+   Mixminion reference implementation, and with the forthcoming
+   Mixmaster 4.  See "minion-spec.txt" for information about the Type
+   III protocol itself.
+
+Table of Contents
+
+            Status of this Document                                    X
+            Abstract
+            Table of Contents
+   1.       Introduction
+   1.1.     Terminology
+   2.       Type-III information exchange format
+   2.1.     Message format
+   2.2.     Processing unrecognized information
+   2.3.     Representing data
+   2.4.     Calculating digests and signatures
+   3.       Server descriptor format
+   3.1.     Server identity
+   3.2.     Descriptor liveness
+   4.       Directory format
+   5.       Directory protocols
+   5.1.     Retrieving a directory
+   5.2.     Publishing a server descriptor
+   6.       Generating server descriptors
+   7.       Generating directories
+   8.       Downloading directories
+
+   A.1.     Appendix: Versioning and alphas
+
+   X.       Open questions
+
+1. Introduction
+ 
+   For a Mix network to provide anonymity to its users, it is vital
+   that those users to provide cover traffic to one another by
+   behaving as similarly as possible when choosing paths and servers
+   for their messages.  Because of this, it is vital that users have a
+   means to learn about usable Mixes -- and that this means yield
+   identical results for all users.
+
+   Furthermore, because the Type-III Mix protocol relies on regular
+   key rotation in order to limit the size of replay caches and
+   mitigate the effect of key compromise, it is necessary for servers
+   to be able to propagate information about their state to users.
+
+   This document specifies the message formats and protocols used by
+   the type-III remailer network to exchange information about
+   servers.
+
+1.1. Terminology
+
+     * Server Descriptor - A human-readable text message describing a
+       set of keys and capabilities for a single Mix.
+      
+     * Directory - A human readable text message describing a list of
+       Mixes and their keys.
+
+     * Identity Key - A long-term signing RSA key used for
+       authenticating server descriptors and directories.
+
+     * Nickname - A human-readable unique identifier for a Mix.  
+
+     This document uses the terms "MUST", "SHOULD", "MAY", "MUST
+     NOT", "SHOULD NOT", and "MAY NOT" as defined in RFC 2119.
+
+2. Type-III Information Exchange format
+
+   To simplify the work required to write a parser for message formats,
+   we base server descriptors on the following extensible meta-format.
+
+2.1. Mix Information Exchange format
+
+   Informally, a Mix Information Message is a sequence of
+   newline-separated key-value pairs, with a colon between keys and
+   values.  These pairs are divided into sections; each section begins
+   with a square-bracketed section identifier.  Blank lines are not
+   allowed.
+
+   Formally, a Mix Information Message is a sequence of ASCII
+   characters, consisting of one or more Sections.  Each Section
+   contains a Header, and one or more Entries.  Each Header consists of
+   an left square-bracket ('[', ASCII 91), an Identifier, a right
+   square-bracket (']', ASCII 93), and an EOL.  Each Entry consists of
+   an Identifier, a colon (':', ASCII 58), a Space, a Value, and an EOL.
+   An Identifier is a sequence of one or more printable nonspace
+   characters other than colon (ASCII 33-57,59-126 inclusive).  A Space
+   is a sequence of one or more space (' ', ASCII 32) or tab ('\t' ASCII
+   9) characters.  A Value is a sequence of zero or more printing ASCII
+   characters, excluding NL and CR (ASCII 9, 32-126 inclusive), and not
+   beginning with a space or a tab.  An EOL is an optional Space,
+   followed by either a CR ('\r', ASCII 13), an NL ('\n', ASCII 10), or
+   a CR-NL sequence.
+
+   [XXXX Is there any reason to handle non-ASCII here?  I don't want to
+    walk down the road of having a dozen competing charsets and
+    encodings. -NM]
+
+   Here is a grammar, using C syntax for characters:
+
+      Message ::= Section | Message Section
+      Section ::= Header | Section Entry
+      Header ::= '[' Identifier ']' EOL
+      Entry ::= Identifier ':' Space OptValue EOL
+
+      Identifier ::= IdentifierChar | Identifier IdentifierChar
+      IdentifierChar ::= [Any character from ASCII 33 through ASCII 126
+         inclusive, excluding ASCII 58.]
+
+      OptValue ::= Value |
+      Value ::= NonSpaceValueChar | Value ValueChar
+      NonSpaceValueChar ::= [Any character from ASCII 33 through ASCII
+         126 inclusive.]
+      ValueChar ::= NonSpaceValueChar | ' ' | '\t'
+
+      Space ::= SpaceChar | Space SpaceChar
+      SpaceChar ::= ' ' | '\t'
+      OptSpace ::= Space |
+
+      EOL ::= OptSpace '\n' | OptSpace '\r' | OptSpace '\r' \n'
+
+   An example follows (indented by a uniform number of spaces):
+
+      [Section1]
+      Key1: Value1
+      [Empty_Section]
+      [Section-Three]
+      Key-two: the second value is this value
+      Key3:
+
+2.2. Processing unrecognized information
+
+   To enable backward-compatible extensions of the Exchange format, all
+   processors of Mix Information Exchange Messages MUST behave as
+   follows when encountering unrecognized headers or entries.
    
-Mix Information Exchange format
+   When processessing a section with an unrecognized identifier, the
+   processor must ignore the section completely.
    
-   In order to automate and standardize directory servers, we provide 
-   a standardized extensible server descriptor format.
-   
-   All server descriptors and statistics blocks follow a simple
-   section-based key/value format, with items loosely based on RFC822.
-   
-   [Section1]
-   Key: Value
-   Key: Value
-   Key: Value
-   
-   Key: Value
-   Key: Value
-   
-   [Section2]
-   Key: Value
-   
-Syntax
-   
-   (Notation:  X*: 0 or more occurrences of X.
-               X+: 1 or more occurrences of X.
-               X?: 0 or 1 occurrences of X.
-               X Y: An occurrence of X followed by an occurrence of Y.
-               X*{Y}: 0 or more occurrences of X separated by occurrences
-                     of Y.
-               X|Y: Either an occurrence of X, or an occurrence of Y.)
-   
-   Descriptor = NL Section+ 
-   
-   Doctype = (<any printable character but '-'>)+
-   
-   Section = SectionLine EntryLine*
-   
-   SectionLine = '[' Word ']' NL+
-   
-   EntryLine = Word ':' ' ' Data NL+
-   
-   Word = (<Any printable, non-space character but ':'>)+
-   
-   Data = (<Any printable character but NL>)*
-   
-   [Note: For compatibility across different platforms, implementations must
-     accept all of CR, LF, and CR-LF style newlines.]
-   
-Mixminion descriptor blocks
-   
+   When processing a section with a recognized identifier, the
+   processor must check whether it recognizes the version number of
+   that section (usually encoded in an entry with the identifier
+   'Version').  If it does not recognize the version number, the
+   processor must ignore the section completely.
+
+   When encountering an entry with an unrecognized identifier, the
+   processor must ignore the entry.
+
+2.3. Representing data
+
+   All formats use the following conventions to convert encoded values
+   to and from their underlying semantic meaning:
+
+     - Trailing whitespace is always ignored; sequences of whitespace
+       are collapsed to a single space.
+
+     - All numeric quantities are represented in decimal.
+
+     - All dates are represented in YYYY/MM/DD format.
+     
+     - All times are represented in YYYY/MM/DD HH:MM:SS or YYYY/MM/DD
+       HH:MM:SS.mmmm format, relative to UTC.
+
+     - All binary data is base-64 encoded, with all linebreaks and space
+       removed.
+
+     - All boolean values are encoded as 'yes' or 'no'.
+
+     - All RSA public keys are first encoded to binary with ASN.1, then
+       encoded in base-64, with all linebreaks and space removed.
+
+     - 'Address Patterns' are encoded according to the following
+       grammar:
+
+            AddressPattern ::= Address OptPortSpec
+
+	    Address ::= '*' | IP OptMask
+	    OptMask ::= '/' IP |
+	    IP ::= <an IPv4 dotted quad>
+	    
+	    OptPortSpec ::= | Port | Port '-' Port
+	    
+       An omitted mask defaults to 255.255.255.255.  '*' is a synonym
+       for 0.0.0.0/0.0.0.0.  An omitted PortSpec defaults to 48099 for
+       'allow' entries and 0-65535 on 'deny' entries.
+
+2.4. Calculating digests and signatures
+
+   Several places in this specification require Messages to be
+   self-signed with a given identity key.  The digest of a message is
+   computed with the following steps:
+
+      - First, any trailing whitespace on any line is removed, and every
+        EOL is converted to a single NL character.
+
+      - Second, the message is converted to a "stub" format: the values
+        of any unsigned entries in the message are replaced with the
+        empty string.  (Their entry lines now contain an identifier, a
+        colon, a single ' ' character, and single a NL character.)
+
+      - Third, a SHA-1 digest is computed over the resulting stub
+        message.
+
+   When signing a message, the signature is computed by taking the RSA
+   signature of the digest with OAEP/PKCS1 padding and encoding, as
+   described in "minion-spec.txt".  RSA signatures are encoded in
+   base-64.
+
+3. Server Descriptor format
+
    This section describes the format of server descriptors, as uploaded
    to and downloaded from directory servers.  A server descriptor is a
    promise, by a mix's administrators, to provide a given set of
    services, keys, and exit policies over a set period of time.
    
-   The first section must be a 'Server' section.  This section includes
-   the entries:
+   The first section must be a 'Server' section.  This section MUST
+   include each of the following entries in any order, exactly once.
    
-        'Descriptor-Version':  the string "1.0"
-        'Nickname': A human-readable identifier for this server.  If it
-            contains any periods, it must be a fully qualified DNS name
-            which resolves to the provided IP for the entire lifetime of
-            this Descriptor block.  It must be no more than 128
-            characters.  It may contain only the characters 
-            [A-Za-z0-9_@] and '-'.  It should be treated as
-            case-insensitive.
+        'Descriptor-Version':  the string "1.0".
+
+        'Nickname': A human-readable identifier for this server.  It
+            MUST be no more than 128 characters.  It MUST contain only
+            the characters [A-Za-z0-9_@] and '-'.
    
-        'Identity': The modulus of this Mix node's long-term signing key,
-            represented in ASN.1, and encoded in BASE64.  The modulus of
-            this key should be at least 2048 bits long and no more than
-            4096 bits long.  The exponent of this key must be 65537.
-   
-            Clients should at least give a warning if the identity key of
-            any server should ever change.
-        'Digest': The digest of this block. See below.
-        'Signature': The signed digest of this block.  See below.
-        'Published': A date/time, in the form 'YYYY/MM/DD HH:MM:SS',
-            for when this block was generated.
-        'Valid-After': A date, in the form 'YYYY/MM/DD'.  After midnight GMT
-            on this date, this server must support the operations listed
-            in this descriptor.
-        'Valid-Until': A date, in the form 'YYYY/MM/DD'.  Until midnight
-            GMT on this date, this server must support the operations listed
-            in this descriptor.
+        'Identity': This Mix node's identity key, represented in ASN.1,
+            and encoded in BASE64.  The modulus of this key should be at
+            least 2048 bits long and no more than 4096 bits long.  The
+            exponent of this key must be 65537.
+
+        'Digest': The digest of this descriptor.  When generating the
+	    digest, the Digest entry is excluded as unsigned.
+
+        'Signature': The signed digest of this block, signed by the
+            Identity key.  When generating the digest, the Signature
+            entry is excluded as unsigned.
+
+        'Published': The time when this block was generated.
+
+        'Valid-After': A date. After midnight GMT on this date, this
+            server SHOULD support the operations listed in this
+            descriptor.
+
+        'Valid-Until': A date. Until midnight GMT on this date, this
+            server SHOULD support the operations listed in this
+            descriptor.  This date MUST be at least one day after the
+            date in Valid-After.
+
+        'Packet-Key': The public key used to encode encode subheaders
+            for Type-III packets.
+
+        'Packet-Versions': A comma-separated list of allowable
+            major.minor versions for packets this server will process.
+            In a production network, only one value should be used for
+            this field. [Added in Mixminion 0.0.3]
+
+	 
+
+    The 'Server' section MAY contain the following entries, at most
+    once each:
+
         'Contact': An email address that may be used to contact the
-            administrator of this server. Optional field.  Must be no
-            more than 256 characters.
-        'Contact-Fingerprint': Fingerprint of the server administrator's
-            PGP key. Optional field.  Must be no more than 128
+            administrator of this server. Must be no more than 256
             characters.
+
+        'Contact-Fingerprint': Fingerprint of the server administrator's
+            PGP key. Must be no more than 128 characters.
+
         'Comments': Human-readable information about this server.  Must
             be <1024 bytes long.  It *must not* be necessary to read this
             information to use the server properly.
-        'Packet-Key': The public key used to encode encode subheaders for
-            this server, encoded in ASN.1, represented in BASE64. 
-        'Packet-Versions': A comma-separated list of allowable major.minor
-            versions for packets this server will process.  In a
-            production network, only one value should be used for this
-            field. [Added in Mixminion 0.0.3 -NM]
+
         'Software': A string description of the software this server is
-            running.  Optional; for debugging purposes only.  Must be
-            less than 256 characters. [Added in Mixminion 0.0.3 -NM]
-        'Secure-Configuration': "yes" or "no".  If true, the server must 
-            not be running in an insecure operating mode. [XXXX list
-            these modes.  Added in Mixminion 0.0.4]
+            running.  Must be less than 256 characters.  Softare SHOULD
+            NOT take any action based on this field, other than to
+            display it.  [Added in Mixminion 0.0.3]
+
+        'Secure-Configuration': A boolean value.  If true, the server
+            must not be running in an insecure operating mode. [XXXX
+            list these modes.  Added in Mixminion 0.0.4]
     
-   The digest of a descriptor block is computed by removing the contents of the
-   digest and signature fields, and computing the SHA-1 digest of the resulting
-   ASCII string.  (That is, "Digest: DATADATADATA..." is replaced with
-   "Digest:".)  The signed digest is the OAEP/PKCS1 signature of the digest
-   with the server's identity key.  This value is represented in BASE64.
-   
    [Note: before computing the digest, all implementations must
    normalize CR and CR-LF style newlines to a single NL, and remove
    any spaces and tabs that may have been introduced at the ends of
    lines.]
    
    If this server accepts incoming MMTP connections, it MAY have an
-   'Incoming/MMTP' section, with the following entries:
+   'Incoming/MMTP' section, with the following entries, exactly once
+   each:
    
         'Version': The string '1.0'
+
         'IP': An IPv4 address, in dotted-quad format.
+
         'Port': A port at which IP accepts incoming MMTP connections.
-        'Key-Digest': The KEYID of this server, encoded in BASE64.
-        'Protocols': A comma-separated list of the protocols this
+
+        'Key-Digest': The KEYID of this server, encoded in BASE64.  This
+	      is the same as the SHA-1 digest of the ASN.1 encoding of
+	      the identity key.  (See "minion-spec.txt" for more
+	      information.)
+
+        'Protocols': A comma-separated list of the versions of MMTP this
               server accepts.
    
+   The 'Incoming/MMTP' section MAY contain any number of entries of 
    and any number of entries of the form:
-        'Allow': Address Pattern
-        'Deny': Address Pattern
+
+        'Allow': AddressPattern
+        'Deny': AddressPattern
    
    If this server supports outgoing MMTP connections, it MAY have a
    'Outgoing/MMTP' section, with one entry each of the form:
    
          'Version': The string '1.0'
-         'Protocols': A comma-separated list of the protocols this server
-              supports for outgoing connections.
+
+         'Protocols': A comma-separated list of versions of MMTP this
+              server supports for outgoing connections.
    
-   and any number of entries of the form:
+   The 'Outgoing/MMTP' section MAY contain any number of entries of the
+   form:
    
-         'Allow': Address Pattern
-         'Deny': Address Pattern
+         'Allow': AddressPattern
+         'Deny': AddressPattern
    
-   The Address Pattern tokens are of the form:
+   These entries are order-significant; the first one to match wins.
+   The default policy is 'Deny: *'.
    
-      AddressPattern = (IP ('/' Mask)? | '*') (Port ('-' MaxPort)?)?
+   If this server supports outgoing delivery mechanisms, it MAY have
+   corresponding delivery sections.  See 'E2E-spec.txt' for more details
+   on specific types, including SMTP and MBOX.
    
-   '*' is a synonym for '0.0.0.0/0.0.0.0'.
+   Other services provided by this server SHOULD each have their own section.
    
-   An omitted mask defaults to 255.255.255.255.  An omitted portrange
-   defaults to 48099 on ALLOW and 0-65535 on DENY.
+   Note: A server MAY omit some of its capabilities from its descriptor.
+   It is permissible (for example) for a server that supports incoming
+   MMTP connections to omit the Incoming/MMTP section.)  A server
+   MUST NOT, however, advertise any capabilities it does not support.
    
-   The entries are order-significant; the first one to match wins.
+3.1. Server Identity
+
+   Every server descriptor contains two fields that identify the
+   corresponding mix: the Identity public key, and the Nickname.
+   Because only the Mix has the private key corresponding to the
+   Identity key, the identity key works as a unique identifier for the
+   Mix.
+
+   For user convenience, a mix's Nickname also serves as a unique
+   identifier.  Every nickname SHOULD correspond to a single identity
+   key: directory servers and clients SHOULD reject descriptors that use
+   use the same nickname as a previously encountered descriptor but
+   change the identity key.
+
+   All nickname matches MUST be case insensitive.
+
+3.2. Descriptor liveness
+
+   When choosing between multiple server descriptors for the same Mix
+   valid at the same time, implementations SHOULD choose the most
+   recently published descriptor.
    
-   The default policy is 'Deny: *'
+   The interval of time between a descriptor's 'Valid-After' and
+   'Valid-Until' dates is called its 'Lifetime'.
+
+   If some descriptor's lifetime is in the past, that descriptor is said
+   to be 'Expired'.  
+
+   If a descriptor's lifetime is all either in the past or contained
+   within the lifetimes of more recently published descriptors for the
+   same server, that descriptor is said to be 'superceded'.
+
+4. Directory Format
    
-   If this server supports outgoing delivery for a module ABCD, it will
-   have a [Delivery/ABCD] section.  See appendices for more detail on
-   specific modules, including SMTP and MBOX.
+   A directory contains a list of Mixminion servers which are believed
+   to be operational at a given time.  A directory MUST contain all of
+   the following, in order:
+      - A 'Directory' section,
+      - A 'Signature' section, 
+      - A 'Recommended-Software' section, 
+      - One or more server decriptors (see section 3 above).
+
+   The 'Directory' section MUST contain the following entries:
+     
+     - 'Version': The string '1.0'
+     
+     - 'Published': The time when this directory was generated.
+     
+     - 'Valid-After' : A date.  This directory SHOULD NOT be used before
+       midnight GMT on this date.
+
+     - 'Valid-Until' : A date.  This directory SHOULD NOT be used after
+       midnight GMT on this date.  This date SHOULD be exactly one day
+       after the date in 'Valid-After'.
+        
+     - 'Recommended-Servers' : A comma-separated list of server
+       nicknames.  Clients SHOULD NOT depend on servers whose nicknames
+       are not on this list to be reliable or trustworthy.
+
+   The 'Signature' section MUST contain the following fields:
+
+     - 'DirectoryIdentity' : The Identity key of the directory server
+       that generated this directory.  This modulus of this key must be
+       between 2048 and 4096 bits long, and the exponent must be 65537.
+
+     - 'DirectoryDigest' : The digest of the entire directory.  The
+       value of this entry is unsigned.
+
+     - 'DirectorySignature' : The signature of the directory digest
+       with the directory server's identity key.  The value of this
+       entry is unsigned.
+
+   The 'Recommended-Software' section MUST contain the following
+   entries:
    
-   Other services provided by this server should each have their own section.
+     - 'MixminionClient' : A comma-separated list of up-to-date versions
+       versions of Mixminion.  If a client is running a version more
+       recent than any on the list, it SHOULD issue a warning.  If a
+       client is running a version not on the list, and some version on
+       the list is more recent than the client's version, the client
+       SHOULD issue a warning, and MAY refuse to run.
+
+     - 'MixminionServer' : A comma-separated list of up-to-date versions
+        of Mixminion.  Servers should interpret this list as clients
+        interpret 'MixminionClient'.
+
+   Entries in 'MixminionClient' and 'MixminionServer' are in decreasing
+   order of preference. Because the version numbering scheme will be
+   different for each implementation, lines within
+   'Recommended-Software' are version specific.  Other implementations
+   of Type-III should generate similar entries in
+   'Recommended-Software'.
+
+5. Directory Protocols
+
+   Compliant directory servers MUST provide HTTP URLs to download a
+   current directory or upload a descriptor for inclusion in a
+   directory.
+
+5.1. Retrieving a directory
+
+   A directory server SHOULD provide one or more well-known HTTP URLs at
+   which its directory can be downloaded.  Retrieving such a URL MUST
+   yield a currently valid directory, or one which will be valid 'very
+   soon' [XXXX how soon?].
+
+   The contents of such a URL MAY be compressed with GZIP to save
+   bandwidth and speed downloads.
+
+   Directory servers SHOULD also make their identities well-known out of
+   band.
+
+5.2. Publishing a server descriptor
    
-   (Note: A server need not advertise all of its capabilities; it is
-   permissible (for example) for a server that supports incoming MMTP
-   connections to omit the Incoming/MMTP section.)
-   
-   A client should ignore any keys or sections it does not recognize, but
-   should not use any service whose sections have an unrecognized
-   descriptor version.
-   
-Directories and Directory servers
-   
-   A directory is a list of Mixminion servers which are believed to
-   be operational at a given time.
-   
-   A directory server provides an HTTP URL for uploading server
-   descriptors, an HTTP URL for downloading a directory, and a long-term
-   public key (2048-4096 bits).
-   
+   A directory server SHOULD provide one or more well-known HTTP URLs
+   to publish server descriptors to the directory.  
+
    To upload a descriptor block, a client performs an HTTP POST request
-   to the upload URL, with the server block as enclosed entity.
+   to the upload URL, with the server block as the contents of a single
+   parameter, 'desc'.
+
+   The server MUST reply to an upload with a message of Content-Type
+   test/plain, and contents of the form
+
+        UploadReply ::= StatusLine MessageLine
+	StatusLine ::= "Status: " Bit EOL
+	Bit ::= '0' | '1'
+	MessageLine ::= "Message: " Value EOL
+
+   If the upload is successful and the descriptor will be accepted into
+   the directory, the status MUST be 1, and the message MUST be
+   'Accepted.'.
+
+   Otherwise, if the upload was successful and the descriptor will not
+   be accepted into the directory, the status MUST be 0, and the
+   message SHOULD be a description of why the server descriptor was not
+   accepted.
    
-   To retrieve the directory, a client performs an HTTP GET request on
-   the directory URL.
+   Finally, if the upload was successful, but the descriptor will only
+   be accepted into the directory when manually approved by the
+   administrator, the status MUST be 1, and the message MUST be a
+   description of the status of the desctiptor, and MUST NOT be
+   'Accepted.'.
    
-   A directory takes the following form:
+6. Generating server descriptors
+
+   Servers SHOULD generate at least a [[two weeks]] of keys in advance,
+   and SHOULD allow about [[2.5 days]] for newly published keys to
+   appear in the directory.  Servers SHOULD continue to accept packets
+   encrypted to old keys at least [[20 hours]] after their published
+   Value-Until date, and SHOULD NOT accept new keys until their
+   published Valid-After date.
+
+   [XXXX These ranges above are all guesses. -NM]
+
+   Servers MAY refrain from publishing their keys entirely.
+
+   When a server's capabilities or configuration changes in such a way
+   as to render a previous server descriptor incorrect, it SHOULD
+   immediately generate a new server descriptor for each of the existing
+   server descriptors it has published, using the same keys as used in
+   the existing published descriptors.
+
+   To advertise a planned outage, a server SHOULD publish a server
+   descriptor valid over the time of the entire planned outage, with
+   all sections except 'Server' absent.
+
+7. Generating directories
    
-    [Directory]
-    Version: 1.0
-    Published: YYYY/MM/DD HH:MM:SS
-    Valid-After: YYYY/MM/DD
-    Valid-Until: YYYY/MM/DD
-    Recommended-Software: Mixminion 0.0.2,Mixminion 0.0.3
-    [Signature]
-    DirectoryIdentity: Base64-encoded public key, in ASN.1
-    DirectoryDigest: Digest of this document.
-    DirectorySignature: Base64-encoded OAEP/PKCS1 signature of this document, with
-        the contents of this field removed.
-    [Recommended-Software]
-    ... (see below)
-    [Server]
-        (Server descriptor block)
-    [Server]
-        (Server descriptor block)
-   
-   The 'Recommended-Software' section lists versions of Type-III clients
-   and servers that are currently recommended.  Because the version
-   numbering scheme will be different for each implementation, lines
-   within 'Recommended-Software' are version specific.  The "Mixminion"
-   program uses the entries 'MixminionClient' and 'MixminionServer'; each
-   contains a space-separated list of acceptable version numbers, in
-   order of decreasing preference.  If a client is running an
-   unrecommended version, it must warn the user.  [Policy: A development
-   version of Mixminion (pre 1.0) will only be declared obsolete when it 
-   is either too insecure or too buggy to use, when backward
-   compatibility is broken, or when a new stable release comes out.
-   Stable releases will be taken off the list only for security or
-   privacy reasons.]
-   
-   Directory servers change their directories only at midnight GMT.  Any
-   client which has not downloaded a directory since before midnight GMT,
-   must download a fresh directory before generating any packets.
-   
-   A directory includes all the servers that were uploaded to the
-   directory before some cutoff time the previous day, and which proved
-   upon some random number of tests and probings to have a real Mixminion
-   server running on them.  A directory server periodically re-tests
-   the servers in its directory to make sure they have not gone down.
+   Directory servers SHOULD change their directories only at midnight
+   GMT.  
+
+   For every mix, the directory SHOULD either include no descriptors
+   from that mix; or include all of that mix's published descriptors
+   that are not expired or superceded, and that do not become valid
+   before a given cutoff time. [[2 weeks]].
+
+   A directory server decides, for every mix whose descriptors
+   descriptors it has received, whether that mix is 'Trustworthy' and
+   'Reliable'.  A 'trustworthy' mix is one that is believed to protect
+   its users anonymity.  A 'reliable' mix is one that delivers packets
+   with high probability and reasonable latency.  Directories SHOULD
+   include only trustworthy and reliable mixes on their
+   'Recommended-Servers' entry.  
+
+8. Downloading directories
+
+   Any client which has not downloaded a directory since before midnight
+   GMT, SHOULD download a fresh directory before generating any packets.
+
+A.1. Versioning and Alphas
+
+   Today's alpha code does not publish its version as '1.0'; it uses
+   '0.x' instead (currently '0.2' for Descriptor-Version, '0.2' for
+   directory Version, and '0.1' for everything else.)  Production
+   versions MUST NOT retain backward compatibility with pre-production
+   releases.
+
+   When generating Recommended-Software entries for Mixminion, we follow
+   the following policies: A development version of Mixminion (pre 1.0)
+   will only be declared obsolete when it is either too insecure or too
+   buggy to use, when backward compatibility is broken, or when a new
+   stable release comes out.  Stable releases will be taken off the list
+   only for security or privacy reasons.
+
+X. Open problems
    
    Because of possible partitioning attacks related to accidentally or
    maliciously unsynchronized servers, the presence of multiple directory
    servers presents sever security issues.  Since solving these issues is
    an active research project, we leave them for a later draft.
    
+   Issues include:  How do directory servers synchronize?
+   What happens when they disagree?  How many servers must a client
+   contact before he/she has enough information?  How do we catch
+   dishonest directory servers?
    
-   [XXXX Issues include:  How do directory servers synchronize?
-      What happens when they disagree?  How many servers must a client
-      contact before he/she has enough information?  How do we catch
-      dishonest directory servers? -NM]
-   
-   [XXXX We should also specify, perhaps, how directories are to order
-      the server descriptors; what uniqueness constraints there are, and so
-      on. -NM]
-   
-   [XXXX Also: statistics information. Also: we should think about
-      avoiding catastrophic failure modes if directories _do_ fail or
-      change. -NM]
-   
-   
-   
-   
-   
-X. Open questions
+				 * * *
+  
+   Also: statistics information. Also: we should think about avoiding
+   	    catastrophic failure modes if directories _do_ fail or
+   	    change. -NM
+
+				 * * *
    
    2. Description of mixing algorithm should go in descriptor blocks. -NM
       [XXXX Unless the mixing method requires special packaging of the
@@ -258,6 +592,8 @@ X. Open questions
             information theoretic one presented by myself and Andrei
             could do the job quite well. -GD]
    
+				 * * *
+
    1. Statistics Information Exchange format
       [Not for first cut]
    
@@ -266,7 +602,7 @@ X. Open questions
       [Actually, we may need these first two pieces for Mixminion 1.0;
        else we won't be deployable. -NM]
    
-   5. Automatic retrieval of Server Information
+   3. Automatic retrieval of Server Information
    [XXXX I think it is important to have a standard way to query a
          server given an IP and a port. -GD]
 
@@ -330,4 +666,3 @@ X. Open questions
     desirable... but that we should first design directories or whatever
     other node discovery mechanisms *may* want this feature before we
     decide that to implement the feature itself. -NM]
-   
