@@ -73,7 +73,7 @@ known attacks.
 Chaum first introduced anonymous remailer designs over 20 years ago
 \cite{chaum-mix}. The research community has since introduced many new
 designs and proofs
-\cite{abe,web-mix,babel,flash-mix,realtime-mix,kesdogan,hybrid-mix},
+\cite{abe,web-mix,babel,flash-mix,realtime-mix,kesdogan,shuffle,hybrid-mix},
 and discovered a variety of new attacks
 \cite{back-traffic-analysis,langos02,disad-free-routes,desmedt,mitkuro,raymond00},
 but the state of deployed remailers has changed remarkably little since
@@ -406,7 +406,7 @@ software; specifically, senders generating forward messages must be able
 to create onions, and receivers must be able to create reply blocks
 and unwrap messages received through those reply blocks. Other parties,
 such as those receiving forward messages and those sending direct reply
-messages, do not need to run any new software.
+messages, do not need to run new software.
 
 % Do we ever say how to send a reply without software? -Nick
 % Nope. We're just bluffing. Is that ok? -RRD
@@ -448,42 +448,42 @@ how this all-or-nothing encryption approach helps protect against tagging.
 \end{center}
 \end{figure}
 
-A ``header swap'' mechanism could be used in order to minimize the
-information leaked by \emph{tagging attacks}. Each Mixminion packet,
-when created, has two headers: the first one contains a series of sub
-headers each encrypted as an onion under the public keys of a sequence of
-nodes. Each of these sub headers contain some symmetric key and a hash
-to check the integrity of the header. The second header contains sub
-headers in the form of an onion as well but is also encrypted under
-the keys contained in the first header, as well as the hash of the
-payload. In the case of a bi-directional anonymous channel the 
-second header could also be a single use reply block (SURB)
-provided by another party. The payload is finally encrypted using all
-the keys contained in the first header and the second if it is not a SURB.
-
-The packet travels through nodes that perform the operations illustrated
-on \emph{figure 1}. Each node decrypts the RSA sub header, retrieves
-the key and checks the integrity of the first header. If someone has
-tampered with it, the packet is discarded. If the header is correct,
-the secret is used to decrypt the second header and the payload. There
-is one special node, at the ``crossover point'' in the path, that in
-addition to the standard operation, decrypts the second header using
-the hash of the payload and swaps the two headers.
-
-The primitive used for encryption and decryption is BEAR \cite{BEAR},
-a variable block size block cipher. It offers the property that if any
-bit of the encrypted material is changed the decryption will look like
-random bits for anyone that does not know the key. Therefore we minimize
-an attackers benefit from tagging a message. It is impossible to tag the
-headers because any modification is detectable. It is also fruitless to
-modify the payload of the message: if it is modified before the crossover
-point, the second header will not be decryptable, and if it is modified
-afterward the first part of the path should offer enough anonymity. Of
-course in order to make this scheme as secure as if tagging attacks did
-not exist we should require users to choose the double path length for
-each message. In practice users might choose to select shorter paths,
-given that the remaining tagging attack provides very little information 
-and is very difficult to mount.
+%A ``header swap'' mechanism could be used in order to minimize the
+%information leaked by \emph{tagging attacks}. Each Mixminion packet,
+%when created, has two headers: the first one contains a series of sub
+%headers each encrypted as an onion under the public keys of a sequence of
+%nodes. Each of these sub headers contain some symmetric key and a hash
+%to check the integrity of the header. The second header contains sub
+%headers in the form of an onion as well but is also encrypted under
+%the keys contained in the first header, as well as the hash of the
+%payload. In the case of a bi-directional anonymous channel the 
+%second header could also be a single use reply block (SURB)
+%provided by another party. The payload is finally encrypted using all
+%the keys contained in the first header and the second if it is not a SURB.
+%
+%The packet travels through nodes that perform the operations illustrated
+%on \emph{figure 1}. Each node decrypts the RSA sub header, retrieves
+%the key and checks the integrity of the first header. If someone has
+%tampered with it, the packet is discarded. If the header is correct,
+%the secret is used to decrypt the second header and the payload. There
+%is one special node, at the ``crossover point'' in the path, that in
+%addition to the standard operation, decrypts the second header using
+%the hash of the payload and swaps the two headers.
+%
+%The primitive used for encryption and decryption is BEAR \cite{BEAR},
+%a variable block size block cipher. It offers the property that if any
+%bit of the encrypted material is changed the decryption will look like
+%random bits for anyone that does not know the key. Therefore we minimize
+%an attackers benefit from tagging a message. It is impossible to tag the
+%headers because any modification is detectable. It is also fruitless to
+%modify the payload of the message: if it is modified before the crossover
+%point, the second header will not be decryptable, and if it is modified
+%afterward the first part of the path should offer enough anonymity. Of
+%course in order to make this scheme as secure as if tagging attacks did
+%not exist we should require users to choose the double path length for
+%each message. In practice users might choose to select shorter paths,
+%given that the remaining tagging attack provides very little information 
+%and is very difficult to mount.
 
 Because the path is split into two legs, we can cleanly support anonymized
 reply messages. Alice simply uses Bob's reply block as the second leg,
@@ -559,15 +559,16 @@ The above design is still vulnerable to a subtle and very dangerous
 attack. If Alice sends a group of messages along the same path, the
 adversary can tag some of those message as they leave Alice, recognize
 the pattern (number of tagged and untagged messages) at the crossover
-point, and observe where the untagged ones go.
+point, and observe where the untagged ones go (if he built the second
+leg himself, as in an anonymized reply, he can recognize it immediately).
 
-It turns out with some assumptions about our adversary, we can reduce
+With some assumptions about our adversary, we can reduce
 this attack to a traffic confirmation attack we're already willing to
 accept: when Alice sends a bunch of messages, the adversary can count
 them and look for the pattern later. He can also drop some of them and
 look for resulting patterns.
 
-The attack is possible only if the adversary happens to own the crossover
+The adversary can only recognize a tag if he happens to own the crossover
 point that Alice chooses.
 % If Alice were sending
 %only one message, then this multiple-message tagging attack also would
@@ -860,10 +861,10 @@ node until the directory servers remove some MIX $M$ from their listings
 --- he can then release the delayed messages and guess that any messages
 still using $M$ are likely to be from Alice. An adversary controlling
 many nodes can launch this attack very effectively. Thus clients
-should download new information regularly, but information regularly,
+should download new information regularly,
 but wait for a given time threshold (say, an hour) before using any
 newly-published nodes. Dummy traffic to old nodes may also be able to
-help thwart trickle attacks.
+help stop trickle attacks.
 
 Directory servers compile node availability and performance information by
 sending traffic through MIXes in their directories. In its basic form this
