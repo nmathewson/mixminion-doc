@@ -1,4 +1,4 @@
-$Id: spec-issues.txt,v 1.3 2003/08/03 07:30:38 nickm Exp $
+$Id: spec-issues.txt,v 1.4 2003/08/09 03:09:23 nickm Exp $
 
 				MIX3:X
     Open Issues in Type III (Mixminion) Mix Protocol Specifications
@@ -24,30 +24,31 @@ Table of Contents
             Status of this Document                                    X
    0.       Meta-issues
    1.       Issues in MIX3:1: 'minion-spec.txt'
-   1.1.     Disposition of 'DROP' messages
+   1.1.     Disposition of 'DROP' messages -- RESOLVED
    1.2.     Generation of dummy messages and link padding
-   1.3.     Recommended pooling rule
-   1.4.     Hostnames versus IPs
-   1.5.     IPv6
-   1.6.     Denial-of-service prevention   
+   1.3.     Recommended pooling rule -- RESOLVED
+   1.4.     Hostnames versus IPs -- RESOLVED, NEED SPEC
+   1.5.     IPv6 -- RESOLVED, NEED SPEC
+   1.6.     Denial-of-service prevention -- DEFERRED
    1.7.     Bursty MMTP
    2.       Issues in MIX3:2: 'E2E-spec.txt'
-   2.1.     Mail Gateways
+   2.1.     Mail Gateways -- DEFERRED
    2.2.     MIME
    2.3.     Improved K-of-N algorithm
    2.4.     Abuse prevention
-   2.5.     Path selection in non-freeroute networks 
-   2.6.     News
-   2.7.     PKI bootstrapping
+   2.5.     Path selection in non-freeroute networks -- RESOLVED, NEED SPEC
+   2.6.     News -- RESOLVED, NEED SPEC
+   2.7.     PKI bootstrapping 
    2.8.     Multiple recipients
    3.       Issues in MIX3:3: 'dir-spec.txt'
    3.1.     Directory agreement
    3.2.     Integrated pinging
    3.3.     Reliability versus trust
    3.4.     Unadvertised broken links
-   3.5.     Anonymity information in descriptor blocks
-   3.6.     Automatic retrieval of server information
-   3.7.     Jurisdictions and twins
+   3.5.     Anonymity information in descriptor blocks -- DEFERRED
+   3.6.     Automatic retrieval of server information -- DEFERRED
+   3.7.     Jurisdictions and twins -- PARTIALLY RESOLVED
+   3.8.     Statistics reporting & logging -- RESOLVED, NEED SPEC
    4.       Unspecified components
    4.1.     RFC822-style interface
 
@@ -60,7 +61,7 @@ Table of Contents
 
 1. Issues in Mix3:1: 'minion-spec.txt'
 
-1.1. Disposition of 'DROP' messages
+1.1. Disposition of 'DROP' messages -- RESOLVED
 
    We need to specify: are 'DROP' messages dropped before they go
    into the mix pool, or after they're pulled from the pool?
@@ -71,6 +72,8 @@ Table of Contents
  
    [Roger seemed pretty sure that it should be 'before', but I don't
       remember why.  Roger? -NM]
+
+   [RESOLVED 3Aug: "Before".  Roger will tell us why.]
 
 1.2. Generation of dummy messages and link padding
 
@@ -84,13 +87,13 @@ Table of Contents
    seems to be superseded by hopes that we can use dummy messages and
    link padding for each node to ping the network.
 
-   See Danezis and Sassaman's forthcoming paper on Red-Green-Black mixes for
-   some other uses of having every mix be a pinger.
+   See Danezis and Sassaman's forthcoming work on Red-Green-Black
+   mixes for some other uses of having every mix be a pinger.
 
-   See Diaz and Preneel's forthcoming paper on dummy traffic for some
+   See Diaz (and Preneel?)'s forthcoming work on dummy traffic for some
    other good ideas.
 
-1.3. Recommended pooling rule
+1.3. Recommended pooling rule -- RESOLVED
 
    Currently, we recommend Mixmaster's pooling rule as a baseline in
    appendix A.3.  There is some possibility that a better rule might be
@@ -99,7 +102,10 @@ Table of Contents
    pooling rule might provide better anonymity.  Somebody should look
    into this.
 
-1.4. Hostnames versus IPs
+   [RESOLVED 3AUG: Stick with binomial timed dynamic pool until we
+     get something better.]
+
+1.4. Hostnames versus IPs -- RESOLVED, NEED SPEC
 
    In the current specification, we address servers only by IP.  While
    this approach prevents DNS-related attacks against the mixnet, it
@@ -139,14 +145,23 @@ Table of Contents
   
                                       -- Nick
 
-1.5. IPv6
+   [3Aug: We decided to allow administrators to provide either
+     hostname or IP at their discretion.  I need to come up with a
+     migration plan and modify minion-spec.txt to say the right
+     thing. -NM]
+    
+
+1.5. IPv6 -- RESOLVED, NEED SPEC
 
    (Adding IPv6 support to the network would create a situation in
    which only hosts with IPv6 support could deliver packets to nodes
    without IPv4 addresses.  This would create a non-freeroute network.
    See 2.5 below.)
 
-1.6. Denial-of-service prevention
+   [3Aug: Damn the torpedos; George is right about non-freeroute
+     networks.  Just add IPv6 support to the spec. ]
+
+1.6. Denial-of-service prevention -- DEFERRED
 
    Right now, the network may be too easy to DOS.  In particular, there
    are unpleasantly high work multipliers for attacks that send junk
@@ -180,25 +195,33 @@ Table of Contents
         - Does not prevent nymservers from working.
         - You are prepared to specify :) .)
 
-1.7. Bursty MMTP
+   [3Aug: Let's not do hashcash; Nick will write why in FRS.  Neglect
+      multiplier issues for now.]
+
+1.7. Bursty MMTP -- RESOLVED, NEED SPEC
 
    Right now, an MMTP sender waits for the MMTP recipient to
    acknowledge each packet before transmitting the next.  Bram claims
    that TCP will be happier if senders burst as many packets as
    possible without interruption, allowing the recipient to ACK each
-   one asynchonously.
+   one asynchronously.
 
    Someone should confirm that this matters with the message sizes that
    we're dealing with.  (32KB messages, <80B acks, over TLS).  If it
    does matter, we should change MMTP to use bursty transmission.
 
+   [RESOLVED 3Aug: Do it.  It may affect client apis -- but old
+      implementations may be compatible.]
+    
 2. Issues in MIX3:2: 'E2E-spec.txt'
 
 2.1. Mail gateways
 
    The design paper calls for gateways that can allow users to reply to
-   Type-III messages without reply blocks.  This needs to be designed
+   Type-III messages without software.  This needs to be designed
    and specified.
+
+   [DEFERRED 3Aug: Spec it when somebody feels like implementing it.]
 
 2.2. MIME
 
@@ -208,7 +231,7 @@ Table of Contents
 
    But if we allowed arbitrary values for Content-Type, Content-
    Encoding, and so on, we'd expose ourselves to partitioning attacks
-   based on the distinguishability among MIME implementations.  
+   based on the distinguishability among MIME implementations.
 
    Thus, we need to specify _at least_ a clean way to access type and
    encoding functionality.  Possibly, we should also specify a standard
@@ -217,6 +240,8 @@ Table of Contents
    This functionality *may* take the format of a canonical subset of
    MIME, but Lucky thinks that such a thing would drive us into a 
    Lovecraftian state of madness.
+
+   [3Aug: Canonicalize encodings; allow types.  PGP-mime is "hard".]
 
 2.3. Improved K-of-N algorithm
 
@@ -232,6 +257,9 @@ Table of Contents
    It would be nice to have an unencumbered efficient approach to
    K-of-N fragmentation.  Somebody should do one.
 
+   [3Aug: Ask the patentholders for a license?  Otherwise look for a
+     non-encumbered alternative.  Nick tells Len what we need.]
+
 2.4. Abuse prevention
 
    Right now, we have some vague ideas about users emailing admins to
@@ -242,7 +270,9 @@ Table of Contents
    abusive behavior.  If these don't make it into the specification,
    they should at least appear in a best-practices document.
 
-2.5. Path selection in non-freeroute networks 
+   [3Aug: Dybbuk says he will specify cookie opt-out protocol.]
+
+2.5. Path selection in non-freeroute networks -- RESOLVED, NEED SPEC
 
    Our current path selection algorithm assumes that the network is a
    clique, and that every node can route to every other node.  If this
@@ -255,9 +285,14 @@ Table of Contents
    fraction of the network.  See his paper, "Mix-networks with
    restricted routes".
 
-2.6. News
+   [3Aug: Use George's approach till we have something better.]
+
+2.6. News -- RESOLVED, NEED SPEC
 
    There's no way to post to USENET specified.  There should be.
+
+   [3Aug: Specify NEWS delivery type.  NEWS allows email addresses
+     too. NGs capped at 3.  Allow Followup-To. -NM]
 
 2.7. PKI bootstrapping
 
@@ -270,11 +305,16 @@ Table of Contents
    to bootstrap from an existing PKI.  We should probably specify some
    way to bootstrap from PGP keys (or something).
 
+   [3Aug: Use gpg to dump parameters; add El Gamal.  No ECC.]
+
 2.8. Multiple recipients
 
    Right now, you can only specify a single recipient mailbox for each
    outgoing mail message.  There should be some way to allow for
    multiple recipients, but to deal with the attendant abuse issues.
+
+   [3Aug: <=8 addresses.  If client gets more than 8, divides into N/8
+     messages.  Eliminate dups at client; dups at server are error.]
 
 3. Issues in MIX3:3: 'dir-spec.txt'
 
@@ -311,13 +351,17 @@ Table of Contents
    the directory admin considers untrustworthy.  This may or may not be
    a good thing.
 
+   [3Aug -- yes]
+
 3.4. Unadvertised broken links
 
    We may or may not want a way for a directory to advertise that,
    although N1 and N2 both work, and N1 and N2 both claim to allow
    messages from one other, the N1-N2 link is broken nonetheless.
 
-3.5. Anonymity information in descriptor blocks
+   [3Aug -- do this in revised dir spec]
+
+3.5. Anonymity information in descriptor blocks -- DEFERRED
 
    We may want some way for servers to advertise how much anonymity
    they claim to provide.  This may consist of a description of their
@@ -331,7 +375,9 @@ Table of Contents
    It is also unclear whether anybody could ever use this information
    safely.
 
-3.6. Automatic retrieval of server information
+   [3Aug -- punt.]
+
+3.6. Automatic retrieval of server information -- DEFERRED
 
    Right now, server descriptors are published in a push-only model:
    nodes advertise themselves to as many directory servers as they can.
@@ -411,7 +457,9 @@ Table of Contents
 
    If you can resolve this definitively, please do.
 
-3.7. Jurisdictions and twins
+   [3Aug: Don't add this until/unless it is needed.]
+
+3.7. Jurisdictions and twins -- PARTIALLY RESOLVED
 
    It might be good to have some way for serves to advertise their
    jurisdiction, so that clients can choose paths that cross different
@@ -425,6 +473,21 @@ Table of Contents
    with the same administrator to also share the same set of keys, thus
    forming a single 'virtual server'.
    
+   [PARTIALLY RESOLVED 3Aug: Treat twins as separate for traffic
+     purposes, but don't do adjacently.  Don't do jurisdictions until
+     we can either verify them, or show that they are beneficial even
+     when unverified.]
+
+3.8. Statistics reporting & logging -- RESOLVED, NEED SPEC
+
+   [RESOLVED 3Aug: Servers MAY report how many messages they process
+     per day, rounded up to the next 1K.  Servers SHOULD NOT report
+     more statistics.  Servers MAY log errors, malformed packets, and
+     any other non-dummy packets dropped along with hash of packet.
+     MAY also log time at which message is received, along with no
+     other msg info.  Servers MUST NOT log anything else without
+     marking themselves insecure.  We ship without extra logging.]
+
 4. Unspecified components
 
    There are some other projects that need to be specified and

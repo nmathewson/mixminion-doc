@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.9 2003/07/24 03:33:21 nickm Exp $
+$Id: minion-spec.txt,v 1.10 2003/08/09 03:09:23 nickm Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -485,7 +485,8 @@ Table of Contents
 
    A DROP routing type indicates a dummy message. It must be
    discarded.  To prevent servers from distinguishing among clients,
-   every DROP message should have a random payload.
+   every DROP message should have a random payload.  DROP messages
+   must be discarded, and not inserted into the mix pool.
 
    A FWD/IP4 routing type indicates that the message must be
    retransmitted using the TLS/Mixminion transport protocol (see
