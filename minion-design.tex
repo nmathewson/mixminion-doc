@@ -162,6 +162,7 @@ improves anonymity.
 %it is fairly hard to add new experimental features to the current software.
 
 We review mixes and mix-nets in Section \ref{sec:background},
+describe our goals and assumptions in Section \ref{sec:assumptions},
 and then address the above list of improvements in Sections
 \ref{sec:design}-\ref{sec:nymservers}. We conclude with a summary of how
 our design stands up to known attacks; a list of future
@@ -196,10 +197,10 @@ input message,
 and because the mix collects a batch of messages and then sends out the
 decrypted messages in a new order, an observer cannot learn which incoming
 message corresponds to which outgoing message. Chaum showed the
-security of a mix against a \emph{passive adversary} who can eavesdrop on
+security of a mix against a \emph{passive adversary} who eavesdrops on
 all communications but is unable to observe the reordering inside the mix.
-Pfitzmann found a weakness in Chaum's original scheme, based on the
-properties of raw RSA encryption and fixes it in \cite{pfitzmann90how}.
+Pfitzmann fixed a weakness in Chaum's original scheme based on the
+properties of raw RSA encryption \cite{pfitzmann90how}.
 
 However, trusting a single mix is dangerous: the mix itself could be
 controlled by the adversary. Therefore users send their messages through
@@ -243,12 +244,15 @@ Some mix-net designs allow recipients to construct \emph{reply blocks}
 that allow others to send messages to them without knowing their
 identities. A reply block contains only the routing portion of a message;
 the actual contents are appended by the user who eventually sends a
-message to the recipient. Such a design was first introduced by Chaum
-\cite{chaum-mix} and later extended in Babel \cite{babel}. However,
-Babel's replies are indistinguishable from forward messages only by
-passive observers --- the mix nodes can still distinguish. Babel's reply
-addresses are also multiple-use, making them less secure than forward
-messages due to replay vulnerabilities.
+message to the recipient. In this case the contents are effectively
+\emph{encrypted} at each step in the path rather than decrypted.
+The recipient knows all the keys used in the reply block and can peel
+off all the layers of encryption when the message arrives. Such a design
+was first introduced by Chaum \cite{chaum-mix} and later extended in
+Babel \cite{babel}. However, Babel's replies are indistinguishable from
+forward messages only by passive observers --- the mix nodes can still
+distinguish. Babel's reply addresses are also multiple-use, making them
+less secure than forward messages due to replay vulnerabilities.
 
 The first widespread public implementations of mixes were produced by the
 Cypherpunks mailing list. These ``Type I'' \emph{anonymous remailers}
@@ -336,6 +340,7 @@ the anonymity of users.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Design goals and assumptions}
+\label{sec:assumptions}
 
 Mixminion brings together the current best practical approaches
 for providing anonymity in a batching message-based free-route mix
@@ -391,6 +396,15 @@ backward) to any messages.
 %trace communication backward or forward and gain additional knowledge
 %about communicating partners.
 
+We choose to drop packet-level compatibility with Mixmaster and the
+Cypherpunk remailer systems, in order to provide a simple extensible
+design. We can retain minimal backwards compatibility by ``remixing''
+Type II messages to be Type III messages, thus increasing anonymity sets
+in the Type III network. Type II messages travelling between Type III
+remailers are treated as plaintext and encrypted to the next remailer
+in the chain using its Type III key. The message is sent as a Type III
+encrypted message, but it decrypts to reveal the Type II message.
+
 The Mixminion network tries to make it as hard as possible for an
 adversary observing the network to gain any additional information
 about communicating partners beyond an \emph{a priori} belief. It does
@@ -401,6 +415,7 @@ be as long as 32 hops), or their position in the network. Furthermore
 the processing for replies is exactly the same as for normal messages
 and it is therefore difficult to partition the anonymity sets by
 distinguishing between them. 
+
 
 % replies: we want to avoid partitioning by having reply messages be
 %   indistinguishable from forward messages, and just as secure.  To the
@@ -414,19 +429,14 @@ distinguishing between them.
 \section{The Mix-net Design}
 \label{sec:design}
 
-Mixminion's principal difference from earlier mix-net designs is the
-mechanism it uses to support reply messages with the same processing
-machinery as non-reply messages, while at the same time resisting the
-attacks described below in REF.
-
-Headers addressed to each intermediate mix are encrypted using RSA.
-%RSA-OAEP \cite{PKCS1} and are of 128 bytes each.
-% IMO we should use OAEP+, and variable-length headers. -DH
-They contain a secret 
-that can be used to generate padding and decrypt the rest
-of the message. They also contain the address of the next node to 
-which the message should be forwarded along with its expected signature 
-key fingerprint.
+%Headers addressed to each intermediate mix are encrypted using RSA.
+%%RSA-OAEP \cite{PKCS1} and are of 128 bytes each.
+%% IMO we should use OAEP+, and variable-length headers. -DH
+%They contain a secret 
+%that can be used to generate padding and decrypt the rest
+%of the message. They also contain the address of the next node to 
+%which the message should be forwarded along with its expected signature 
+%key fingerprint.
 
 % we haven't said what a subheader is yet. too early to say this. -RD
 %To frustrate tagging attacks (see
@@ -437,20 +447,15 @@ key fingerprint.
 % material well enough to know that Alice encrypts each layer with the
 % appropriate mix's public key. Is this assumption safe -Nick
 
-We choose to drop packet-level compatibility with Mixmaster and the
-Cypherpunk remailer systems, in order to provide a simple extensible
-design. We can retain minimal backwards compatibility by ``remixing''
-Type II messages to be Type III messages, thus increasing anonymity
-sets in the Type III network. Type II messages travelling between
-Type III remailers are treated
-as plaintext and encrypted to the next remailer in the chain using its
-Type III key. The message is sent as a Type III encrypted message, but
-it decrypts to reveal the Type II message.
+Mixminion uses a free-route mix-net just like \cite{mixmaster-spec}
+and \cite{babel}. Mixminion's principal difference from earlier mix-net
+designs is the mechanism it uses to support reply messages with the
+same processing machinery as forward messages, while at the same time
+resisting the attacks described above.
 
-We also provide a new feature: a reply block mechanism that is as secure
-as forward messages. Reusable reply blocks, such as those in the
-Cypherpunk remailer, are a security risk --- by their very nature they
-let people send multiple 
+Reusable reply blocks, such as those in the Cypherpunk remailer and
+in Babel, are a security risk --- by their very nature they let people
+send multiple
 messages through them.  These multiple messages can easily be used to
 trace the recipient's path: if two incoming batches both include a
 message to the same reply block, then the next hop must be in the
@@ -460,18 +465,17 @@ replies may be very rare relative to forward messages, and thus
 much easier to trace, the Mixminion protocol makes reply messages
 indistinguishable from forward messages even for the mix nodes. Thus
 forward and reply messages can share the same anonymity
-set. Unfortunately reply blocks are fundamentally more dangerous than
-forward secure communications due to the fact that the adversaries have
-in their possession a string that they can force intermediate mixes to
-decrypt until the originator is reached.
-
-\subsection{Recipient anonymity and indistinguishable replies}
-\label{subsec:replies}
-\label{subsec:header-swap}
+set.\footnote{Note that replies are still weaker than forward messages:
+an adversary can successively force intermediate mixes to reveal the
+next hop of the reply block until its originator is reached.}
 
 The rest of this section describes the mechanism for secure replies,
 its integration with the normal sender anonymous message delivery, and
 how we defeat tagging-related attacks.  
+
+\subsection{Recipient anonymity and indistinguishable replies}
+\label{subsec:replies}
+\label{subsec:header-swap}
 
 Mixminion allows Alice to send messages to Bob in one of three ways:
 
@@ -499,9 +503,6 @@ secret contained in the last header of the single-use reply block, which
 the creator of the block addresses to itself and encrypts under its
 own public key.
 
-% \subsection{Indistinguishable replies}
-% \label{subsec:header-swap}
-
 By making forward messages and replies indistinguishable even to mixes,
 we prevent an
 adversary from dividing the message anonymity sets into two classes. In
@@ -522,11 +523,11 @@ software.  Specifically, senders generating forward messages must be able
 to create onions, and anonymous receivers must be able to create reply blocks
 and unwrap messages received through those reply blocks. Other parties,
 such as those receiving forward messages and those sending direct reply
-messages, do not need to run new software. (The quoting
-performed by ordinary mail software can be used to include the reply
+messages, do not need to run new software. We use the quoting
+performed by ordinary mail software to include the reply
 block in a direct reply; this is sent to a node at the Reply-To:
 address, which extracts the reply block and constructs a properly
-formatted onion.)
+formatted onion.
 
 \begin{figure}
 \begin{center}
@@ -540,7 +541,7 @@ a message's path into two \emph{legs}, and split the header section
 correspondingly into a main header and a secondary header. Each header
 is composed of up to 16 subheaders, one for each hop along the path.
 Each subheader contains a hash of the remainder of its header as
-seen by the appropriate mix, so we can do
+seen by that mix, so we can do
 integrity-checking of the path (but not the payload) within each leg.
 Each subheader also contains a symmetric key, which is used to derive a
 decryption key for decrypting the rest of the message. The mix also
@@ -549,21 +550,21 @@ to place predictable padding at the end of the header, so the hash will
 match even though each hop must regrow the header to maintain constant
 length.
 
-For forward messages, Alice provides both legs; for anonymous replies, Alice
+For forward messages, Alice provides both legs. For anonymous replies, Alice
 uses Bob's reply block as the second leg, and generates her own path
 for the first leg.  To send a direct reply, Alice can use an empty
-first leg, or send the reply block and message to a mix that can wrap
-them for her.
+second leg, or send the reply block and message to a mix that can wrap
+them for her. Figure 1 illustrates the three options.
 
 When Alice creates her message, she encrypts the secondary header
-with a hash of her payload (in addition to the usual layered onion
-encryptions). Alice's message then traverses the mix-net as normal (every
+with a hash of her payload (as well as the usual layered onion
+encryptions). Alice's message traverses the mix-net as normal (every
 hop pulls off a layer, verifies the hash of the current header,
 and puts some junk at the end of the header), until it gets to a
 hop that is marked as a \emph{crossover point}. This crossover point
 performs a ``swap'' operation: it decrypts the secondary header with
 the hash of the current payload, and then swaps the two headers. The
-swap operation is detailed in Figure 1 --- specifically, the normal
+swap operation is detailed in Figure 2 --- specifically, the normal
 operations done at every hop are those above the dotted line, and the
 operations performed only by the crossover point are those below
 the dotted line. The encryption primitive, labelled ``LBC'', that is
@@ -600,8 +601,8 @@ further analysis.  In that case the simpler BEAR construction
 Thus if any bit of
 the encrypted material is changed, the decryption will look like random
 bits.  An SPRP is also equally secure in the encryption and decryption
-directions.  See Section \ref{subsec:tagging-defenses} for a
-discussion of how this approach helps protect against tagging.
+directions.  Below we describe
+how this approach helps protect against tagging.
 
 % BEAR isn't an SPRP; LIONESS is. I'm not sure that an SPRP is necessary,
 % but I'm sure that it is sufficient. We don't need encryption and
@@ -630,7 +631,7 @@ discussion of how this approach helps protect against tagging.
 \label{subsec:tagging-attacks}
 \label{subsec:tagging-defenses}
 
-To motivate some aspects of the Mixminion design, we describe an attack
+To motivate the Mixminion design, we describe an attack
 that works against many mix-net protocols, including Mixmaster and Babel.
 
 A {\em tagging attack} is an active attack in which a message is
@@ -658,23 +659,21 @@ so that it is possible to calculate
 authentication tags for the whole message at each hop.  But
 the situation becomes more complicated when reply messages are
 introduced --- the message and the reply block are
-created by different users. It is therefore impossible for the creator
+created by different users. It is impossible for the creator
 of the SURB to include in the header a checksum of a message he
 does not yet know. Therefore techniques taken straight out of modern
 cryptology, such as semantically secure or randomized encryption, that
-makes sure that an adversary does not gain any information by sending
-malformed messages to the mix (that acts as a decryption oracle),
+make sure an adversary does not gain any information by sending
+malformed messages to the mix (since the mix acts as a decryption oracle),
 cannot be used.
 
 Mixminion uses a hybrid strategy to protect against
 such attacks: we use cryptographic checksums to protect the headers,
 and we make sure that the addressing information contained in the
-message is destroyed if the payload is modified by an adversay.
-
-% old split here.
+headers is destroyed if the payload is modified by an adversay.
 
 If the Mixminion design did not require
- the crossover point, an adversary could mount a tagging
+the crossover point, an adversary could mount a tagging
 attack by modifying the payload of a forward message as
 it leaves Alice, and recognizing it later when it reaches Bob.
 Specifically, if our encryption mechanism were an ordinary
@@ -684,12 +683,8 @@ will be in part predictable (either entirely plaintext, or with
 predictable PGP header material), the adversary can later observe
 messages exiting the mix-net and look for payloads that have a
 corresponding anomaly at that byte. Other block cipher modes such as
- Cipher Block Chaining (CBC) present comparable problems, since whole
- blocks would look like random noise instead of the normal payload.
-
-% I think we shold point out =someplace= why we can't use
-% CBC or anything else that isn't symmetrically good for encryption
-% and decryption.  -Nick
+Cipher Block Chaining (CBC) present comparable problems, since whole
+blocks would look like random noise instead of the normal payload.
 
 We use a large-block cipher as described in the previous section to
 minimize the amount of information an adversary can learn from tagging.
@@ -711,15 +706,14 @@ We briefly considered introducing \emph{cover-trash}, dummy messages
 designed to look like tagged messages, to frustrate
 these tagging attacks; but that problem is as complex as the dummy
 traffic problem \cite{langos02}. Instead, we use the
-% decryption-by-hash-of-payload 
 ``swap'' step at the
 crossover point to prevent the attacker from learning information from
 tagging attacks. The second header of the message, that contains the
-path to the final destination of the forward path,  is encrypted by the
-sender by the hash of the payload that is to arrive at the mix. The
+path to the final destination of the forward path, is encrypted by the
+sender with the hash of the payload that is to arrive at the mix. The
 mix then needs to perform the decryption and swap the first header for
 the second one.
-Our security argument falls into several cases:
+Our security argument has three cases:
 
 \begin{itemize}
 \item Forward messages: if the message is tagged during the first leg,
@@ -731,7 +725,7 @@ and so the adversary cannot learn the sender.
 secrecy equivalent to encryption, the effect is similar to {\em encrypting}
 the payload at each step along a reply block. Only the recipient can learn,
 after peeling off all layers, whether the message has been tagged. Thus
-tagging attacks are useless against reply messages.
+tagging attacks are useless against direct reply messages.
 \item Anonymized reply messages: as with forward messages, if the first leg
 is tagged the second header is unrecoverable --- so an adversary will
 never learn that the message was addressed to a reply block. And as with
@@ -759,8 +753,9 @@ through the network is very similar to the Luby-Rackoff \cite{sprp}
 structure. In particular the fact that the header depends on the body
 and \emph{vice versa} makes sure that if the message is tagged in
 any way it will become entirely different from what was intended, and
+its contents
 will provide no information at all to an attacker. It is the
-first time, to our knowledge, that this property is achived by
+first time, to our knowledge, that this property is achieved by
 distributing the operation of a cipher across many nodes of a mix network.
 
 No mix except the crossover point can distinguish forward messages from
@@ -768,9 +763,6 @@ replies --- even the crossover point cannot be sure whether it is processing
 a reply or forward message, but it may be able to guess that crossover
 points are more frequent on forward paths than direct replies or
 anonymized reply paths.
-%The protocol doesn't allow a mix to know its location in the path (other
-%than the exit node), or the total length of the route.
-% [WE NEED TO SAY THIS SOMEWHERE SINCE IT IS AN IMPORTANT FEATURE! -GD]
 
 \subsection{Multiple-message tagging attacks}
 \label{subsec:multi-tagging}
@@ -1487,7 +1479,7 @@ correction codes can be used to recover the message.
 variable-length block cipher is pushing it. Can we keep indistinguishable
 forward messages and replies using a simpler design? It would be
 relieving if the design can be proven to provide unlinkability between
-the input bit-patterns of messages and the messages comming out of the
+the input bit-patterns of messages and the messages coming out of the
 network. 
 \item We need stronger intuition about how to use
 dummy messages. Such messages can be inserted either at the link layer
