@@ -1,4 +1,4 @@
-\title{Type III (Mixminion) MIX Protocol Specifications}
+\title{Type III (Mixminion) Mix Protocol Specifications}
 
 \section{UNRESOLVED ISSUES}
 
@@ -127,11 +127,11 @@ have more stuff done.)
 
 \subsection{Overview}
 
-Type III (Mixminion) MIX messages are composed of a header section and a
+Type III (Mixminion) Mix messages are composed of a header section and a
 payload.  The header section has a main header and a
 secondary header, both of which have identical structure.  Each
 header is further composed of up to 16 subheaders, which are
-addressed and encrypted to the intermediate nodes (MIXes).  We
+addressed and encrypted to the intermediate nodes (mixes).  We
 begin by explaining how the full message is structured by starting
 with the smallest building block.
 
@@ -210,7 +210,7 @@ All RSA encryption uses the public exponent 65537.
 
 \subsection{The subheader structure and address extensions}
 
-A subheader contains all the information that a MIX needs to check the
+A subheader contains all the information that a mix needs to check the
 integrity of a message and route it through the Internet. The subheader
 is encrypted using RSA after having been padded using OAEP, using a 1024
 bit key. This results in an encrypted block of 128 bytes.
@@ -240,8 +240,8 @@ kept secret and discarded as soon as the packet has been processed.
 header (128*15 bytes in total). The digest does not cover the current
 subheader: modifications to it are detected because of the OAEP padding.
 
-* The Routing Type defines how the MIX should deliver or relay the
-  message. If a MIX receives a routing type it does not recognize,
+* The Routing Type defines how the mix should deliver or relay the
+  message. If a mix receives a routing type it does not recognize,
   it must discard the message.
 
   Most routing methods require additional addressing information.
@@ -527,7 +527,7 @@ is specified in a subheader.
 The Mixminion protocol uses TLS (the IETF standardization of SSL) with
 the ciphersuite "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" (defined in
 tls-ciphersuite-03.txt).  No other ciphersuite is permitted for
-MIX-to-MIX communications.
+mix-to-mix communications.
 
 [Servers must allow incoming connections via SSL3_RSA_DES_192_CBC3_SHA
 for clients written with older SSL libraries.  However, servers must
@@ -620,7 +620,7 @@ appropriately.
   Type III packet for a server, but not know the server's transport
   key? -NM]
 
-\section{MIX Information Exchange format}
+\section{Mix Information Exchange format}
 
 In order to automate and standardize directory servers, we provide 
 a standardized extensible server descriptor format.
@@ -670,7 +670,7 @@ Data = (<Any printable character but NL>)*
 
 This section describes the format of server descriptors, as uploaded
 to and downloaded from directory servers.  A server descriptor is a
-promise, by a MIX's administrators, to provide a given set of
+promise, by a mix's administrators, to provide a given set of
 services, keys, and exit policies over a set period of time.
 
 The first section must be a 'Server' section.  This section includes
