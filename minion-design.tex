@@ -329,7 +329,7 @@ Preventing abuse of open exit nodes is an unsolved problem. If
 receiving mail is opt-in, an abuser can forge an opt-in request from
 his victim. Indeed, requiring recipients to declare their interest
 in receiving anonymous mail is risky --- human rights activists in
-Guatemala cannot both sign up to receive anonymous mail and retain
+Guatemala cannot both sign up to receive anonymous mail and also retain
 plausible deniability.\footnote{
   Compare with the 1965 U.S. Supreme Court case Lamont v. Postmaster
   General (381 U.S. 301), where the Post Office would detain mail it
@@ -510,9 +510,48 @@ while more, I think.
 
 http://archives.seul.org/mixminion/dev/Apr-2002/msg00031.html
 
-\subsection{key rotation and anonymity}
+\subsection{key rotation, message expiration, and replay attacks}
 
-http://archives.seul.org/mixminion/dev/Apr-2002/msg00047.html
+Mixmaster offers rudimentary replay prevention by keeping a list of recent
+message IDs. To keep the list from getting too large, it expires entries
+after a user-configurable amount of time. But if an adversary records
+the input and output batches of a mix and then replays a message after
+the mix has forgotten about it, the message's decryption will be exactly
+the same. Mixmaster does not provide the forward anonymity that we want.
+
+Chaum first observed this attack in \cite{chaum-mix}, but his solution
+--- include in each message a timestamp that describes when that message
+is valid --- also has problems. Specifically, it introduces a new class
+of \emph{partitioning} attacks, where the adversary can distinguish and
+track messages based on timestamps. If messages have short lifetimes,
+legitimate messages may arrive after their expiration date and be
+dropped. But if we specify expiration dates well after when we expect the
+message to arrive, messages arriving near their expiration date will be
+rare: an adversary can delay a message until near its expiration date,
+then release it and trace it through the network.
+
+%More generally, these partitioning attacks arise whenever a message can be
+%`very rare' and `valid' at the same time.
+
+One way of addressing this partitioning attack is to add dummy traffic
+so it's less rare for messages to arrive near their expiration date;
+but dummy traffic is still not well-understood. Another approach would
+be to add random values to the expiration time of each mix in the path,
+so an adversary delaying a message at one mix could not expect that it
+is now near to expiring elsewhere in the path; but this seems open to
+statistical attacks.
+
+Mixminion provides a compromise solution that hopefully avoids many of
+these problems while still providing forward anonymity. Messages don't
+contain any timestamp or expiration information. Each mix must keep
+hashes of the headers of all messages it's processed since the last time
+it rotated its key. Mixes should choose key rotation frequency based on
+security goals and on how many hashes they want to be remembering.
+
+Note that this solution doesn't entirely solve the partitioning problem
+--- near the time of a key rotation, the anonymity set of messages will
+be divided into those senders who knew about the key rotation and used
+the new key, and those who didn't.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
