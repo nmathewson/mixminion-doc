@@ -1348,23 +1348,29 @@ own recognizable messages with the honest messages in the batch
 \cite{batching-taxonomy}. By repeatedly
 attacking each mix in the path, the adversary will link Alice and Bob.
 
-%XXXX
 Mixminion nodes use a \emph{timed dynamic-pool} batching strategy
-\cite{batching-taxonomy} adapted from Mixmaster. A
-mix fires every... [insert Cottrell mix description here. Perhaps put
-the algorithm itself from the spec into a side box, or an appendix?]
+\cite{batching-taxonomy} adapted from Mixmaster. Rather than simply
+processing each message as soon as it arrives, each mix keeps a pool of
+messages. New messages arrive, are decrypted, and enter the pool. The
+mix fires every $t$ seconds, but only if the pool contains at least a
+threshold of messages. If the mix fires, it randomly chooses a constant
+fraction of the pool messages (say, 60\%) to deliver.
 
-Timed dynamic-pool mixes increase
-the cost of the blending attack: because the number of messages coming
-out at each flush is always a fraction of the number waiting, it is
-impossible to arrange to completely flush the mix with high probability
-in one flush. Thus an adversary is forced to spend multiple intervals
-(and thus delay other messages for considerable time) first to flush
-the original honest messages from the mix, and again to flush the
-target message from the mix. This delay will be noticed by the other
-mixes, because they communicate over TLS with a heartbeat to detect
-delays.
+Since the number of messages delivered each round is based on the rate of
+incoming messages, an attacker cannot overflow the pool with sustained
+flooding. These mixes also increase the cost of the blending attack:
+while the \emph{number} of messages coming out increases as the rate
+of incoming messages increases, the chance that any given message will
+leave the pool remains constant. Thus it is impossible to arrange to
+completely flush the mix with high probability in one flush. An adversary
+is forced to spend multiple intervals (and thus delay other messages
+for considerable time) first to flush the original honest messages from
+the mix, and again to flush the target message from the mix. This delay
+will be noticed by the other mixes, because they communicate over TLS
+with a heartbeat to detect delays.
 % XXXX Huh? Heartbeat? -NM
+% spoke to you about this on the phone. feel free to add clarifying
+% text if you like. there's another place we say heartbeat too. -RD
 
 This batching strategy also increases the cost of intersection attacks by
 providing large anonymity sets for each message in the network. Because
@@ -1394,8 +1400,9 @@ messages are out; but once he has done so he can be certain that no
 honest messages remain. In the second phase of the attack, he again
 needs to flush until the target message comes out; but once it does, he
 can be certain of recognizing it. Thus Mixminion employs the following
-dummy policy, as suggested in \cite{batching-taxonomy} and analyzed in 
-\cite{andrei-claudia}: each time the mix
+dummy policy, as suggested in \cite{batching-taxonomy}:
+%and analyzed in \cite{andrei-claudia}:
+each time the mix
 fires, it also sends out a number of dummies chosen from a geometric
 distribution. These dummies travel a number of hops chosen uniformly
 between $1$ and $4$. The blending attack is now harder --- the adversary
