@@ -7,7 +7,7 @@ Status
 
    This is a draft document describing a directory agreement protocol
    for Type III remailers.  If people like it, we'll merge in into
-   Mix3:3 "dir-spec.txt". 
+   Mix3:3 "dir-spec.txt".
 
    It's substantially identical to what Nick was blathering about at
    Defcon.
@@ -21,7 +21,7 @@ Status
 
    Currently, we have specifications for most of the type III
    directory system, including: server descriptor structure, directory
-   structure, publishing to directories, building directories, 
+   structure, publishing to directories, building directories,
    downloading directories, and using directories.  One critical
    piece remains: directory agreement.
 
@@ -43,7 +43,7 @@ Status
           which directory helps the attacker mount statistical
           partitioning attacks on the network based on client
           knowledge.
-          
+
           (If users try to avoid this attack by using multiple
           directories, they only make their situation worse: Instead
           of dividing themselves into D possible states of knowledge,
@@ -61,12 +61,12 @@ Status
         an absolute requirement.  In particular, the protocol should
         succeed even when the directory servers do not agree on who is
         a directory server.
-  
+
       - The protocol should allow old directory servers to shut down,
         and new directory servers to join, but should not allow an
         attacker to control the final directory by signing up a large
         number of directory servers.
-      
+
       - When the protocol succeeds, it should create a directory
         signed by a large quorum of directory servers.  If at least
         half of the quorum has signed a directory, clients should be
@@ -79,7 +79,7 @@ Status
       - If at least half of the directory servers in a quorum are
         running, cooperative, and able to communicate, then they
         should produce a signed directory.
-        
+
       - The protocol should discourage social engineering attacks
         aiming to fragment a quorum of directory servers.  Although
         it is impossible to *force* only a single directory to exist
@@ -136,7 +136,7 @@ Status
                directory.
 
    Below, I discuss this protocol in more detail.
-                  
+
 
 1. Terminology
 
@@ -261,7 +261,7 @@ Status
       and new server descriptors.
 
    Phase 1: Declarations  (22:00)
- 
+
       Once a day, at 22:00, every directory server publishes (at some
       well known URL) a signed Declaration.  A Declaration includes:
 
@@ -295,12 +295,12 @@ Status
       For auditing purposes: Along with their pre-directories,
       directory servers also publish a signed copy of the declarations
       they have used to compute the pre-directory.
-  
+
    Phase 4: Pre-directories are collected (23:00-23:50)
 
       Directories collect one another's signed pre-directories as in
       Phase 2.
- 
+
    Phase 5: A directory is published (00:00)
 
       Every directory collects the pre-directories from step 4 from
@@ -406,7 +406,7 @@ Status
       - It lists mixes as "recommended" iff they are considered
         reliable by enough members of the quorum and they are
         considered credible by enough members of the quorum.
-        
+
         [If the quorum has an odd number N members, "enough" is
         FLOOR(N/2)+1.]
 

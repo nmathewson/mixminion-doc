@@ -1,4 +1,4 @@
-$Id: nym-spec.txt,v 1.3 2003/07/28 01:03:55 nickm Exp $
+$Id: nym-spec.txt,v 1.4 2003/10/01 22:15:24 nickm Exp $
 
                                Mix3:Nym
     Underhill: A Proposed Type 3 Nymserver Protocol Specification
@@ -202,9 +202,9 @@ Table of Contents
 1.3.1. Non-goals
 
    The following properties are *not* goals or requirements of this
-   protocol. 
+   protocol.
 
-      - Full transport neutrality.  
+      - Full transport neutrality.
 
         (Although this protocol does not require a Type III mix
         network specifically, it assumes that its underlying transport
@@ -218,7 +218,7 @@ Table of Contents
         generator.)
 
       - Minimal nymserver storage requirement
-      
+
         (This protocol assumes that nymservers will have to devote a
         certain amount of space to each nym in order to store SURBs
         (under ordinary load) and pending messages (under high load).
@@ -256,7 +256,7 @@ Table of Contents
 
      - To allow the nymserver to communicate back to the anonymous
        nymholder, the nymholder provides the nymserver with a stock of
-       SURBs, and replenishes them periodically. 
+       SURBs, and replenishes them periodically.
 
        (Because the nymholder uses a separate SURB identity secret for
        each pseudonym it generates, it can distinguish reply messages
@@ -343,7 +343,7 @@ Table of Contents
             A 'sent' tristate: "Nothing sent", "Synopsis-sent", "Sent-In-Full".
             A time of receipt.
 
-      - A set of SURBs 
+      - A set of SURBs
 
 2.2. Processing incoming emails
 
@@ -375,7 +375,7 @@ Table of Contents
               Anytime delivery to the nymserver fails, bounces should
               also be sent back as per the SMTP server's policies.  I
               think a nymserver will probably be some kind of local
-              delivery agent.  
+              delivery agent.
 
          XXXX]
 
@@ -520,13 +520,13 @@ Table of Contents
      Let M_C = COMPRESS(M).
      Let PADDING_LEN = CEIL(LEN(M_C)/P) - LEN(M_C).
      Let M_P = M | Z(PADDING_LEN).
-   
+
      Let K = R(16).
      Let M_Enc = SPRP_Encrypt(K, "", M_P)
      Let RSA_LEN = Len(PK_nym) - OAEP_OVERHEAD - 16
      Let RSA_PART = PK_Encrypt(PK_nym, K | M_Enc[0:RSA_LEN])
 
-     Return RSA_PART | M_Enc[RSA_LEN:Len(M_Enc)-RSA_LEN] 
+     Return RSA_PART | M_Enc[RSA_LEN:Len(M_Enc)-RSA_LEN]
 
    For efficiency reasons, a nymserver tries to encrypt several
    synopses at once, so that zlib can compress them effectively.
@@ -535,7 +535,7 @@ Table of Contents
    between forward security (which would mandate encrypting each
    synopsis as soon as possible) and between efficiency and
    traffic-analysis resistance (which would mandate minimizing the
-   number of packets sent between client and server).  
+   number of packets sent between client and server).
 
    We strike the following compromise: a nymserver encrypts synopses
    for a user whenever it has eight or more pending synopses to
@@ -554,7 +554,7 @@ Table of Contents
    synopses the message ID of every synopsis, in order, contained
    therein.  It can only delete the set of synopses when it has
    deleted every corresponding email.)
-     
+
 4.3. Control message format: messages to the nymserver
 
    This section describes the control messages sent from the
@@ -566,7 +566,7 @@ Table of Contents
 
    All of the control messages described below follow the following
    format.
-      
+
        Header:
             SIG    Signature             (PK_LEN=256 octets)
             NL     Nym Length            (1 octet)
@@ -615,7 +615,7 @@ Table of Contents
    empty (0-octet) nym, and should be signed with the identity key
    given in the NEWPK command.  The nymserver replies with a CREATED
    command, which the nymholder confirms with a CREATE2 command.)
-   
+
    [XXXX specify a proof-of-work system.]
 
 4.3.2. CREATE2 [0x01]
@@ -671,7 +671,7 @@ Table of Contents
    unencoded.  When the server delivers the email, it adds a From
    line with the correct nym mailbox, and sets the name as given in
    the headers.
-   
+
 4.3.6. GET [0x05]
 
    A GET command requests that the server transfer a set of emails to
@@ -743,7 +743,7 @@ Table of Contents
 
    All of the control messages described below follow the following
    format.
-      
+
           Sequence of:
             CT    Command type      (1 octet)
             CS    Command data size (3 octets)
@@ -757,7 +757,7 @@ Table of Contents
    of the size of the immediately following CD field.
 
    The following values for CT are recognized:
-        0x00 : CREATED  (Acknowledge a new nym) 
+        0x00 : CREATED  (Acknowledge a new nym)
         0x01 : STATUS   (Acknowledge messages and describe status)
         0x02 : SUMMARY  (Describe pending emails)
         0x03 : MSGS     (Send emails to the client)
@@ -813,14 +813,14 @@ Table of Contents
 
    A SUMMARY command has the following body structure:
      VALID_BF Bitfield: which entries in ES have an email?   (2 octets)
-     ES       Encrypted set of synopses.              
+     ES       Encrypted set of synopses.
                                      (variable length; rest of command)
 
    The LSB in Valid_BF corresponds to the first synopsis in ES, and so
    on.
 
 4.4.4. MSG [0x03]
- 
+
    A MSG command relays an email to the client.
 
    The body of MSG commands have the following structure.
@@ -845,7 +845,7 @@ Table of Contents
 4.4.6. ERROR [0x05]
 
      NONCE  Nonce from client message; Z(20) if none.  (20 octets)
-     ERROR  English-language error message             
+     ERROR  English-language error message
                                 (variable length; rest of command)
 
 5. Filtering and abuse prevention

@@ -1,4 +1,4 @@
-$Id: api-spec.txt,v 1.2 2003/08/22 01:17:59 nickm Exp $
+$Id: api-spec.txt,v 1.3 2003/10/01 22:15:24 nickm Exp $
 
                             MIX3:ClientAPI
          Type III (Mixminion) Mix Client API Recommendations
@@ -42,7 +42,7 @@ typedef int bool;
  */
 typedef void *(*mix3_allocator)(size_t n);
 typedef void (*mix3_deallocator)(void *ptr);
-void mix3_set_allocator(mix3_allocator allocator, 
+void mix3_set_allocator(mix3_allocator allocator,
                         mix3_deallocator deallocator);
 /* Anything that will be freed by a mix3_* function must be
  * mix3_alloc'd; anything that was alloced by a mix3_* function must
@@ -75,7 +75,7 @@ typedef enum {
         MIX3_NOMEM,
         /* The operation failed because the arguments given to the
          * function were invalid.
-         */ 
+         */
         MIX3_BADARGS,
         /* The operation failed because the directory, server
          * descriptor, message, etc provided was not correctly
@@ -104,13 +104,13 @@ typedef enum {
         /* XXXX We need __way__ more error codes.  I don't know  */
 } mix3_status;
 
-/* Effects: Given a mix3_status code, return a English string. 
+/* Effects: Given a mix3_status code, return a English string.
  * Allocates: nothing.
  */
 const char *mix3_status_string(mix3_status status);
 
 /* ==================== */
-/* Directories */ 
+/* Directories */
 /* ==================== */
 
 /* Opaque struct to hold a Type III directory */
@@ -130,7 +130,7 @@ typedef struct mix3_serverdesc mix3_serverdesc;
  * approximately -n random servers are chosen.
  */
 typedef struct mix3_pathcomponent {
-        enum { MIX3_PC_NICKNAME, MIX3_PC_DESCRIPTOR, MIX3_PC_RANDOM, 
+        enum { MIX3_PC_NICKNAME, MIX3_PC_DESCRIPTOR, MIX3_PC_RANDOM,
                MIX3_PC_SWAP } type;
         union {
                 char *name;
@@ -157,7 +157,7 @@ typedef struct mix3_capability_spec {
 } mix3_capability_spec;
 /* Struct to specify the destination of a Type III message. */
 typedef struct mix3_address_spec {
-        enum { MIX3_ADDR_EMAIL, MIX3_ADDR_MBOX, MIX3_ADDR_NEWS, 
+        enum { MIX3_ADDR_EMAIL, MIX3_ADDR_MBOX, MIX3_ADDR_NEWS,
                MIX3_ADDR_DROP,  MIX3_ADDR_OTHER, MIX3_ADDR_REPLY, } type;
         union {
                 char *address;
@@ -238,18 +238,18 @@ mix3_status mix3_directory_download_to_file(
  * directory that match certain properties.
  *
  * Arguments:
- *    servers_out -- If the function succeeds, *servers_out will be a 
+ *    servers_out -- If the function succeeds, *servers_out will be a
  *        NULL-terminated array of pointers to server descriptors.
  *    byNickname -- If not NULL, the function only yields server
  *        descriptors whose nicknames match byNickname.
  *    byCapability -- If not NULL, the function only yields server
  *        descriptors that have at leas tthe capabilities set in
- *        *byCapability. 
+ *        *byCapability.
  *    validBy -- If not 0, the function only yields server descriptors
  *        that become valid at some time before validBy.
  *    validUntil -- if not 0, the function only yields server
  *        descriptors that do not become invalid before validUntil.
- *  
+ *
  * Allocates: servers_out; it must be freed.
  */
 mix3_status mix3_directory_get_servers(
@@ -284,7 +284,7 @@ void mix3_serverdesc_get_lifespan(mix3_serverdesc *desc,
 /* === Helper functions for server descriptors. === */
 
 /* Return a raw field from a server descriptor, by section and field
- * name. 
+ * name.
  */
 const char *mix3_serverdesc_get_field(mix3_serverdesc *desc,
                                       const char *section,
@@ -303,7 +303,7 @@ const char *mix3_serverdesc_get_field(mix3_serverdesc *desc,
  *    validate -- If true, check the signature on the descriptor.
  *
  * Allocates: *serverdesc_out, which must be freed with
- *    _mix3_serverdesc_free. 
+ *    _mix3_serverdesc_free.
  */
 mix3_status _mix3_serverdesc_parse(
         mix3_serverdesc **serverdesc_out,
@@ -377,7 +377,7 @@ typedef struct mix3_packet {
 /* A structure to specify a message header for a SMTP or NEWS message.
  */
 typedef struct mix3_header_spec {
-        enum { MIX3_HDR_FROM, MIX3_HDR_SUBJECT, MIX3_HDR_IN_REPLY_TO, 
+        enum { MIX3_HDR_FROM, MIX3_HDR_SUBJECT, MIX3_HDR_IN_REPLY_TO,
                MIX3_HEADER_REFERENCES } header;
         char *value;
 } mix3_header_spec;
@@ -402,7 +402,7 @@ typedef struct mix3_surb mix3_surb;
  * Allocates: *mix3_payload_out. Each element of *mix3_payload_out[]
  * should be passed to mix3_free, followed by *mix3_payload_out
  * itself.
- *  
+ *
  * XXXX This fails if the message won't all fit into memory with the
  * payloads.  That's probably okay.
  */
@@ -535,13 +535,13 @@ typedef struct mix3_mmtp_connection mix3_mmtp_connection;
  *        MIX3_WANTREAD or MIX3_WANTWRITE as status.
  *
  * Allocates: *mix3_mmtp_connection, which must be freed with
- *    mix3_mmtp_connection_free. 
+ *    mix3_mmtp_connection_free.
  */
 mix3_status mix3_mmtp_new_connection(
         mix3_mmtp_connection **out,
         mix3_serverdesc *server,
         bool blocking);
-/* XXXX What to do about DNS, if we ever do DNS. */ 
+/* XXXX What to do about DNS, if we ever do DNS. */
 
 /* XXXX We also need to do something about 'REJECTED' replies. */
 
@@ -609,7 +609,7 @@ int mix3_mmtp_get_n_padding(mix3_mmtp_connection *conn);
  */
 int mix3_mmtp_get_n_acks(mix3_mmtp_connection *conn);
 
-/* Renegotiate a key with a connected MMTP server.  Returns as above.   
+/* Renegotiate a key with a connected MMTP server.  Returns as above.
  */
 mix3_status mix3_mmtp_renegotiate(mix3_mmtp_connection *conn);
 
@@ -671,7 +671,7 @@ typedef struct mix3_fragment_message_id {
 
 /* Identity of a fragment within a fragmented message */
 typedef unsigned long mix3_fragment_fragment_id;
- 
+
 /* Return the length of the (compressed) message corresponding to
  * pkt. */
 size_t mix3_decoded_packet_get_length(mix3_decoded_packet *pkt);

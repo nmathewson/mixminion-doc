@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.10 2003/09/12 15:32:28 nickm Exp $
+$Id: E2E-spec.txt,v 1.11 2003/10/01 22:15:23 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -92,14 +92,14 @@ Table of Contents
 1.1. Terminology
 
       * "Packet" - A Type III mix packet.  Fixed in size to 32 KB.
-      
+
       * "Message" - A variable size end-to-end message, transmitted
         from one location from another.  May be larger or smaller
         than a single packet.
 
       * "Forward message" - A message sent anonymously to a known
         recipient.
-        
+
       * "Direct reply message" - A message sent to an known recipient,
         with no attempt to maintain sender anonymity.
 
@@ -112,7 +112,7 @@ Table of Contents
       * "Forward encrypted message" - A forward message encrypted to
         the public key of its recipient.
 
-      * "Corrupted packet" - A packet which has had its payload 
+      * "Corrupted packet" - A packet which has had its payload
         corrupted on the second leg of its path.  [Other forms of
         corruption will result in the message's not being delivered.]
 
@@ -137,7 +137,7 @@ Table of Contents
    [XXXX]
 
 2.1.1. Compression
-   
+
    We define a compression primitive based on ZLIB, as defined in
    RFC-1950 and RFC-1951.  Because these standards describe only a
    message format, and do not mandate a single compression algorithm,
@@ -160,18 +160,18 @@ Table of Contents
    from the Gzip team has averred that this is so with all zlib
    versions from 1.0.4 through 1.1.4, but *may* change in some future
    version.
-   
+
    We also define DECOMPRESS as the inverse of COMPRESS: namely, ZLIB
    decompression as described in RFCs 1950 and 1951.  Note that not
    DECOMPRESS is not defined for every sequence of bytes.
-   
+
 2.1.2. K-of-N fragmentation
 
    We define a primitive, FRAGMENT, that breaks a K-packet message
    into N>K packets, such that any K of those packets are sufficient
    to reconstruct the original message with high probability.
    FRAGMENT(M,K,N,i) is the i'th such packet.
-   
+
    We also define a primitive RECONSTRUCT(K,N,P_i1, P_i2,...P_iK) that
    reconstructs the original message.
 
@@ -182,7 +182,7 @@ Table of Contents
 
    Currently, we use the algorithm described by Luigi Rizzo in several
    papers and implemented in software at
-             http://info.iet.unipi.it/~luigi/fec.html . 
+             http://info.iet.unipi.it/~luigi/fec.html .
    This algorithm has
    several advantages: first, it has freely-available implementations
    in C and Java under a modified-BSD style license.  Second, it runs
@@ -200,7 +200,7 @@ Table of Contents
    reconstructed if and only if K packets from each chunk arrive
    intact. Because packet loss is likely to be nonuniformly concentrated
    at specific remailers and links, this is not so dangerous to
-   reliability as it might initially appear. 
+   reliability as it might initially appear.
 
    [NOTE: I am not happy with this current situation: there needs to
     be _some_ unpatented probabilistic O(N) algorithm out there! -NM]
@@ -213,26 +213,26 @@ Table of Contents
            PS: payload sized (fixed)
            EXF: expansion factor (fixed: everyone must use the same EXF,
                                  see below.)
-   
+
        Let M_SIZE = CEIL(LEN(M) / PS)
 
        Let K = Min(16, 2**CEIL(Log2(M_SIZE)))
        Let NUM_CHUNKS = CEIL(M_SIZE / K)
-   
+
        Let M = M | PRNG(Len(M) - NUM_CHUNKS*PS*K)
-   
+
        For i from 1 to NUM_CHUNKS:
           Let CHUNK_i = M[(i-1)*PS*K : i*PS*K]
        End
-   
+
        Let N = Ceil(EXF*K)
-   
+
        For i from 0 to NUM_CHUNKS-1:
          For j from 0 to N-1:
            FRAGMENTS[i*N+j] = FRAGMENT(CHUNK_i, K, N, j)
          End loop
        End loop
-   
+
        Return FRAGMENTS.
 
   [If we find an unpatented O(N) algorithm, we use it instead of this
@@ -255,7 +255,7 @@ Table of Contents
    turning DIVIDE from an erasure correcting code into a full secret
    sharing encoding: If insufficient packets are received to reconstruct
    the whole message, none of the message can be reconstructed.
-   
+
 2.2. Generating messages
 
    When sending a message as packets, a sender follows these steps:
@@ -268,18 +268,18 @@ Table of Contents
       3. Annotate each payload with a payload header.  (The payload
          header includes size, integrity, and fragmentation
          information.)
-      4. According to the type of the message, encode each payload into 
+      4. According to the type of the message, encode each payload into
          a final 28KB paylaod and (possibly) 20-octet decoding handle.
       5. For each payload, select a list of servers to form a path
          through the network.
       6. Using the decoding handle, payload contents, and route for
          each payload, generate a 32KB type III packet.
-      7. Deliver each packet 
+      7. Deliver each packet
 
    This section will describe steps 1, 2, 3, 4.  Step 5 is described
    more fully in "path-spec.txt".  Steps 6 and 7 are described in
-   "minion-spec.txt".   
-      
+   "minion-spec.txt".
+
 2.2.1. Packet format
 
    As described in minion-design.txt, every mixminion packet contains a
@@ -305,28 +305,28 @@ Table of Contents
       * Plaintext forward - the handle is unused; its value is random.
 
       * Encrypted forward - the handle holds the first 20 octets of the
-        RSA-encrypted session key for this packet.  
+        RSA-encrypted session key for this packet.
 
-      * Reply - the handle (generated by the SURB creator) contains a 
+      * Reply - the handle (generated by the SURB creator) contains a
         random seed used to seed the RNG that generated the master
         secrets for this SURB header.
 
 2.2.1.2. Payload formats
 
    The payload of every packet, when decrypted, begins with the one of
-   the two following headers.  
+   the two following headers.
 
    SINGLE-PACKET-MESSAGE Payload:  [Header size is 22 octets]
-   
+
       (Single-packet message flag) [1 bit: 0]
       (Length of packet contents)  [15 bits]
       (Hash of packet contents)    [20 octets]
 
    The length field encodes the size of the contents of the packet
-   after compression. 
+   after compression.
 
    FRAGMENT Header:  [Header size is 47 octets]
-   
+
       (Multi-packet message flag)       [1 bit: 1]
       (Packet index)                    [23 bits]
       (Hash of remaining fields and packet
@@ -341,7 +341,7 @@ Table of Contents
 
    We define the constants FRAGMENT_HEADER_LEN = 47 and
    SINGLETON_HEADER_LEN=22.
-   
+
    To break a message into packets with headers (steps 2 and 3 in 2.2
    above), an implementation follows these steps:
 
@@ -357,19 +357,19 @@ Table of Contents
                             - OVERHEAD
 
           Let PADDING = Rand(PADDING_LEN)
-          
+
           Return a singleton payload containing:
               Flag 0 | Int(15,LEN(M_C)) | Hash(M_C | PADDING) | M_C | PADDING
 
       Otherwise:
           Let FRAGMENTS = DIVIDE(M_C, 28KB-OVERHEAD-FRAGMENT_HEADER_LEN)
-   
+
           Let ID = Rand(TAG_LEN)
 
           Let SZ = Int(32,Len(M_C))
 
           For every FRAGMENT_i in FRAGMENTS:
-             
+
              Let PAYLOAD_i = a fragment payload containing:
                 Flag 1 | Int(23,i) | Hash(ID | SZ | FRAGMENT_i ) | ID
                    | SZ | FRAGMENT_i
@@ -465,14 +465,14 @@ Table of Contents
    procedure.  To use this method, SURB generators must store a
    separate long-term secret for each identity they wish to associate
    with a chain of SURBs.
-   
+
    (Client software MUST support multiple identities, and MUST make
    it clear to the user which identity has been associated with each
    incoming SURB.)
 
    To generate a SURB for a path of length PATH_LEN, using a long-term
    secret SEC:
-      
+
       Repeat:
          Let SEED = a random 159-bit seed.
       Until Hash(SEED | SEC | "Validate") ends with a 0 byte.
@@ -501,7 +501,7 @@ Table of Contents
 
    Message decoders recognize plaintext (singleton or fragment)
    payloads by checking whether the hash fields match the calculated
-   hash of the rest of the packet.  
+   hash of the rest of the packet.
 
    If a message decoder knows one or more SURB secrets, it then checks
    the decoding handle 'TAG' to see whether Hash(TAG | SEC |
@@ -509,7 +509,7 @@ Table of Contents
    decoder generates secrets from TAG | SEC as in SURB generation, and
    successively decrypts the payload with up to MAX_PATH of them,
    checking each time for a plaintext payload.
-   
+
    If no SURB secrets are known, or if no SURB secrets yield a
    plaintext payload, and the decoder knows one or more secret keys
    SK_i, it then checks whether PK_Decrypt(SK_i, TAG |
@@ -532,7 +532,7 @@ Table of Contents
       If P[2:HASH_LEN] = Hash(P[2+HASH_LEN:Len(P)-2-HASH_LEN]):
          SZ = P[0:2]
          Return "Singleton", P[2+HASH_LEN : SZ]
-      Otherwise, 
+      Otherwise,
          Return "Unknown"
    Otherwise, if the first bit of P[0] is 1:
       If P[3:HASH_LEN] = Hash(P[3+HASH_LEN:Len(P)-3-HASH_LEN]):
@@ -560,17 +560,17 @@ Table of Contents
          Let P_t = P.
          For j in 0 ... MAX_PATH-1:
             Let P_t = SPRP_Encrypt(STREAM[j * KEY_LEN : KEY_LEN],
-                                   "PAYLOAD_ENCRYPT", 
+                                   "PAYLOAD_ENCRYPT",
                                    P_t)
             If DECODE_PLAINTEXT_PAYLOAD(P_t) is not "Unknown", return it.
-   
+
    For all SK_i:
       Let E0 = TAG | P[0:Len(SK_i)-TAG_LEN]
       Let P0 = PK_Decrypt(SK_i, E0).
       If the OAEP padding is valid:
          Let K = P0[0:KEY_LEN]
          Let P0' = P0[KEY_LEN:Len(P0)-KEY_LEN]
-         Let P1 = SPRP_Decrypt(K, "END-TO-END ENCRYPT", 
+         Let P1 = SPRP_Decrypt(K, "END-TO-END ENCRYPT",
                                P[Len(SK_i)-TAG_LEN : Len(P)-Len(SK_i)+TAG_LEN])
          If DECODE_PLAINTEXT_PAYLOAD(P0'|P1) is not "Unknown", return it.
 
@@ -599,14 +599,14 @@ Table of Contents
 
    When a server receives a plaintext forward packet containing a
    fragment of a message, it should behave as follows:
-      
+
       - If the server does not support reconstruction, or if the hash
         of the packet is invalid, it drops the packet.
 
       - From the declared message size of the message, it calculates
         the number of packets it expects.  If this number is higher
         than the maximum number of packets the server is willing to
-        construct, it drops the packet.  
+        construct, it drops the packet.
 
       - If the server has already logged this message ID as finished,
         it drops the packet.
@@ -668,7 +668,7 @@ Table of Contents
    header MUST be "plaintext".
 
    [XXXX Right now, there's no way to specify an encoding in a
-   message.  Don't worry--you didn't misread. -NM] 
+   message.  Don't worry--you didn't misread. -NM]
 
 3.1.2. RFC822 headers
 
@@ -734,20 +734,20 @@ Table of Contents
 
 3.2.2. Formatting: Message body
 
-  Header encoding is as described in 3.1.2 above.  
+  Header encoding is as described in 3.1.2 above.
 
   The following headers are allowed:
         "SUBJECT"  (any.  Must be no more than 900 characters long.)
         "FROM"     (any sequence of printing ASCII characters
                     excluding '"', '[', ']', and ':'. )
- 
+
         "IN-REPLY-TO" (an RFC2822 msg-id)
         "REFERENCES" (a list of RFC2822 msg-ids)
 
   [XXXX Are msg-ids really what we want? Should we say more?  Should
         we restrict encoding? -NM]
 
-  Unrecognized or malformatted headers MUST be removed.  
+  Unrecognized or malformatted headers MUST be removed.
 
 3.2.3. Delivery
 
@@ -788,7 +788,7 @@ Table of Contents
       words, Eve can already tell which messages set their from
       addresses; she gains nothing by learning that those messages
       have chosen an exit node with From support to do so. -NM]
- 
+
    The "Date" line should be the current date.
 
    The "In-Reply-To" and "References" lines should be taken verbatim
@@ -814,7 +814,7 @@ Table of Contents
    longer than this by a factor of ~1.33.  The value must be at least
    "32".  It MUST contain a "Allow-From" line, containing 'yes' if the
    server allows user-supplied from addresses and 'no' if it does not.
-   
+
 3.3. SMTP
 
    The routing type 0x100 corresponds to SMTP (email) delivery.
@@ -834,7 +834,7 @@ Table of Contents
       HOSTPART ::= ATOM | LOCALPART DOT ATOM
       ATOM ::= ATOMCHAR | ATOM ATOMCHAR
       ATOMCHAR ::= Any character in the range hex 21 through hex 7E,
-             excluding '[', ']', '(', ')', '<', '>', '@', ',', '.', 
+             excluding '[', ']', '(', ')', '<', '>', '@', ',', '.',
              ';', ':', '\', and '"'.
       AT ::= '@' (ASCII hex 40)
       DOT ::= '.' (ASCII hex 2E)
@@ -845,7 +845,7 @@ Table of Contents
    [XXXX I suspect the above should be "SHOULD NOT." -NM]
 
 3.3.2. Formatting: Message body
-       
+
    The message body format is exactly as the MBOX format, as
    described above in 3.2.2.
 
@@ -854,11 +854,11 @@ Table of Contents
    To deliver an SMTP message, an exit node that supports the SMTP
    delivery type SHOULD construct an RFC2822 message as described in
    3.2.3 above, additionally setting the 'To' line to the mailbox
-   given in the message header.  
+   given in the message header.
 
    Implementations SHOULD allow exit node operators to configure
    additional fields, and to block specific 'To' addresses.
-       
+
 3.3.4. Server descriptor section
 
    Servers that support SMTP delivery MAY include a [Delivery/SMTP]
@@ -873,7 +873,7 @@ Table of Contents
    longer than this type. It MUST contain a "Allow-From"
    line, containing 'yes' if the server allows user-supplied from
    addresses and 'no' if it does not.
-   
+
 3.4. Fragments
 
 3.4.1. Server descriptor section
@@ -885,7 +885,7 @@ Table of Contents
    The section, if present, MUST contain a 'Version' entry, with the
    value "1.0".  It also MUST contain a "Maximum-Fragments" line,
    containing the maximum size (in fragments) of a message that the
-   server is willing to reconstruct. 
+   server is willing to reconstruct.
 
 A.1. Apendix: versioning and alphas
 

@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.13 2003/10/01 00:29:57 arma Exp $
+$Id: minion-spec.txt,v 1.14 2003/10/01 22:15:24 nickm Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -108,7 +108,7 @@ Table of Contents
        and others, based on the PGP message format, using SMTP for an
        underlying transport.  Also known as the "cypherpunk"
        implementation.
-     
+
      * Type II - an anonymity service originally designed by Lance
        Cottrell to address the flaws of the Type I system, and
        implemented in the software "Mixmaster".
@@ -118,7 +118,7 @@ Table of Contents
      This document uses the terms "MUST", "SHOULD", "MAY", "MUST
      NOT", "SHOULD NOT", and "MAY NOT" as defined in RFC 2119.
      [XXXX is this wise? Observable variation=linkability. -NM]
-  
+
      * Packet - A 32 kilobyte string transmitted anonymously through
        the Type III remailer network.
 
@@ -135,7 +135,7 @@ Table of Contents
 
    In this section, we provide an overview of the operations of Type
    III remailers
-   
+
    [XXXX We need to be more explicit here, or somewhere, about
    crossover points and what exactly is encrypted with what. XXXX]
 
@@ -182,7 +182,7 @@ Table of Contents
       8. The server waits until enough time has passed, and/or enough
          packets have been received.  [A suggested rule is described
          in appendix A.1 below.]
- 
+
       9. If the server is the final mix on the path, it delivers the
          message to the recipient [as described in section
          3.2.5.2.], else it delivers it to the next mix [as described
@@ -208,7 +208,7 @@ Table of Contents
 
       3. Through some means the recipient delivers the SURBs
          anonymously to the sender, possibly as the contents of a
-         forward message. 
+         forward message.
 
       4. The sender constructs one or more packets for the recipient
          and inserts them into the network to be delivered, as in
@@ -240,7 +240,7 @@ Table of Contents
    [XXXX]
 
 3.1.1. Cryptographic primitives
-   
+
    Implementing a Type III remailer only requires the combination of
    standardized cryptographic primitives. Most third party
    cryptographic libraries or providers should support RSA-OAEP (PKCS#1
@@ -275,7 +275,7 @@ Table of Contents
    value will make the decryption look like random bits, we use an
    instance of the LIONESS SPRP, with SHA-1 for a hash and the
    stream described in 3.1.1.2 above.
-   
+
    Thus, in the notation described below, we encrypt a message M with
    a key K as follows:
            K1 = K
@@ -314,14 +314,14 @@ Table of Contents
    ASCII string (a quotation from Thomas Paine):
 
      "He who would make his own liberty secure, must guard even his
-      enemy from oppression." 
+      enemy from oppression."
 
-   (In hexadecimal, the hash of P is: 
+   (In hexadecimal, the hash of P is:
     [90 89 60 BC 88 EF 92 B0 9c 58 26 C4 BE 32 B3 34 A7 1C AA 5A].)
 
    For all public key operations in Type III packets, we use 2048-bit
    keys.  We define:
-  
+
        PK_OVERHEAD_LEN = 42   (octets added by OAEP padding)
        PK_ENC_LEN = 256       (size of RSA-encrypted data)
        PK_MAX_DATA_LEN = PK_ENC_LEN - PK_OVERHEAD_LEN = 214
@@ -333,12 +333,12 @@ Table of Contents
 
    We use the following function-style notations in describing our
    packet format.
-   
+
    - Len(A) - The length, in octets, of an octet array A.
 
    - A[i:j] - If A is an octet array, A[i:j] is a subarray starting at
      octet i with length j.   (Len(A[i:j]) = j)
-   
+
    - Rand(n) - Generates n random octets by any secure method.
      Successive instances of Rand generate different and uncorrelated
      sequences.  (Len(Rand(n)) = n)
@@ -361,27 +361,27 @@ Table of Contents
      Len(PK_Encrypt(PK,M) = PK_ENC_LEN = 256)
 
    - PK_Decrypt(SK, M) - The private-key decryption of an octet array
-     M using the secret key SK.  
+     M using the secret key SK.
      (0 <= Len(PK_Decrypt(SK,M)) <= PK_MAX_DATA_LEN = 214)
 
    - PK_Encode(PK) - The ASN.1 encoding of a public key PK.
 
    - PRNG(K, n) - Uses a cryptographic stream generator to produce n
      octets, using key K.  (Len(K) = KEY_LEN = 16; Len(PRNG(K,n)) = n)
-   
+
    - Encrypt(K, M) = M ^ PRNG(K,Len(M)) - The encryption of an octet array
      M with our stream cipher, using key K.  (Encrypt(Encrypt(M)) = M.)
 
-   - SPRP_Encrypt(K, M) - The encryption of an octet array M using our 
-     super-pseudorandom permutation with key K.  
+   - SPRP_Encrypt(K, M) - The encryption of an octet array M using our
+     super-pseudorandom permutation with key K.
      (Len(K) = SPRP_KEY_LEN = 20; Len(SPRP_ENC(K,M)) = Len(M))
 
    - SPRP_Decrypt(K, M) - The decryption of an octet array M using our
-     super-pseudorandom permutation with key K.  
+     super-pseudorandom permutation with key K.
      (Len(K) = SPRP_KEY_LEN = 20; Len(SPRP_DEC(K,M)) = Len(M))
 
    - SubKey(K,S) - Derivation of a named sub key, using a master key K
-     (Len(K) = 16) and an aribrary length ASCII String. 
+     (Len(K) = 16) and an aribrary length ASCII String.
      (Len(SubKey(K,S)) = 16)
      SubKey(K,S) = Hash(K, S)[0:16]
 
@@ -389,8 +389,8 @@ Table of Contents
      integer N.
 
    To improve the readability of our specification, we use the
-   following symbolic constants: 
-   
+   following symbolic constants:
+
    - HASH_LEN = 20
    - KEY_LEN = 16
    - PK_OVERHEAD_LEN = 42
@@ -441,7 +441,7 @@ Table of Contents
        protocol. If a Mix receives a packet with an unrecognized
        version, it must discard that packet.  Note that the major and
        minor version numbers are stored using their binary
-       representations (not the corresponding ASCII codes.) 
+       representations (not the corresponding ASCII codes.)
        (Nodes must advertise in their status blocks what versions of
        the protocol they support; see "dir-spec.txt".)
 
@@ -467,9 +467,9 @@ Table of Contents
 
    We will refer to the fixed-size part of the subheader structure as:
       FSHS(V, SK, D, RS, RT) = V|SK|D|RS|RT    [MIN_SH = 42 octets]
-    
+
    We will refer to the entire subheader as:
-      SHS(V, SK, D, RS, RT, RI) = FSHS(V,SK,D,RS,RT) | RI  
+      SHS(V, SK, D, RS, RT, RI) = FSHS(V,SK,D,RS,RT) | RI
            [42+Len(RI) octets]
 
 3.2.1.1. Routing information
@@ -518,7 +518,7 @@ Table of Contents
    a server is addressed via a static IPs, it should use a dotted quad
    as their hostname.  As of Mixminion 0.0.7, the types formerly
    associated with *FWD/IPv4 will become unallocated.]
-   
+
    See 'E2E-spec.txt' for more information about SMTP and MBOX delivery.
 
 3.2.2. Header Structure
@@ -537,17 +537,17 @@ Table of Contents
    be more or less than PK_MAX_DATA_LEN=214 octets long, some of the
    RI field may spill into the stream-encrypted portion, or some of
    the next mix's header may spill into the RSA-encrypted portion.
-   
+
    These diagrams should help explain:
 
      1. If the subheader is less than PK_MAX_DATA_LEN octets long, it
         fits into a single RSA encryption along with some of the data
         from the rest of the header.
-   
+
         Before: (S is the new subheader, H is the existing header material)
            SSSSSSSSSS   HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH.....
 
-        After: 
+        After:
            (Encrypted with RSA)   (Encrypted with AES)
            SSSSSSSSSSHHHHHHHHHH   HHHHHHHHHHHHHHHHHHHHHHHHHHHHHH.....
 
@@ -569,9 +569,9 @@ Table of Contents
    H1 = PK_Decrypt(PK, H[0:PK_ENC_LEN])
    K  = SubKey(H1[2:KEY_LEN], "HEADER SECRET KEY")
    H2 = Encrypt(K, H[PK_ENC_LEN: 2048 - PK_ENC_LEN]
- 
-   // Reads the length of the routing information and extracts the 
-   // sub header. 
+
+   // Reads the length of the routing information and extracts the
+   // sub header.
    SH = (H1|H2)[0:MIN_SH + H1(38:2)]
    MH = (H1|H2)[Len(SH):2048-Len(SH)]
 
@@ -579,14 +579,14 @@ Table of Contents
    [XXXX writeme]
 
 3.2.4. Constructing a Type III packet
-   
+
    The information about how to build packets, headers and SURBs is
    provided for information purposes only, since a pure type III
    remailer server is not required to be capable of creating
    packets. Understanding how packets are created may be beneficial
    for understanding why the remailer processes them in the way
    specified in section 3.2.5.
-  
+
 3.2.4.1. Building a header
 
    Each type III packet has two headers with identical structure. These
@@ -645,14 +645,14 @@ Table of Contents
 
    PROCEDURE: Create a single header.
 
-   Inputs: RI_1..RI_n, RT_1..RT_N (addresses of intermediate nodes), 
+   Inputs: RI_1..RI_n, RT_1..RT_N (addresses of intermediate nodes),
            PK_1 .. PK_N (Public keys of intermediate nodes),
            SK_1 .. SK_N (Secret keys to be shared with intermediate nodes),
            R Routing type and information of last header (FWD, DROP,
                SWAP, etc.)
    Output: H (The header)
 
-   Process: 
+   Process:
      // Calculate the sizes of the subheaders.
      for i = 1 .. N
         // OAEP Padding plus invariant parts plus routing info.
@@ -693,7 +693,7 @@ Table of Contents
         SH0 = SHS(V, SK_i, Z(20), len(RI_(i+1)), RT_(i+1), RI(i+1))
         SH_LEN = LEN(SH0)
         H0 = SH0 | H_(i+1)
-        
+
         REST = H0[PK_MAX_DATA_LEN : Len(REST) - PK_MAX_DATA_LEN]
 
         EREST = Encrypt(K, REST)
@@ -801,13 +801,13 @@ Table of Contents
         If Len(PK_PART) != PK_MAX_ENC_LEN, discard the packet.
 
         FSHS(V, SK, D, RS, RT) = <extract from PK_PART[0:MIN_SH]>
-        Check that D = Hash(H1[PK_ENC_LEN:HEADER_LEN-PK_END_LEN]), 
+        Check that D = Hash(H1[PK_ENC_LEN:HEADER_LEN-PK_END_LEN]),
              and discard if not.
 
         Check for replays, as described in 3.2.5.1.
 
         JUNK_KEY = SubKey(SK, "RANDOM JUNK")
-        H1 = H1[PK_ENC_LEN : 2048-PK_ENC_LEN] | 
+        H1 = H1[PK_ENC_LEN : 2048-PK_ENC_LEN] |
              PRNG(JUNK_KEY, OAEP_OVERHEAD + MIN_SH + RS)
         HEADER_KEY = SubKey(SK, "HEADER SECRET KEY")
         H1 = H1 ^ PRNG(HEADER_KEY, Len(H1))
@@ -815,7 +815,7 @@ Table of Contents
         FULL_H = PK_PART[MIN_SH:Len(PK_PART)-MIN_SH] | H1
         RI = FULL_H[0:RS]
         H1 = FULL_H[RS:Len(FULL_H) - RS]
-         
+
         H2 = SPRP_Decrypt(SK, "HEADER ENCRYPT",H2)
         P = SPRP_Decrypt(SK, "PAYLOAD ENCRYPT",P)
 
@@ -836,7 +836,7 @@ Table of Contents
    as "RFC822 mailbox") and a correct disposition of P (such as
    "decode and deliver via SMTP").  For more information, see section
    2.2.1.1 and 'E2E-spec.txt'.
- 
+
 3.2.5.1. Replay avoidance
 
    The nodes MUST implement a mechanism to make sure that packets
@@ -872,10 +872,10 @@ Table of Contents
 3.3. SURB exchange formats.
 
    This section describes how to encode SURBs for storage or
-   transmission.  
+   transmission.
 
    A SURB can be encoded in a standard binary or ASCII format.
- 
+
    Binary Format:
 
       Begin Marker: 4 octets
@@ -918,7 +918,7 @@ Table of Contents
 
    To encode a SURB for transport, implementations SHOULD support
    OpenPGP-style ASCII armor, with the header text "BEGIN TYPE III
-   REPLY BLOCK" and a single armor header, "Version: 1.0".   
+   REPLY BLOCK" and a single armor header, "Version: 1.0".
 
 4. Transport protocol
 
@@ -961,7 +961,7 @@ Table of Contents
 
    - B invents a DH key and sends a certificate chain containing:
       - a certificate with B's transport public key, signed by B's
-        identity key. 
+        identity key.
       - a self-signed certificate containing B's identity key.
 
    * A checks that the Hash of the identity key is the same as
@@ -977,7 +977,7 @@ Table of Contents
     (Future clients that support more protocols should transmit
     "MMTP ", a list of comma-separated protocol versions, and a CRLF.)
 
-  * If B is not willing to use any protocol A supports, B closes the 
+  * If B is not willing to use any protocol A supports, B closes the
     connection.
 
     B sends "MMTP 1.0", CRLF.  This indicates B's choice of protocol.
@@ -1013,7 +1013,7 @@ Table of Contents
 
      * A sends "SEND", CRLF, M, HASH(M|"SEND") (6 + 32k + 20 octets)
      * B sends "REJECTED", CRLF, HASH(M|"REJECTED") (10 + 20 octets)
-    
+
        [B must reject a packet if its hash is incorrect; if the
         disk is full, or if for some other reason B cannot accept the
         packet.  Again, implementations should not be distinguishable
@@ -1025,19 +1025,19 @@ Table of Contents
   * If a connection persists for longer than 15 minutes, the client
     must initiate key renegotiation.  If it has not, the server must
     close the connection.
- 
+
    NOTE:
 
    The old keys must be permanently overwritten. Special care should be
-   taken to permanently erase them from the Hard Disk and memory. 
+   taken to permanently erase them from the Hard Disk and memory.
 
    The standard transport mechanism over which the MixMinion Transfer
-   Protocol talks is TCP over IP. The standard listening TCP port should be 
+   Protocol talks is TCP over IP. The standard listening TCP port should be
    number 48099 (until we register a port with www.iana.org)
 
    All possible checks should be performed during the transfer protocol
    and if any fail the connection MUST stop and all state MUST
-   be deleted. An error MAY be logged. 
+   be deleted. An error MAY be logged.
 
 A.1. Appendix: A suggested pooling rule
 
@@ -1047,7 +1047,7 @@ A.1. Appendix: A suggested pooling rule
    to flooding attacks.  Implementors are strongly encouraged to use
    this algorithm, or another equally robust against active and
    passive attacks.  (Be sure to read \cite{batching-taxonomy}. [XXXX
-   Ref]) 
+   Ref])
 
    PROCEDURE: Choose sets of messages to transmit ("Cottrell-style batching")
 
@@ -1073,7 +1073,7 @@ A.1. Appendix: A suggested pooling rule
       Transmit the selected messages.
 
    3. Repeat indefinitely.
-  
+
 A.2. Appendix: Backward compatibility with Type II remailers
 
    In order to share anonymity sets with Type III remailers while
@@ -1082,7 +1082,7 @@ A.2. Appendix: Backward compatibility with Type II remailers
 
    Nodes that accept both type II and type III may advertise the fact
    in their server descriptor by including a section of the form:
- 
+
          [Incoming/Mix2]
          Address: (type II remailer's email address)
          Key: (type II key)

@@ -1,4 +1,4 @@
-$Id: spec-issues.txt,v 1.6 2003/09/04 16:14:02 nickm Exp $
+$Id: spec-issues.txt,v 1.7 2003/10/01 22:15:24 nickm Exp $
 
 				MIX3:X
     Open Issues in Type III (Mixminion) Mix Protocol Specifications
@@ -38,7 +38,7 @@ Table of Contents
    2.4.     Abuse prevention
    2.5.     Path selection in non-freeroute networks -- RESOLVED, NEED SPEC
    2.6.     News -- RESOLVED, NEED SPEC
-   2.7.     PKI bootstrapping 
+   2.7.     PKI bootstrapping
    2.8.     Multiple recipients
    2.9.     Plaintext payload versioning
    3.       Issues in MIX3:3: 'dir-spec.txt'
@@ -142,7 +142,7 @@ Table of Contents
 
    [3Aug: Let's not do hashcash; Nick will write why in FRS.  Neglect
       multiplier issues for now.]
-    
+
 2. Issues in MIX3:2: 'E2E-spec.txt'
 
 2.1. Mail gateways
@@ -168,7 +168,7 @@ Table of Contents
    way to send multi-part messages.
 
    This functionality *may* take the format of a canonical subset of
-   MIME, but Lucky thinks that such a thing would drive us into a 
+   MIME, but Lucky thinks that such a thing would drive us into a
    Lovecraftian state of madness.
 
    [3Aug: Canonicalize encodings; allow types.  PGP-mime is "hard".]
@@ -194,7 +194,7 @@ Table of Contents
 
    Right now, we have some vague ideas about users emailing admins to
    get themselves blacklisted.  This should be specified and
-   automated.  
+   automated.
 
    Additionally, there are probably some other means of preventing
    abusive behavior.  If these don't make it into the specification,
@@ -251,9 +251,9 @@ Table of Contents
 2.9. Plaintext payload versioning
 
    We should burn a byte or two for a version number on plaintext
-   payloads.  This way, we have some hope of changing to a better 
+   payloads.  This way, we have some hope of changing to a better
    fragmentation algorithm in the future, or what have you.
-   
+
    Doing this doesn't break the key property that forward payloads
    can be recognized as okay, but that corrupt payloads, reply
    payloads, and encrypted payloads are indistinguishable except to
@@ -346,7 +346,7 @@ Table of Contents
          (mixes knowing about directory servers). This way one can run
          independently a directory server, without any collaboration
          from the mix network (other than the ability to request info).
-   
+
          Let's not forget that the mixes *sign* their information with
          a long term key, therefore after you establish that you trust
          a signing key to belong to an honest server, the operation of
@@ -358,7 +358,7 @@ Table of Contents
          use will ruin its anonymity. On the other hand if key updates
          are not frequent, then the client can slowly update its
          database in the background.
-   
+
          Even more possibilities open up if each mix server give on
          request not only their information but also what they think
          the state of other servers, they have contacted in the past,
@@ -368,13 +368,13 @@ Table of Contents
          orthogonal issue, but once it is decided the updated
          information could flow very quickly. (this is in fact a gossip
          protocol)
-   
+
          These are the reasons why I think it might be a good idea to
          have automatic on request information from servers. -GD]
 
         [Hm.  You may have a point.  I'm still going to suggest that we
          do not do this yet, for a few reasons.
-   
+
          First, we need a way for servers to publish their descriptors
          to directory servers.  (Otherwise, a directory server couldn't
          learn about new servers for the first time.)  In other words,
@@ -382,16 +382,16 @@ Table of Contents
          directory servers may or may not need a pull mechanism: we do
          not yet have a design that requires this.  Let's not build it
          till we have a use for it.
-   
+
          Second, it's a bit tricky to specify *which* descriptor a
          server should return.  Today's?  Tomorrow's?  All the ones it
          knows about?
-   
+
          Third, (this is a variant of 'First') because client use of
          this feature is prone to misuse, we should only provide it to
          clients wrapped in some safe mechanism.  That safe mechanism
          has yet to be specified.
-   
+
          Therefore, I'm going to suggest that we call this feature
          possibly desirable... but that we should first design
          directories or whatever other node discovery mechanisms *may*
@@ -415,7 +415,7 @@ Table of Contents
    Finally, there may be some value in allowing server S1 and server S2
    with the same administrator to also share the same set of keys, thus
    forming a single 'virtual server'.
-   
+
    [PARTIALLY RESOLVED 3Aug: Treat twins as separate for traffic
      purposes, but don't do adjacently.  Don't do jurisdictions until
      we can either verify them, or show that they are beneficial even
@@ -437,7 +437,7 @@ Table of Contents
    standardized, though they would not form a part of any of the
    current specification documents.
 
-4.1. RFC822-style interface 
+4.1. RFC822-style interface
 
    It'd be nice to have a standard way to feed a single text file to
    a CLI and get a message sent.

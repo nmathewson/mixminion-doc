@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.14 2003/09/04 16:14:02 nickm Exp $
+$Id: dir-spec.txt,v 1.15 2003/10/01 22:15:24 nickm Exp $
 
 				Mix3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -49,7 +49,7 @@ Table of Contents
    A.2.     Appendix: Suggested path selection algorithm
 
 1. Introduction
- 
+
    For a Mix network to provide anonymity to its users, it is vital
    that those users to provide cover traffic to one another by
    behaving as similarly as possible when choosing paths and servers
@@ -70,14 +70,14 @@ Table of Contents
 
      * Server Descriptor - A human-readable text message describing a
        set of keys and capabilities for a single Mix.
-      
+
      * Directory - A human readable text message describing a list of
        Mixes and their keys.
 
      * Identity Key - A long-term signing RSA key used for
        authenticating server descriptors and directories.
 
-     * Nickname - A human-readable unique identifier for a Mix.  
+     * Nickname - A human-readable unique identifier for a Mix.
 
      This document uses the terms "MUST", "SHOULD", "MAY", "MUST
      NOT", "SHOULD NOT", and "MAY NOT" as defined in RFC 2119.
@@ -153,10 +153,10 @@ Table of Contents
    To enable backward-compatible extensions of the Exchange format, all
    processors of Mix Information Exchange Messages MUST behave as
    follows when encountering unrecognized headers or entries.
-   
+
    When processing a section with an unrecognized identifier, the
    processor must ignore the section completely.
-   
+
    When processing a section with a recognized identifier, the
    processor must check whether it recognizes the version number of
    that section (usually encoded in an entry with the identifier
@@ -177,7 +177,7 @@ Table of Contents
      - All numeric quantities are represented in decimal.
 
      - All dates are represented in YYYY-MM-DD format.
-     
+
      - All times are represented in YYYY-MM-DD HH:MM:SS or YYYY-MM-DD
        HH:MM:SS.mmmm format, relative to UTC.
 
@@ -204,9 +204,9 @@ Table of Contents
             Address ::= '*' | IP OptMask
             OptMask ::= '/' IP |
             IP ::= <an IPv4 dotted quad>
-            
+
             OptPortSpec ::= | Port | Port '-' Port
-            
+
        An omitted mask defaults to 255.255.255.255.  '*' is a synonym
        for 0.0.0.0/0.0.0.0.  An omitted PortSpec defaults to 48099 for
        'allow' entries and 0-65535 on 'deny' entries.
@@ -239,16 +239,16 @@ Table of Contents
    to and downloaded from directory servers.  A server descriptor is a
    promise, by a mix's administrators, to provide a given set of
    services, keys, and exit policies over a set period of time.
-   
+
    The first section must be a 'Server' section.  This section MUST
    include each of the following entries in any order, exactly once.
-   
+
         'Descriptor-Version':  the string '1.0'
 
         'Nickname': A human-readable identifier for this server.  It
             MUST be no more than 128 characters.  It MUST contain only
             the characters [A-Za-z0-9_@] and '-'.
-   
+
         'Identity': This Mix node's identity key, represented in ASN.1,
             and encoded in BASE64.  The modulus of this key should be at
             least 2048 bits long and no more than 4096 bits long.  The
@@ -312,11 +312,11 @@ Table of Contents
    normalize CR and CR-LF style newlines to a single NL, and remove
    any spaces and tabs that may have been introduced at the ends of
    lines.]
-   
+
    If this server accepts incoming MMTP connections, it MAY have an
    'Incoming/MMTP' section, with the following entries, exactly once
    each:
-   
+
         'Version': The string '1.0'
 
         'IP': An IPv4 address, in dotted-quad format.  [Deprecated but
@@ -338,28 +338,28 @@ Table of Contents
 
         'Protocols': A comma-separated list of the versions of MMTP this
               server accepts.
-   
+
    The 'Incoming/MMTP' section MAY contain any number of entries of
    the form:
 
         'Allow': AddressPattern
         'Deny': AddressPattern
-   
+
    If this server supports outgoing MMTP connections, it MAY have an
    'Outgoing/MMTP' section, with the following entries, exactly once
    each:
-   
+
          'Version': The string '1.0'
 
          'Protocols': A comma-separated list of versions of MMTP this
               server supports for outgoing connections.
-   
+
    The 'Outgoing/MMTP' section MAY contain any number of entries of the
    form:
-   
+
          'Allow': AddressPattern
          'Deny': AddressPattern
-   
+
    These entries are order-significant; the first one to match wins.
    The default policy is 'Deny: *'.
 
@@ -368,18 +368,18 @@ Table of Contents
    Implementations MUST NOT require any specific entries within 'Testing';
    implementations also MUST NOT require any specific format for entries
    that may be present.
-   
+
    If this server supports outgoing delivery mechanisms, it MAY have
    corresponding delivery sections.  See 'E2E-spec.txt' for more details
    on specific types, including SMTP and MBOX.
-   
+
    Other services provided by this server SHOULD each have their own section.
-   
+
    Note: A server MAY omit some of its capabilities from its descriptor.
    It is permissible (for example) for a server that supports incoming
    MMTP connections to omit the Incoming/MMTP section.  A server
    MUST NOT, however, advertise any capabilities it does not support.
-   
+
 3.1. Server Identity
 
    Every server descriptor contains two fields that identify the
@@ -401,7 +401,7 @@ Table of Contents
    When choosing between multiple server descriptors for the same Mix
    that are valid at the same time, implementations SHOULD choose the
    most recently published descriptor.
-   
+
    The interval of time between a descriptor's 'Valid-After' and
    'Valid-Until' dates is called its Lifetime.
 
@@ -413,28 +413,28 @@ Table of Contents
    same server, that descriptor is said to be Superceded.
 
 4. Directory Format
-   
+
    A directory contains a list of Mixminion servers which are believed
    to be operational at a given time.  A directory MUST contain all of
    the following, in order:
       - A 'Directory' section,
-      - A 'Signature' section, 
-      - A 'Recommended-Software' section, 
+      - A 'Signature' section,
+      - A 'Recommended-Software' section,
       - One or more server descriptors (see section 3 above).
 
    The 'Directory' section MUST contain the following entries:
-     
+
      - 'Version': The string '1.0'
-     
+
      - 'Published': The time when this directory was generated.
-     
+
      - 'Valid-After' : A date.  This directory SHOULD NOT be used before
        midnight GMT on this date.
 
      - 'Valid-Until' : A date.  This directory SHOULD NOT be used after
        midnight GMT on this date.  This date SHOULD be exactly one day
        after the date in 'Valid-After'.
-        
+
      - 'Recommended-Servers' : A comma-separated list of server
        nicknames.  Clients SHOULD NOT depend on servers whose nicknames
        are not on this list to be reliable or trustworthy.
@@ -454,7 +454,7 @@ Table of Contents
 
    The 'Recommended-Software' section MUST contain the following
    entries:
-   
+
      - 'MixminionClient' : A comma-separated list of up-to-date versions
        of Mixminion.  If a client is running a version more
        recent than any on the list, it SHOULD issue a warning.  If a
@@ -493,9 +493,9 @@ Table of Contents
    band.
 
 5.2. Publishing a server descriptor
-   
+
    A directory server SHOULD provide one or more well-known HTTP URLs
-   to publish server descriptors to the directory.  
+   to publish server descriptors to the directory.
 
    To upload a descriptor block, a client performs an HTTP POST request
    to the upload URL, with the server block as the contents of a single
@@ -517,13 +517,13 @@ Table of Contents
    be accepted into the directory, the status MUST be 0, and the
    message SHOULD be a description of why the server descriptor was not
    accepted.
-   
+
    Finally, if the upload was successful, but the descriptor will only
    be accepted into the directory when manually approved by the
    administrator, the status MUST be 1, and the message MUST be a
    description of the status of the descriptor, and MUST NOT be
    'Accepted.'.
-   
+
 6. Generating server descriptors
 
    Servers SHOULD generate at least a [[two weeks]] of keys in advance,
@@ -548,9 +548,9 @@ Table of Contents
    all sections except 'Server' absent.
 
 7. Generating directories
-   
+
    Directory servers SHOULD change their directories only at midnight
-   GMT.  
+   GMT.
 
    For every mix, the directory SHOULD either include no descriptors
    from that mix; or include all of that mix's published descriptors
@@ -563,7 +563,7 @@ Table of Contents
    its users anonymity.  A 'reliable' mix is one that delivers packets
    with high probability and reasonable latency.  Directories SHOULD
    include only trustworthy and reliable mixes on their
-   'Recommended-Servers' entry.  
+   'Recommended-Servers' entry.
 
 8. Downloading directories
 
@@ -602,7 +602,7 @@ A.2. Generating paths
    of length N', and 'random path of random length (E[length]=N)'.
 
    [This algorithm is implemented in Mixminion 0.0.5]
-   
+
    The inputs to this algorithm are:
       1) The earliest time at which the path must be valid. (T_Start)
       2) The latest time at which the path must be useable. (T_End)
@@ -631,7 +631,7 @@ A.2. Generating paths
    meets these criteria:
 
       E) Has its nickname the 'Recommended-servers' list.
- 
+
    Next, the client resolves explicitly specified servers: every
    server specifier with a provided nickname resolves into the
    'current' server descriptor with that nickname.  If there is no
@@ -648,4 +648,4 @@ A.2. Generating paths
    specifiers.  The client picks 'preferred' server descriptors at
    random, with replacement, avoiding any sequence of two consecutive
    server descriptors with the same nickname.
-   
+
