@@ -262,7 +262,7 @@ Status
 
    Phase 1: Declarations  (22:00)
  
-      Once a day, at 21:00, every directory server publishes (at some
+      Once a day, at 22:00, every directory server publishes (at some
       well known URL) a signed Declaration.  A Declaration includes:
 
          1) The date
@@ -270,7 +270,7 @@ Status
 
    Phase 2: Declarations are collected (22:00-22:50)
 
-      Between 21:00 and 22:00, every directory server retrieves every
+      Between 22:00 and 22:50, every directory server retrieves every
       other directory server's Declaration.  The directory server then
       re-publishes those declarations at local URLs, along with signed
       statements averring that the directory server has received them.
@@ -282,7 +282,7 @@ Status
 
    Phase 3: Agreement (23:00)
 
-      At 22:00, every directory server calculates what quorum it is
+      At 23:00, every directory server calculates what quorum it is
       in, calculates how that quorum will vote, and signs the result
       of the vote.  This predicted-vote-result is called a
       'pre-directory'.  Because this process is deterministic, every
@@ -309,7 +309,7 @@ Status
       pre-directory.  This pre-directory, plus the signatures of each
       member of the quorum, forms the final directory.
 
-   Phase 6: Clients download the directory (00:01--00:00)
+   Phase 6: Clients download the directory (00:00--23:59)
 
      The first time in any day that a client originates a message, it
      downloads the most recent directory from some source that it
