@@ -104,13 +104,15 @@ servers to track and distribute remailer availability, performance,
 and key information, and then describe in Section \ref{sec:nymservers}
 how to securely build higher-level systems such as nymservers using SURBs.
 
-Mixminion is a best-of-breed remailer that uses conservative
-design approaches to provide security against most known attacks.
-Many of our design decisions impact anonymity in surprising ways. Herein
-we document and analyze some of these influences to provide more intuition
-to developers and users.
-
-% Mention that Mixminion spec is on track for adoption as Mixmaster v3?
+Mixminion is a best-of-breed remailer that uses conservative design
+approaches to provide security against most known attacks. The overall
+Mixminion project is a joint effort between cryptography and anonymity
+researchers and Mixmaster remailer operators. This design document
+represents the first step in peer review of the Type III remailer
+protocol.
+%Many of our design decisions impact anonymity in surprising ways. Herein
+%we document and analyze some of these influences to provide more intuition
+%to developers and users.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -610,7 +612,7 @@ so an adversary delaying a message at one MIX could not expect that it
 is now near to expiring elsewhere in the path; but this seems open to
 statistical attacks.
 
-Mixminion provides a compromize solution that hopefully avoids many of
+Mixminion provides a compromise solution that hopefully avoids many of
 these problems while still providing forward anonymity. Messages don't
 contain any timestamp or expiration information. Each MIX must keep
 hashes of the headers of all messages it's processed since the last time
@@ -621,15 +623,12 @@ Note that this solution doesn't entirely solve the partitioning problem
 --- near the time of a key rotation, the anonymity set of messages will
 be divided into those senders who knew about the key rotation and used
 the new key, and those who didn't.
-
-Also note that while key rotation and link-layer encryption (see Section
-\ref{subsec:link-encrypt}) both provide forward security, their
-protection is not redundant.  Even with link-layer encryption, an
-attacker who has compromised a MIX M1 could later compromise M2, and
-use M2's private key to decrypt messages sent from M1 to M2.  Key
-rotation, however, limits the window of opportunity for this attack.
-
-% This last paragraph could be put better. -Nick
+Also note that while key rotation and link encryption (see Section
+\ref{subsec:link-encrypt}) both provide forward security, their protection
+is not redundant. With only link encryption, an adversary running
+one MIX could compromise another and use its private key to decrypt
+messages previously sent between them. Key rotation limits the window
+of opportunity for this attack.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
