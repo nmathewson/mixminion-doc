@@ -37,6 +37,8 @@ with the smallest building block.
   PRNG(K, n) = Encrypt(K, Z(n))
 - SPRP(K, M) (Len(M) bytes) Uses LIONESS (A super-pseudorandom
   permutation) to encrtypt M with key K.
+    [XXXX With lioness, encryption != decryption.  Moreover, lioness 
+        assumes a keyed hash and 4 independent keys.  -NM]
   
 RSA encryption and decryption is used with OAEP+ padding, using the 
 mask function MGF1 and hash function SHA1.  The security
@@ -249,7 +251,7 @@ Process:
 	// Phase 1
 	if (H2 is a reply block)
 		for i = N .. 0
-			P = BEAR(HASH(SK2_i, ``PAYLOAD ENCRYPT''),P)
+			P = SPRP(HASH(SK2_i, ``PAYLOAD ENCRYPT''),P)
 		end
 
 	// Phase 2
@@ -275,19 +277,20 @@ PROCEDURE: Process a message M
 	H1 = H1[128:15*128] | PRNG(HASH(SK, ``RANDOM
 						JUNK'')[0:16])[0:128];
 	H1 = H1 XOR PRNG(HASH(SK, ``HEADER SECRET KEY''), Len(H1));
-	H2 = BEAR(HASH(SK, ``HEADER ENCRYPT''),H2);
-	P = BEAR(HASH(SK, ``PAYLOAD ENCRYPT''),P);
+	H2 = SPRP(HASH(SK, ``HEADER ENCRYPT''),H2);
+	P = SPRP(HASH(SK, ``PAYLOAD ENCRYPT''),P);
 
 	if routing type is is DROP:
                 End.
 	if routing type is SWAP-FWD:
-		H2 = BEAR(HASH(P, ``HIDE HEADER''), H2)
+		H2 = SPRP(HASH(P, ``HIDE HEADER''), H2)
 		Swap H1 and H2;
         if routing type is SWAP-FWD or FWD:
 	   	Put (H1, H2, P) in queue to be sent to A.
         Otherwise:
 		Give (A, H(SK,``APPLICATION KEY''), (H1, H2, P)) to
 		Module manager. 
+                  [XXXX Why does the application need H1 and H2? - NM]
 
 \section{Single Use Reply Block exchange formats}
 
@@ -415,3 +418,4 @@ Receiving a reply?
 Sending SMTP
 
 Local delivery
+
