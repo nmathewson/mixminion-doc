@@ -16,8 +16,7 @@ with the smallest building block.
 
 - if B is a byte array, B[i:j] (j bytes) is sub array starting at 
   byte i with length j.
-- R(n) (n bytes) Generates n random bytes by any secure method.
-[XXXX is R(n) ever used in the rest of the spec? Remove it? -RD]
+- Rand(n) (n bytes) Generates n random bytes by any secure method.
 - Z(n) (n bytes) Generates n zero bytes.
 - Len(M) (2 bytes) is the length of message M (* bytes).
 - x|y (Len(x)+Len(y) bytes) denotes x concatenated with y.
@@ -71,12 +70,10 @@ with the smallest building block.
 
   We also define SPRP_DEC(K,P,M) as the inverse of SPRP_ENC.
     
-RSA encryption and decryption is used with OAEP padding, using the 
-mask function MGF1 and hash function SHA1.  The security
-[XXXX this is a different P from the other one. Can we call it the
-'OAEP security parameter' (is that accurate?)? -RD]
-parameter P is set to be the hash of the following 84-character ASCII
-string (a quotation from Thomas Paine): 
+RSA encryption and decryption is used with OAEP padding, using the
+mask function MGF1 and hash function SHA1.  The security parameter (P
+in the OAEP spec) is set to be the hash of the following 84-character
+ASCII string (a quotation from Thomas Paine):
 
      "He who would make his own liberty secure, must guard even his
       enemy from oppression." 
@@ -258,15 +255,17 @@ other variable information. -GD]
          reply blocks, she may generate them in 'stateless' mode.  She  
          does so by using an SMTP or LOCAL delivery type, and setting
          the TAG field to 
-              (nHops | E(seed, sha1(password) | pad up to 32b.
-[XXXX what's E? -RD]
+           (nHops | Encrypt(sha1(password)[0:16]), seed) | padding up to 32b.)
 
          She uses PRNG(seed, nHops*16) to form the SK's in the reply
 [XXXX why *16? What are you trying to do here. -RD]
+[XXXX 16 bytes = size of a single secret. -NM]
          block, and to reconstruct them later when she receives the 
          message.
 [XXXX should specify an order for reconstruction. looks dangerous
   without keeping the seed secret? -RD]
+[XXXX I think the seed =is= a secret.  You can't derive it from the
+  SK's, and you can't derive it from the TAG without the password. -NM]
        
          If the client has complete trust in the final hop, she may
          use a null password.  Beware, however: an attacker who recovers 
@@ -292,6 +291,11 @@ ok -GD]
       we may need to PK-encrypt it anyway, or otherwise make it always
       plausible? -RD]
 
+[XXXX I don't think we need to worry about tampering with the tag:
+      it's always in the header, so nobody (IIUC) can tag it fruitfully.
+
+      But if you like what if we had it be:
+        TAG= E(sha1(password)[0:16],  (nHops | seed | padding)) ? -NM]
 
 \subsection{The header structure}
 
@@ -308,9 +312,12 @@ Hash(SharedSecret, ``HEADER SECRET KEY'') with which the part of the
 header after the subheader (but including its routing extension) is
 encrypted using the stream cipher. 
 [XXXX not a stream cipher. Encrypt()? -RD]
+[XXXX Encrypt _is_ a stream cipher, but we should be specific. -NM]
 
 (In practice headers and subheaders are constructed in parallel since
 [XXXX in parallel? i don't get it. -RD]
+[XXXX Indeed; my implementation constructs the subheaders serially, in
+      reverse order, as described below -NM]
 the Digest contained in the subheader is a hash of all the other
 encrypted subheaders and the random data they generate as the message
 travels through the network.)
@@ -339,20 +346,36 @@ Process:
 	J_i = J_i XOR PRNG(HASH(SK_i, ``HEADER SECRET KEY''),
   		128*16)[128*15 -Len(J_i) + SIZE_i:Len(J_i)];
 [XXXX                       16? -RD]
+[XXXX  From the source:
+
+        # Node i encrypts starting with its first extended subheader.  By
+        #   the time it reaches the junk, it's traversed:
+        #          All of its extended subheaders    [(size-1)*128]
+        #          Non-junk parts of the header      [HEADER_LEN-len(nextJunk)]
+        #
+        # Simplifying, we find that the PRNG index for the junk is
+        #    HEADER_LEN-len(lastJunk)-128.
+
+      So we have 128*16 - len(J_(i-1)) - 128 =
+                = 128*15 - len(J(i) | PRNG(..., SIZE_i)
+                = 128*15 - len(J_i) - SIZE_i.
+
+      Hm.  There seems to be a sign difference here.
+                                                     -NM ]
+
+
   end
 
   // Create the Header
-  H_(N+1) = J[0: 128*16 - sum(SIZE_1 .. SIZE_N)];
-[XXXX There is no J. J_n? -RD]
+  H_(N+1) = Rand(128*16 - sum(SIZE_1 .. SIZE_N));
+
   for i = N .. 1
 	K = HASH(SK_i, ``HEADER SECRET KEY'')[0:16];
 	IF i = N (set appropriate routing type and A_i)
 	EH = EXT( RI_i )
-  	DIGEST = HASH( Encrypt(K, EH | H_(N+1)) | J_i ) )
-[XXXX                                  H_(i+1)?
-  We've got too many parens here too. -RD]
-	H_i = ESHS(PK_i, V, SK_i, DIGEST, F, len(RI_i), RT_i, RI_i)
-                  || Encrypt(K, EH | H_(N+1))
+        REST = Encrypt(K, (EH || H_(i+1)))
+  	DIGEST = HASH( REST | J_i )
+	H_i = ESHS(PK_i, V, SK_i, DIGEST, F, len(RI_i), RT_i, RI_i) || REST
   end
 
 return H_1;
@@ -496,9 +519,9 @@ Binary Format:
 
 Begin Marker: 4 bytes
 Version: 2 bytes
-Address Size: 2 bytes
-Address Type: 2 bytes
-Address: (Address Size) bytes
+Routing Size: 2 bytes
+Routing Type: 2 bytes
+Routing Info: (Routing Size) bytes
 Use-by-Date: 4 bytes
 SURB size: 2 bytes
 SURB data: (SURB size) bytes
@@ -509,17 +532,23 @@ Digest: 20 bytes
 
 Total: 54 bytes + Address Size + SURB size + Linked Data Size
 
+[XXXX In summary of my comments below, I suggest:
+   Begin Marker: 4 bytes
+   Version:      2 bytes
+   Use-by-Date:  4 bytes
+   SURB header:  2048 bytes
+   Routing Size: 2 bytes
+   Routing Type: 2 bytes
+   Routing Info: (Routing Size) bytes
+
+   Total: 14 bytes + Header size + Routing info size. -NM]
+
 * The magic marker contains the ASCII 4-byte string 'SURB'. 
 * The version number contains the format version of the SURB.
-  (should be 1 and 0 for this standard)
-* Address: Contains the address of the first hop to which the message
-  encoded using this SURB should be sent to.
-   [ XXXX Won't the first hop always be a forward address?  If so, then
-     we don't need the size marker: we only need an IP, port, and
-     keyid.  If not, then we need a routing type as well. -NM ]
-   [ XXXX I would rather have a consistent addressing scheme
-          throughout. Is that causing any problems? Added an address 
-          type as well. -GD]
+  (should be hex 01 and 00 for this standard).
+* Routing type/routing size/routing info: Definded as  in subheaders.  
+  These fields encode the 
+
 * Use-by-Date: indicated the expiry date the SURB should be used by. Can
   be calculated using the key rotation frequencies of the intermediate
   nodes.
@@ -527,6 +556,11 @@ Total: 54 bytes + Address Size + SURB size + Linked Data Size
      leak info.  If we're too course-grained, we can't move to a
      tighter schedule later on.  -NM]
    [ XXXX Should we have it in days since a magic date? -GD]
+   [ XXXX We haven't yet settled on a standard granularity.  A
+      synchronous scheme practically needs finer grains.  I suggest
+      that we go for seconds, but require that seconds be aligned to
+      the first second of a day. -NM]
+  
 * SURB data: Containst the SURB that is created as described
   above. The Junk at the end can be omited (although it is not wise
   to reduce it more than half the size of a full SURB). When the SURB
@@ -536,7 +570,8 @@ Total: 54 bytes + Address Size + SURB size + Linked Data Size
   data: 
 	H(Address, Use-by-Date, Linked Data)
   That hash is contained in the last 20 bytes of the SURB data.
-* Filler: Used to prinme the stream cipher to pad the SURB data up to
+
+* Filler: Used to prime the stream cipher to pad the SURB data up to
   128*16 bytes.
 
     [ XXXX Why not just always include the junk?  It'd be easier, and
@@ -546,6 +581,14 @@ Total: 54 bytes + Address Size + SURB size + Linked Data Size
        this possibility because 16 hops is actually quite a lot and 1k
        in a message of 32k could be significant (particularly is more
        than one SURB have to be transported). -GD]
+    [ XXXX Hn. As Roger says, this _does_ leak an upper bound on the
+       number of hops in a message.  Also, by leaking the number of hops
+       which the recipient feels are necessary, it may provide
+       statistical linkability between a given recipient's SURBs.  
+
+       I really don't think this is worth it.  Anybody who needs to
+       send more than 27 SURBs per message should lobby for a bigger
+       packet size. ;) -NM]
 
 * Linked Data: Additional data that might have to be linked with the 
   SURB.
@@ -559,6 +602,9 @@ Total: 54 bytes + Address Size + SURB size + Linked Data Size
   included before the junk. It is better to have a standard place to
   hold and encode this additional data otherwise everyone will be
   finding a different method for doing it. -GD]
+    [ XXXX I disagree with the hash, so I disagree with the extra data. 
+       If we can foresee likely need here, let's design for it now.
+       Else, I apply the end-to-end argument: see below. -NM]
 
 * The Digest is a Hash of all the other fields.
     [ XXXX Why have a digest here?  What is the risk?  Anybody who can
@@ -568,6 +614,28 @@ Total: 54 bytes + Address Size + SURB size + Linked Data Size
   commented etc) it is better if they can be checked as valid. Could
   just be a CRC. Is is nice if it is a hash since we are sure it is
   difficult to find another SURB that hashes to the same ID. -GD]
+    [ XXXX So this prevents SURBs from being modified on the wire by
+       non-malicious parties.  
+
+       I think the ``End-to-end'' argument applies:
+  (http://web.mit.edu/Saltzer/www/publications/endtoend/endtoend.ps)
+  ``The function in question can completely and correctly be
+    implemented only with the knowledge and help of the application
+    standing at the end points of the communication system.
+    Therefore, providing that questioned function as a feature of the
+    communication system itself is not possible. (Sometimes an
+    incomplete version provided by the communications system may be
+    useful as a performance enhancement.''
+
+       If an application =needs= good SURBs, this hash is inadequate:
+       we'll be encrypting them and wrapping with a signed hash.  On
+       the other hand, if the application =doesn't= need good SURBs,
+       this hash is unnecessary.  In either case, it's wasted.
+
+       Similarly, metadata is best left to the application.  What good
+       is it to have a generic place to put metadata if that means
+       that SURBs for application 1 can't be used with 
+       application 2? -NM]
 
 The ASCII Encoding of SURBs.
 
@@ -588,6 +656,13 @@ binary version.
   this SURB. Can be used by applications that manage SURBs to refer to
   them, and as a 8 character short hand if you want to address an
   email to the SURB -GD]
+[ XXXX See above for arguments against using the digest for integrity.
+  I don't believe the digest would be very useful for the purposes
+  here, either: (1) applications can compute hashes on their own if they
+  like, (2) Any good tool for managing SURBs will provide shorthands 
+  far better than random 8-char strings. -NM]
+[ XXXX BTW, PEM-encoded stuff seems to use '-----BEGIN FOO-----' (5
+  dashes, no space).  Any reasons for this convention? -NM
 
 \section{Email Transport exchange format}
 
@@ -643,6 +718,9 @@ The Mixminion protocol uses TLS (the IETF standardization of SSL) with
 the ciphersuite "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" (defined in
 tls-ciphersuite-03.txt).  No other ciphersuite is permitted for
 MIX-to-MIX communications.
+[XXXX Do we want to allow other suites for client-to-server
+      communication in order to accommodate clients with older SSL
+      implementations? -NM]
 
 X.509 certificates need not be signed; instead, they must contain
 a key matching that used in the KEYID portion of the header's routing
@@ -658,6 +736,15 @@ that every message is encrypted under a different key. It also
 provides a very small time window for someone breaking down your door
 in order to decrypt what you have just transmitted. Is there a problem
 with having it so often? -GD]
+[XXXX There's no problem, but it seems a little paranoid to me: It's
+extra computation, but doesn't really buy us much.  We can get a very
+small time window by requiring a new key every 5 minutes, and AES_CBC
+can certainly stand up to a lot of packets sent with the same
+key. -NM]
+[XXXX BTW, DHE handshake is far more expensive than a regular SSL
+handshake -- thus, we'd better have SSL sessions to avoid redoing DHE
+a lot.  We can maintain forward security by -at a minimum- rekeying
+before we suspend a session. -NM]
 
 Protocol outline: (Portions marked with '*' are normative; other
 portions are non-normative descriptions of TLS.)
@@ -677,6 +764,11 @@ portions are non-normative descriptions of TLS.)
 
 * A sends "PROTOCOL 1.0", NL.  This indicates the highest protocol
   version A supports.
+[XXXX This seems to imply that MMTP implementations must stay
+  backward compatible forever, or at least implement a contiguous set 
+  of versions.  Is this really so? -NM]
+[XXXX BTW, is NL 'LF' or is it 'CRLF'? -NM]
+
 * If B is not willing to use any protocol A supports, B closes the 
   connection.
 
