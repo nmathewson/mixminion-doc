@@ -603,6 +603,8 @@ message to arrive, messages arriving near their expiration date will be
 rare: an adversary can delay a message until near its expiration date,
 then release it and trace it through the network.
 
+% need to read stop & go mix paper here.
+
 %More generally, these partitioning attacks arise whenever a message can be
 %`very rare' and `valid' at the same time.
 
@@ -774,57 +776,57 @@ while more, I think.
 \url{http://archives.seul.org/mixminion/dev/Apr-2002/msg00031.html}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Attacks and Defenses}
-\label{sec:attacks}
-
-[Do something akin to pages 13-15 of
-\url{http://freehaven.net/doc/casc-rep/casc-rep.ps}.]
-
-\subsection{MIX attacks}
-\label{subsec:mix-attacks}
-
+%\section{Attacks and Defenses}
+%\label{sec:attacks}
+%
+%[Do something akin to pages 13-15 of
+%\url{http://freehaven.net/doc/casc-rep/casc-rep.ps}.]
+%
+%\subsection{MIX attacks}
+%\label{subsec:mix-attacks}
+%
+%%\begin{description}
+%Replay attack
+%Message delaying
+%Message dropping
+%Tagging
+%n-1 attack (trickle, flooding)
+%intersection attack (short-term, long-term)
+%textual analysis, etc
+%%\end{description}
+%
+%\subsection{Exit-based attacks}
+%\label{subsec:attacks-exitbased}
+%
+%Attack: use delivery method to partition anon set.
+%Attack: use caps to partition anon set.
+%
+%[Need to expand this. -Nick]
+%
+%\subsection{Directory-based attacks}
+%\label{subsec:attacks-dirbased}
+%
 %\begin{description}
-Replay attack
-Message delaying
-Message dropping
-Tagging
-n-1 attack (trickle, flooding)
-intersection attack (short-term, long-term)
-textual analysis, etc
+%\item \emph{Compromize a directory server.} Identical directory listings
+%  are served by a large group of servers, and signed by all.
+%\item \emph{Lie to a directory server.}  Signed capability blocks, and
+%  the fact that a MIX's signing key is its identity, prevent this
+%  attack.
+%\item \emph{Exploit differences in client directory knowledge.}  By
+%  only updating directory information nightly; by urging client
+%  software to pull updates as soon as possible after their release;
+%  and by 
+%\item \emph{Delay MIX packets until directory information changes.}
+%  The delay in clients' using new information, along with dummy
+%  traffic sent to de-listed destinations and expired keys, should
+%  mitigate this attack. However, a complete solution remains an
+%  open problem.
+%\item \emph{Flood the directories with nonfunctional MIX entries.}
+%  Availability statistics should mitigate this problem.  Nevertheless,
+%  it remains an area of active research. \cite{mix-acc,casc-rep}
+%[[WHAT OTHER DIRECTORY ATTACKS?]]
 %\end{description}
-
-\subsection{Exit-based attacks}
-\label{subsec:attacks-exitbased}
-
-Attack: use delivery method to partition anon set.
-Attack: use caps to partition anon set.
-
-[Need to expand this. -Nick]
-
-\subsection{Directory-based attacks}
-\label{subsec:attacks-dirbased}
-
-\begin{description}
-\item \emph{Compromize a directory server.} Identical directory listings
-  are served by a large group of servers, and signed by all.
-\item \emph{Lie to a directory server.}  Signed capability blocks, and
-  the fact that a MIX's signing key is its identity, prevent this
-  attack.
-\item \emph{Exploit differences in client directory knowledge.}  By
-  only updating directory information nightly; by urging client
-  software to pull updates as soon as possible after their release;
-  and by 
-\item \emph{Delay MIX packets until directory information changes.}
-  The delay in clients' using new information, along with dummy
-  traffic sent to de-listed destinations and expired keys, should
-  mitigate this attack. However, a complete solution remains an
-  open problem.
-\item \emph{Flood the directories with nonfunctional MIX entries.}
-  Availability statistics should mitigate this problem.  Nevertheless,
-  it remains an area of active research. \cite{mix-acc,casc-rep}
-[[WHAT OTHER DIRECTORY ATTACKS?]]
-\end{description}
-%\item \emph{X} Y.
+%%\item \emph{X} Y.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
