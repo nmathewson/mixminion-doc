@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.4 2003/05/10 20:30:49 gd Exp $
+$Id: minion-spec.txt,v 1.5 2003/05/17 00:29:22 nickm Exp $
 
            Type III (Mixminion) Mix Protocol Specifications
 
@@ -24,8 +24,8 @@ Status of this Document
       - Resolve XXXXs, esp: 3.2.3 - 4.
       - Describe crossover and server operations
       - Who else to add to authors?
-        [We should add an ACKS section where we put all the people that
-         have contributed to the project, as in the software release -GD]
+      - We should add an ACKS section where we put all the people that
+         have contributed to the project.
       - Process E2E-spec
         - Incorporate Text-spec
 
@@ -305,6 +305,7 @@ Table of Contents
    K must be 20 octets long; M must be at least 20 octets long.
 
    [XXXX Should we provide IVs. e.g. Encrypt(Z(16), Z(40)) -GD]
+   [XXXX Lioness doesn't have IVs, nor does counter-mode AES. -NM]
 
 3.1.1.4. Public-key cipher
 
@@ -450,8 +451,8 @@ Table of Contents
 
      * The Digest contains an integrity check of the part of the
        current header encrypted using AES in counter mode. The digest
-       does not cover the RSA encrypted subheader: modifications to it
-       are detected because of the OAEP padding.
+       does not cover the RSA encrypted part of the header:
+       modifications to it are detected because of the OAEP padding.
 
      * The Routing Type defines how the mix should deliver or relay the
        message. If a mix receives a routing type it does not recognize,
@@ -508,9 +509,7 @@ Table of Contents
    and SWAP-FWD/IP4, except that they use IPv6 addresses rather than
    IP4 addressed.  Path generation in this case is an open issue.
 
-   See appendices for more information about SMTP and MBOX delivery.
-   [XXXX Cannot find this in the appendices. Should it move to
-   E2E-spec.txt? -GD]
+   See 'E2E-spec.txt' for more information about SMTP and MBOX delivery.
 
 3.2.2. Header Structure
 
@@ -621,10 +620,10 @@ Table of Contents
 
      // Calculate the Junk that will be appended during processing.
      // J_i is the junk that node i will append, and node i+1 will see.
-     J_0 = "";
+     J_0 = ""
      for i = 1 .. N
         J_i = J_(i-1) | PRNG(JUNK_KEY_i, SIZE_i)
-        Stream_i = PRNG(K_i, 2048 + SIZE_i);
+        Stream_i = PRNG(K_i, 2048 + SIZE_i)
         // Before we encrypt the junk, we encrypt all the data, and all
         // the initial padding, but not the RSA-encrypted part.
         //    OFFSET = PADDING_LEN + SUM(SIZE_i ... SIZE_N) - 256
@@ -633,7 +632,7 @@ Table of Contents
         //           = 2048-256 - SUM(SIZE_1 ... SIZE_(i-1))
         //           = 2048 - 256 - len(J_{i-1})
         OFFSET = PADDING_LEN  + Len(J_i) - 256
-        J_i = J_i XOR Stream_i[OFFSET:Len(J_i)];
+        J_i = J_i XOR Stream_i[OFFSET:Len(J_i)]
      end
 
      // Create the Header, starting with the padding.
@@ -666,7 +665,7 @@ Table of Contents
         H_i = ESH | EREST
      end
 
-   return H_1;
+   return H_1
 
    It is important to note that a user can create a SURB, by following
    a similar procedure as described above. Since the objective is for
@@ -729,7 +728,7 @@ Table of Contents
    following operations:
 
    PROCEDURE: Process a message M
-        PK_PART = PK_Decrypt(PK,H1[0:PK_ENC_LEN]);
+        PK_PART = PK_Decrypt(PK,H1[0:PK_ENC_LEN])
         If there is any problem with the OAEP padding discard the message.
 
         If Len(PK_PART) != MAX_RSA, discard the message.
@@ -758,15 +757,15 @@ Table of Contents
 
         RI = RI | H1[0:MISSING_RI_LEN]
         H1 = EXTRA_H | H1[MISSING_RI_LEN:2048-MISSING_RI_LEN]
-        H2 = SPRP_DEC(SK, "HEADER ENCRYPT",H2);
-        P = SPRP_DEC(SK, "PAYLOAD ENCRYPT",P);
+        H2 = SPRP_DEC(SK, "HEADER ENCRYPT",H2)
+        P = SPRP_DEC(SK, "PAYLOAD ENCRYPT",P)
 
         if routing type is DROP:
                 End.
         if routing type is SWAP-FWD:
                 P = SPRP_DEC(SHA1(H2), "HIDE PAYLOAD", P)
                 H2 = SPRP_DEC(SHA1(P), "HIDE HEADER", H2)
-                Swap H1 and H2;
+                Swap H1 and H2
         if routing type is SWAP-FWD or FWD:
                 Put (H1, H2, P) in queue to be sent to the address in RI.
         Otherwise:
