@@ -1453,30 +1453,30 @@ them.
 \label{subsec:mix-attacks}
 
 \begin{description}
-\item \emph{Compromise a mix} Because messages traverse multiple mixes,
+\item \emph{Compromise a mix.} Messages traverse multiple mixes, so
 compromising a single mix, even a crossover point, does not gain much.
-\item \emph{Compromise a mix's private key} Again, owning a single mix
+\item \emph{Compromise a mix's private key.} Again, owning a single mix
 is of limited use. Further, periodic mix key rotation limits the window
 of time in which to attack the next mix in the target message's path.
-\item \emph{Message replay.}  Mixes remember header checksums of
+\item \emph{Replaying messages.}  Mixes remember header checksums of
 previously seen messages; after key rotation these old headers can no
 longer be decrypted.
-\item \emph{Message delay.} The adversary can delay messages and
+\item \emph{Delaying messages.} The adversary can delay messages and
 release them when certain network parameters (eg traffic volume) are
 different. The efficacy of this attack is poorly understood, but it may
 well be quite damaging \cite{batching-taxonomy}. Imposing a deadline on
-transmission for each hop may help \cite{mix-acc}.
-\item \emph{Message dropping.} The adversary can drop messages with the
+transmission at each hop may help \cite{mix-acc}.
+\item \emph{Dropping messages.} The adversary can drop messages with the
 hope that users will notice and resend. If the user must resend, he
 should use the same path, to prevent the adversary from forcing him onto
 an adversary-controlled path (see Section \ref{subsec:many-messages}).
-\item \emph{Message tagging.} Mixes detect modified headers immediately
+\item \emph{Tagging messages.} Mixes detect modified headers immediately
 using checksums. The payload can still be tagged, but the ``swap'' step
 along with LIONESS encryption from Section \ref{subsec:header-swap}
 provide protection.
 \item \emph{N$-1$ attack (trickle, flooding)} The ``timed dynamic-pool''
-batching strategy from Section \ref{subsec:batching} limits the
-effectiveness of these attacks.
+batching strategy from Section \ref{subsec:batching}, along with our dummy
+policy, limits the effectiveness of these blending attacks.
 \end{description}
 
 \subsubsection{Passive attacks}
@@ -1484,10 +1484,10 @@ effectiveness of these attacks.
 
 \begin{description}
 \item \emph{Intersection attack.} Our dynamic-pool batching strategy
-from Section \ref{subsec:batching} spreads out the set of possible
-senders for a given received message, increasing the cost of an
-intersection attack. However, a complete solution remains an open problem
-\cite{langos02}.
+from Section \ref{subsec:batching} spreads out the messages over time,
+increasing the set of possible senders for a given received message and
+thus increasing the cost of an intersection attack. However, a complete
+solution remains an open problem \cite{langos02}.
 \item \emph{Textual analysis.} Mixminion provides location anonymity,
 not data anonymity. Users are responsible for making sure their messages
 do not reveal information.
@@ -1497,13 +1497,13 @@ do not reveal information.
 \label{subsec:attacks-exitbased}
 
 \begin{description}
-\item \emph{Use delivery method to partition traffic.} We encourage
-recipients to use one of only a few delivery methods, so we can maintain
-sufficient anonymity sets for each.
-\item \emph{Use servers' exit capabilities to partition traffic.}
+\item \emph{Partition traffic by delivery method.} We encourage recipients
+to use one of only a few delivery methods, so we can maintain sufficient
+anonymity sets for each.
+\item \emph{Partition traffic by exit capabilities.}
 Delivery methods should be standardized; users should be suspicious of
-any exit node offering an unusual delivery method.
-\item \emph{Use the mix network to deliver hate mail, etc.} We allow
+exit nodes offering an unusual delivery method.
+\item \emph{Use the mix network to send hate mail, etc.} We allow
 recipients to opt out of receiving further mail. Overall, we must assume
 we will have enough nodes that can withstand this abuse that simple
 adversaries cannot monitor all exit nodes in the network.
@@ -1515,23 +1515,25 @@ adversaries cannot monitor all exit nodes in the network.
 
 \begin{description}
 \item \emph{Compromise a directory server.} Identical directory listings
-  are served by a large group of servers, and signed by all.
-\item \emph{Lie to a directory server.}  Signatures on capability
-  blocks prevent others from forging them to the directory
-  servers. Because a mix's signing key is its identity,
-
-\item \emph{Exploit differences in client directory knowledge.}  By
-  only updating directory information nightly; by urging client
-  software to pull updates as soon as possible after their release;
-  and by 
-\item \emph{Delay mix packets until directory information changes.}
-  The delay in clients' using new information, along with dummy
-  traffic sent to de-listed destinations and expired keys, should
-  mitigate this attack. However, a complete solution remains an
-  open problem.
-\item \emph{Flood the directories with nonfunctional mix entries.}
-  Availability statistics should mitigate this problem.  Nevertheless,
-  it remains an area of active research. \cite{mix-acc,casc-rep}
+are served by a small group of servers, and signed by all. We assume
+that a threshold of these directory servers will remain honest.
+\item \emph{Exploit differences in client directory knowledge.} By only
+updating directory information nightly, by designing client software to
+pull updates as soon as possible after their release, and by ensuring
+that clients have the entire directory, we can limit this attack.
+\item \emph{Delay mix messages until directory information changes.}
+The fact that clients delay using new information, along with dummy
+traffic sent to de-listed destinations and expired keys, should mitigate
+this attack. Again, imposing a deadline on transmission at each hop
+may help more \cite{mix-acc}.
+\item \emph{Sign somebody else up as a mix.}  Signatures on capability
+blocks prevent others from forging blocks to the directory servers.
+\item \emph{Flood the directories with nonfunctional mix entries; run
+highly reliable mixes to gain traffic for analysis; attack honest mixes
+to encourage users to start using the dishonest ones.}
+Availability and reliability statistics should mitigate some of these
+problems, but they introduce problems of their own. They are an area of
+active research \cite{mix-acc}\cite{casc-rep}.
 \end{description}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
