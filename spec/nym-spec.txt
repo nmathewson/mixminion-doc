@@ -1,4 +1,4 @@
-$Id: nym-spec.txt,v 1.7 2004/08/06 09:26:43 nickm Exp $
+$Id: nym-spec.txt,v 1.8 2004/08/18 18:50:22 nickm Exp $
 
                                Mix3:Nym
     Underhill: A Proposed Type 3 Nymserver Protocol Specification
@@ -518,8 +518,8 @@ Table of Contents
            P -- The padding granularity -- either 1024 or 128.
 
      Let M_C = COMPRESS(M).
-     Let PADDING_LEN = CEIL(LEN(M_C)/P) - LEN(M_C).
-     Let M_P = M | Z(PADDING_LEN).
+     Let PADDING_LEN = CEIL(LEN(M_C)/P)*P - LEN(M_C).
+     Let M_P = M_C | Z(PADDING_LEN).
 
      Let K = Rand(16).
      Let M_Enc = SPRP_Encrypt(K, "", M_P)
