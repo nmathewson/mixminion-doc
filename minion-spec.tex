@@ -25,22 +25,35 @@ with the smallest building block.
   using zeroes.
 - H(M) (20 bytes) is the SHA-1 hash of M (* bytes)
 - PK_Encrypt(K,M) (128 bytes): the RSA-encryption of a header M 
-  using the public key K.  M is padded using RSA-OAEP+.
+  using the public key K.  M is padded using RSA-OAEP, and encoded
+  with PCKS1.
 - PK_Decrypt(K,M) (up to 86 bytes) Gives the decryption of the
   message M (128 bytes) under the private key corresponding to K.
-- Encrypt(K,M) (Len(M) bytes) Rijndael encryption (in Counter mode)
-  of message M using key K. 
+- Encrypt(K,M) (Len(M) bytes) Rijndael encryption (in Counter mode,
+  with 128-bit blocksize) of message M using key K.  (All Rijndael
+  operations use 128-bit blocks.)
 - Decrypt(K,M,i,j) (j-i bytes) Rijndael counter mode decryption 
   using the key material byte i to j.
 - PRNG(K, n) (n bytes) Uses Rijndael in counter mode to produce N
   bytes of pseudo-random numbers.
   PRNG(K, n) = Encrypt(K, Z(n))
-- SPRP(K, M) (Len(M) bytes) Uses LIONESS (A super-pseudorandom
-  permutation) to encrtypt M with key K.
-    [XXXX With lioness, encryption != decryption.  Moreover, lioness 
-        assumes a keyed hash and 4 independent keys.  -NM]
-  
-RSA encryption and decryption is used with OAEP+ padding, using the 
+- SPRP_ENCRYPT(K1,K2,K3,K4,M) (Len(M) bytes) Uses a super-pseudorandom
+  permutation to encrypt M with keys K1-K4.  Specifically, we use LIONESS,
+  as described in XXXXCITE, with PRNG(K,n) as our stream generator,
+  and the keyed-SHA1 construction specified in the LIONESS paper.
+
+  K1 and K3 are 160 bits long; K2 and K4 are 128 bits long.
+
+  For convenience, we write SPRP_ENC(K,P,M) to denote:
+       LIONESS_ENCRYPT(HASH(K|P|" (FIRST SUBKEY)"),
+                       HASH(K|P|" (SECOND SUBKEY)")[0:16],
+ 	               HASH(K|P|" (THIRD SUBKEY)"),
+ 	               HASH(K|P|" (FOURTH SUBKEY)")[0:16], P)
+- SPRP_DECRYPT(K1,K2,K3,K4,M) (Len(M) bytes) Inverts SPRP_ENCRYPT.
+
+  We also define SPRP_DEC(K,P,M) as the inverse of SPRP_ENC.
+    
+RSA encryption and decryption is used with OAEP padding, using the 
 mask function MGF1 and hash function SHA1.  The security
 parameter P is set to be the hash of the following 84-character ASCII
 string (a quotation from Thomas Paine): 
@@ -49,6 +62,11 @@ string (a quotation from Thomas Paine):
       enemy from oppression." 
 
 All fields are packed in Internet (MSB first) order.
+
+[XXXX I've backed off from using OAEP+: As far as I can tell from the
+      literature, the weaknesses in OAEP's security proofs only appear
+      when you're using something other than RSA.  With RSA, I believe
+      the claim is still that OAEP is secure. -NM]
 
 \subsection{The subheader structure and address extensions}
 
@@ -155,6 +173,9 @@ retransmitted using the TLS/Mixmaster transport protocol. The IP field
 of represents the IPv4 address.  The KEYID field represents the hash of
 the next node's tranport public key.
 
+[XXXX Are the TLS keys different from the keys used to encrypt the
+      headers?  I claim they should be. -NM]
+
 A SWAP routing type tells the node to exchange headers as described below.
 
 The EMAIL field in the SMTP type of address should be a valid email
@@ -226,7 +247,7 @@ The payload of a Mixminion message has a fixed length of 32 kb
 - 2*16*128 bytes = 28kb.   Payloads indicate their size.
 
   [XXXX Shouldn't size info go into the header, or no place?  Size
-  info makes tagged payloads distinguishable from garbage.]
+     info makes tagged payloads distinguishable from garbage. -NM]
 
 Size:   2 bytes
 Data:   (Variable)
@@ -251,15 +272,18 @@ Process:
 	// Phase 1
 	if (H2 is a reply block)
 		for i = N .. 0
-			P = SPRP(HASH(SK2_i, ``PAYLOAD ENCRYPT''),P)
+	            P = SPRP_ENC(SK2_i, "PAYLOAD ENCRYPT", P)
 		end
+        else
+           [ XXXX what do we use for H2 if we're not using a reply
+	           block? -NM ]
 
 	// Phase 2
-	H2 = SPRP(HASH(P, ``HIDE HEADER''), H2)
+	H2 = SPRP(P, ``HIDE HEADER'', H2)
 
 	for i = N .. 1
-		H2 = SPRP(HASH(SK1_i, ``HEADER ENCRYPT''),H2)
-		P = SPRP(HASH(SK1_i, ``PAYLOAD ENCRYPT''),P)
+		H2 = SPRP_ENC(SK1_i, "HEADER ENCRYPT",H2)
+		P = SPRP_ENC(SK1_i, "PAYLOAD ENCRYPT",P)
 	end
 
 \section{Processing of Messages}
@@ -277,13 +301,13 @@ PROCEDURE: Process a message M
 	H1 = H1[128:15*128] | PRNG(HASH(SK, ``RANDOM
 						JUNK'')[0:16])[0:128];
 	H1 = H1 XOR PRNG(HASH(SK, ``HEADER SECRET KEY''), Len(H1));
-	H2 = SPRP(HASH(SK, ``HEADER ENCRYPT''),H2);
-	P = SPRP(HASH(SK, ``PAYLOAD ENCRYPT''),P);
+	H2 = SPRP_DEC(SK, ``HEADER ENCRYPT'',H2);
+	P = SPRP_DEC(SK, ``PAYLOAD ENCRYPT'',P);
 
 	if routing type is is DROP:
                 End.
 	if routing type is SWAP-FWD:
-		H2 = SPRP(HASH(P, ``HIDE HEADER''), H2)
+		H2 = SPRP_DEC(P, ``HIDE HEADER'', H2)
 		Swap H1 and H2;
         if routing type is SWAP-FWD or FWD:
 	   	Put (H1, H2, P) in queue to be sent to A.
@@ -336,11 +360,15 @@ protocol should be used when the SWAP-FWD/IP4 or FWD/IP4 address type
 is specified in a subheader.
 
 The Mixminion protocol uses TLS (the IETF standardization of SSL) with
-the ciphersuite "TLS_DHE_RSA_WITH_AES_256_CBC_SHA" (defined in
+the ciphersuite "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" (defined in
 tls-ciphersuite-03.txt).  No other ciphersuite is permitted for
 MIX-to-MIX communications.
 
-  [XXXX Do we want to use DHE_DSS instead?  Or AES_128? -NM]
+  [XXXX Do we want to use DHE_DSS instead? -NM]
+
+  [XXXX We don't use AES256 because (a) it doesn't seem to be in
+        the works for OpenSSL 0.9.7, and (b) all our other AES
+        operations use 128-bit blocks and keys. -NM]
 
 X.509 certificates need not be signed; instead, they must only contain
 a key matching that used in the KEYID portion of the header's routing
@@ -367,6 +395,15 @@ portions are non-normative descriptions of TLS.)
   key has been established. All communications are then encrypted
   using this session key.
 
+* A sends "PROTOCOL 1.0", NL.  This indicates the highest protocol
+  version A supports.
+* If B is not willing to use any protocol A supports, B closes the 
+  connection.
+
+  B sends "PROTOCOL 1.0", NL.  This indicates B's choice of protocol.
+
+  If A is not willing to support B's choice, A closes the connection.
+  
 * A sends "SEND", M, H(M,"SEND") (4 + 32k + 20 bytes)
 * B sends "RECEIVED", H(M,"RECEIVED") (8 + 20 bytes)
 
