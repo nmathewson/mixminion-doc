@@ -1,4 +1,4 @@
-$Id: api-spec.txt,v 1.1 2003/07/24 08:02:28 nickm Exp $
+$Id: api-spec.txt,v 1.2 2003/08/22 01:17:59 nickm Exp $
 
                             MIX3:ClientAPI
          Type III (Mixminion) Mix Client API Recommendations
@@ -543,6 +543,8 @@ mix3_status mix3_mmtp_new_connection(
         bool blocking);
 /* XXXX What to do about DNS, if we ever do DNS. */ 
 
+/* XXXX We also need to do something about 'REJECTED' replies. */
+
 /* Return the server descriptor associated with a connection.
  */
 mix3_serverdesc *mix3_mmtp_connection_get_serverdesc(
@@ -560,20 +562,52 @@ mix3_status mix3_mmtp_connect(mix3_mmtp_connection *conn);
 /* Send a packet to a connected MMTP server.  If the operation blocks,
  * it must be called again later with the same arguments.
  *
- * Return MIX3_OK on success, MIX3_WANT* if a nonblocking connection
- * would block.
+ * Return MIX3_OK on successful transmission, MIX3_WANT* if a
+ * nonblocking connection would block.
+ *
+ * (Note that even once transmission is successful, it is not safe to
+ * assume the packet has been received until mix3_mmtp_await_acks
+ * returns MIX3_OK.)
  */
 mix3_status mix3_mmtp_send_packet(mix3_mmtp_connection *conn,
-                              mix3_packet *packet);
+                                  mix3_packet *packet);
 
 /* Send padding to a connected MMTP server.  If the operation blocks,
  * it must be called again later with the same arguments.
  *
- * Return MIX3_OK on success, MIX3_WANT* if a nonblocking connection
- * would block.
+ * Return MIX3_OK on successful transmission, MIX3_WANT* if a
+ * nonblocking connection would block.
+ *
+ * (Note that even once transmission is successful, it is not safe to
+ * assume the padding has been received until mix3_mmtp_await_acks
+ * returns MIX3_OK.)
  */
 mix3_status mix3_mmtp_send_padding(mix3_mmtp_connection *conn,
-                               mix3_packet *padding);
+                                   mix3_packet *padding);
+
+/* Read from the connection until the MMTP server acknowledges all
+ * as-yet-unacknowledged packets and padding blocks, or until there is
+ * an error.
+ *
+ * Return MIX3_OK when all blocks are acknowledged, MIX3_WANT* if a
+ * nonblocking connection would block.
+ */
+mix3_status mix3_mmtp_await_acks(mix3_mmtp_connection *conn);
+
+/* Return the number of packets which have been sent along a
+ * connection.  Includes partially-transmitted packets.
+ */
+int mix3_mmtp_get_n_packets(mix3_mmtp_connection *conn);
+
+/* Return the number of padding blocks which have been sent along a
+ * connection.  Includes partially-transmitted blocks.
+ */
+int mix3_mmtp_get_n_padding(mix3_mmtp_connection *conn);
+
+/* Return the number of packets and padding blocks which have been
+ * acknowledged by the other side of the connection.
+ */
+int mix3_mmtp_get_n_acks(mix3_mmtp_connection *conn);
 
 /* Renegotiate a key with a connected MMTP server.  Returns as above.   
  */

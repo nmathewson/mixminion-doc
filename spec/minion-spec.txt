@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.10 2003/08/09 03:09:23 nickm Exp $
+$Id: minion-spec.txt,v 1.11 2003/08/22 01:17:59 nickm Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -56,7 +56,7 @@ Table of Contents
    2.1.     Sender anonymity
    2.2.     Recipient anonymity
    2.3.     Bidirectional anonymity
-   3.       Message format
+   3.       Packet format
    3.1.     Preliminaries and Definitions
    3.1.1.   Cryptographic primitives
    3.1.2.   Notation
@@ -71,7 +71,7 @@ Table of Contents
    3.2.4.3. Constructing the packet
    3.2.5.   Processing a Type III packet
    3.2.5.1. Replay avoidance
-   3.2.5.2. Message pooling and delivery.
+   3.2.5.2. Packet pooling and delivery
    3.3.     SURB exchange formats
    4.       Transport protocol
 
@@ -119,6 +119,18 @@ Table of Contents
      NOT", "SHOULD NOT", and "MAY NOT" as defined in RFC 2119.
      [XXXX is this wise? Observable variation=linkability. -NM]
   
+     * Packet - A 32 kilobyte string transmitted anonymously through
+       the Type III remailer network.
+
+     * Payload - The 28 kilobyte portion of a packet containing a
+       message, or part of a message, to be delivered anonymously.
+
+     * Message - A variable-length sequence of octets sent anonymously
+       through the network.  Short messages are sent in a single
+       packet; long messages are fragmented across multiple packets.
+       See 'E2E-spec.txt' for more information about encoding messages
+       into payloads.
+
 2. System overview
 
    In this section, we provide an overview of the operations of Type
@@ -221,7 +233,7 @@ Table of Contents
    this, see the Type III nymserver specification at "nym-spec.txt".
    [XXXX this document isn't there yet. XXXX]
 
-3. Message Format
+3. Packet Format
    [XXXX]
 
 3.1. Preliminaries and Definitions
@@ -408,7 +420,7 @@ Table of Contents
 3.2.1. Subheader structure
 
    A subheader is a variable-length structure containing all the
-   information that a mix needs to decrypt a message, check its
+   information that a mix needs to decrypt a packet, check its
    integrity, and route it to the next hop on its path.  Every
    subheader contains the following fields:
 
@@ -444,8 +456,8 @@ Table of Contents
        modifications to it are detected because of the OAEP padding.
 
      * The Routing Type defines how the mix should deliver or relay the
-       message. If a mix receives a routing type it does not recognize,
-       it must discard the message (see 2.2.1.1.)
+       packet. If a mix receives a routing type it does not recognize,
+       it must discard the packet (see 2.2.1.1.).
 
      * Most routing methods require additional addressing information,
        which is given in the variable length Routing Info field.
@@ -483,12 +495,12 @@ Table of Contents
 
    0xF000-0xFFFF: FOR EXPERIMENTAL USE
 
-   A DROP routing type indicates a dummy message. It must be
+   A DROP routing type indicates a dummy packet. It must be
    discarded.  To prevent servers from distinguishing among clients,
-   every DROP message should have a random payload.  DROP messages
+   every DROP packet should have a random payload.  DROP messages
    must be discarded, and not inserted into the mix pool.
 
-   A FWD/IP4 routing type indicates that the message must be
+   A FWD/IP4 routing type indicates that the packet must be
    retransmitted using the TLS/Mixminion transport protocol (see
    section 4.) The IP field represents the IPv4 address.  The KEYID
    field contains the SHA1 hash of the ASN.1 representation of the
@@ -543,10 +555,10 @@ Table of Contents
            SSSSSSSSSSSSSSSSSSSS   SSSSSHHHHHHHHHHHHHHHHHHHHHHHHH.....
 
    In order to decode an encrypted header H addressed to a mix with
-   public key PK, into a subheader SH and the rest of the messages
+   public key PK, into a subheader SH and the rest of the header
    MH, the following operations could be performed.
 
-   // Decrypts the messages using the public key and the extracted key.
+   // Decrypts the header using the public key and the extracted key.
    H1 = PK_Decrypt(PK, H[0:PK_ENC_LEN])
    K  = SubKey(H1[2:KEY_LEN], "HEADER SECRET KEY")
    H2 = Encrypt(K, H[PK_ENC_LEN: 2048 - PK_ENC_LEN]
@@ -556,21 +568,21 @@ Table of Contents
    SH = (H1|H2)[0:MIN_SH + H1(38:2)]
    MH = (H1|H2)[Len(SH):2048-Len(SH)]
 
-3.2.3. The entire message  
+3.2.3. The payload
    [XXXX writeme]
 
 3.2.4. Constructing a Type III packet
    
-   The information about how to build messages, headers and SURBs is
+   The information about how to build packets, headers and SURBs is
    provided for information purposes only, since a pure type III
    remailer server is not required to be capable of creating
-   messages. Understanding how messages are created may be beneficial
+   packets. Understanding how packets are created may be beneficial
    for understanding why the remailer processes them in the way
    specified in section 3.2.5.
-
+  
 3.2.4.1. Building a header
 
-   Each type III message has two headers with identical structure. These
+   Each type III packet has two headers with identical structure. These
    headers are swapped at the crossover point. [XXXX describe crossover]
 
    A header is HEADER_LEN=2048 octets long and contains up to
@@ -698,8 +710,9 @@ Table of Contents
 
 3.2.4.2. Encoding the payload
 
-   The payload of a Mixminion message has a fixed length of 32 KB
-   - 2*16*128 octets = 28KB. Payloads indicate their size.
+   The payload of a Mixminion packet has a fixed length of 32 KB
+   - 2*16*128 octets = 28KB. Payloads indicate the size of the
+   messages they contain as described in "E2E-spec.txt".
 
    (When sending a reply message with a SURB, we use payload encryption
    to prevent the crossover point from seeing an unencrypted payload. See
@@ -713,14 +726,14 @@ Table of Contents
    first header must end with a subheader with routing type SWAP.
 
    To construct a Type III packet, the sender applies the SPRP steps
-   for message transmission in reverse order.
+   for payload transmission in reverse order:
 
    If the sender has a forward message, she first SPRP_Encrypts the
    payload with the secret keys for the hops in the second header in
    reverse order.  If she has a SURB, she SPRP_Decrypts the payload
    with the SURB encryption key.  [We use decryption in the reply case
    so that the recipient only needs to use SPRP_Encrypt steps to
-   retrieve the message.]
+   retrieve the payload.]
 
    Next, the sender SPRP_Encrypts the payload with a hash of the
    second header, then SPRP_Encrypts the header with a hash of the
@@ -740,7 +753,7 @@ Table of Contents
              we constructed it, or a header with unknown keys if we're
              using a reply block and a SURB secret key.)
           P (Payload)
-   Output: M (the 32KB message)
+   Output: M (the 32KB packet)
 
    Process:
         // Phase 1
@@ -764,21 +777,21 @@ Table of Contents
 
 3.2.5. Processing a Type III packet
 
-   Messages are transferred from node to node using either the custom
-   Type III transport protocol (see below) or email.  A node with
-   private key PK receiving message M = H1 | H2 | P performs the
-   following operations:
+   Packets are transferred from node to node using the custom Type III
+   transport protocol (see below).  A node with private key PK
+   receiving a packet M = H1 | H2 | P performs the following
+   operations:
 
-   PROCEDURE: Process a message M
+   PROCEDURE: Process a packet M
 
         H1 = M[0:HEADER_LEN]
         H2 = M[HEADER_LEN:HEADER_LEN]
         P = M[2*HEADER_LEN:PAYLOAD_LEN]
 
         PK_PART = PK_Decrypt(PK,H1[0:PK_ENC_LEN])
-        If there is any problem with the OAEP padding discard the message.
+        If there is any problem with the OAEP padding discard the packet.
 
-        If Len(PK_PART) != PK_MAX_ENC_LEN, discard the message.
+        If Len(PK_PART) != PK_MAX_ENC_LEN, discard the packet.
 
         FSHS(V, SK, D, RS, RT) = <extract from PK_PART[0:MIN_SH]>
         Check that D = Hash(H1[PK_ENC_LEN:HEADER_LEN-PK_END_LEN]), 
@@ -819,7 +832,7 @@ Table of Contents
  
 3.2.5.1. Replay avoidance
 
-   The nodes MUST implement a mechanism to make sure that messages
+   The nodes MUST implement a mechanism to make sure that packets
    cannot be replayed. To do this a hash of the secret contained in
    the subheader is kept for as long as the public key under which it
    was encrypted is in use. The Hash should be computed in the
@@ -831,7 +844,7 @@ Table of Contents
    upon.  The integrity of the list should be secured and the X values
    lists may be made public.
 
-3.2.5.2. Message pooling and delivery
+3.2.5.2. Packet pooling and delivery
 
    Instead of processing and delivering packets immediately upon
    receipt, a node SHOULD packets as soon as possible (in order to
@@ -839,19 +852,20 @@ Table of Contents
    batch of deliverable packets before delivering any of them (in
    order to frustrate traffic analysis).
 
-   Nodes SHOULD choose a batching strategy that blends messages with
+   Nodes SHOULD choose a batching strategy that blends packets with
    one another even in the event of a flooding or n-1 attack; such an
    algorithm is given in Appendix A.3 below.
 
    If a packet or message cannot be delivered immediately due to a
-   (possibly) transient error, the node SHOULD retry the message
-   periodically until either it can be delivered, or a until a given
-   interval has passed.  After the interval, the packet or message
-   is discarded.
+   (possibly) transient error, the node SHOULD retry the packet or
+   message periodically until either it can be delivered, or a until a
+   given interval has passed.  After the interval, the packet or
+   message is discarded.
 
 3.3. SURB exchange formats.
 
-   This section describes how to encode messages with XXXX.
+   This section describes how to encode SURBs for storage or
+   transmission.  
 
    A SURB can be encoded in a standard binary or ASCII format.
  
@@ -903,7 +917,7 @@ Table of Contents
 
    A special channel should be established between mixes that provides
    forward secrecy making it impossible to recognize or decrypt any
-   message that went through it in the past. In order to establish
+   packet that went through it in the past. In order to establish
    this channel one of the two mixes initiates the connection but at
    the end of the key exchange protocol the channel is
    bi-directional. The protocol should be used when the SWAP-FWD/IP4
@@ -928,7 +942,7 @@ Table of Contents
    identity key doesn't match the KEYID portion of the header's
    routing data, the client closes the connection.
 
-   Messages are sent from client to server.  Session suspension is not
+   Packets are sent from client to server.  Session suspension is not
    permitted.
 
    Protocol outline: (Portions marked with '*' are normative; other
@@ -963,16 +977,18 @@ Table of Contents
 
     If A is not willing to support B's choice, A closes the connection.
 
-  * Message case:
+  * Packet case:
 
      * A sends "SEND", CRLF, M, HASH(M|"SEND") (6 + 32k + 20 octets)
      * B sends "RECEIVED", CRLF, HASH(M|"RECEIVED") (10 + 20 octets)
 
-    [Note that A does not wait for B's reply before sending further
-     messages; rather, A begins sending its next message immediately.
-     Node A waits until the reply is received, however, before
-     removing the message from its local storage.  Node A pauses,
-     however, if it is waiting for 16 hashes at a time.]
+       [Note that A SHOULD NOT wait for B's reply before sending
+        further packets; rather, A SHOULD sending its next packet
+        immediately.  Node B SHOULD NOT send a reply until it has
+        committed the packet to local storage, and Node A SHOULD NOT
+        remove the packet from local storage before it has it has
+        received B's reply.  Node A MAY pause if it is waiting for 16
+        hashes at a time.]
 
   * Padding case:
 
@@ -981,8 +997,8 @@ Table of Contents
      * B sends "RECEIVED", CRLF, HASH(Junk|"RECEIVED JUNK") (10 + 20 octets)
 
        [Note that both cases require the same number of octets and
-        processing time. Implementations must make sure the real
-        message and the padding cases are indistinguishable to a third
+        processing time. Implementations SHOULD make sure the real
+        packet and the padding cases are indistinguishable to a third
         party, or even to the parties involved after the keys have
         been updated.]
 
@@ -991,12 +1007,12 @@ Table of Contents
      * A sends "SEND", CRLF, M, HASH(M|"SEND") (6 + 32k + 20 octets)
      * B sends "REJECTED", CRLF, HASH(M|"REJECTED") (10 + 20 octets)
     
-       [B must reject a message if their hash is incorrect; if the
+       [B must reject a packet if its hash is incorrect; if the
         disk is full, or if for some other reason B cannot accept the
-        message.  Again, implementations should not be distinguishable
-        in their timing in the case where the message is accepted or
+        packet.  Again, implementations should not be distinguishable
+        in their timing in the case where the packet is accepted or
         rejected.  When A receives a "REJECTED" reply, it must behave
-        as if delivery had failed, and retry the message later (up to
+        as if delivery had failed, and retry the packet later (up to
         a reasonable retry interval).]
 
   * If a connection persists for longer than 15 minutes, the client
@@ -1057,9 +1073,8 @@ A.2. Appendix: Backward compatibility with Type II remailers
    retaining type II support, some remailers may wish to use Mixminion
    to deliver type II messages.  This is done as follows:
 
-   Nodes that accept both type II and type III messages may advertise
-   the fact in their server descriptor by including a section of the
-   form:
+   Nodes that accept both type II and type III may advertise the fact
+   in their server descriptor by including a section of the form:
  
          [Incoming/Mix2]
          Address: (type II remailer's email address)
@@ -1087,12 +1102,11 @@ A.2. Appendix: Backward compatibility with Type II remailers
    for a type III node whose KeyID matches the KeyID for the
    packet. [See below] If it finds one, the bridging node unbase64's
    the type II message's contents, and uses them (plus random padding)
-   as the payload of a type III message for that node.  The routing
+   as the payload of a type III packet for that node.  The routing
    type must be 'MIX2' (0x0102); the routing info must be equal to the
    destination mix's type II address.
 
-
-   \subsection{Non-normative note: extracting KeyID and message contents}
+ [[Non-normative note: extracting KeyID and message contents]]
 
    (This information is included in the Type II remailer spec; it is
    included here only for reference.)

@@ -1,4 +1,4 @@
-$Id: spec-issues.txt,v 1.4 2003/08/09 03:09:23 nickm Exp $
+$Id: spec-issues.txt,v 1.5 2003/08/22 01:18:00 nickm Exp $
 
 				MIX3:X
     Open Issues in Type III (Mixminion) Mix Protocol Specifications
@@ -197,21 +197,6 @@ Table of Contents
 
    [3Aug: Let's not do hashcash; Nick will write why in FRS.  Neglect
       multiplier issues for now.]
-
-1.7. Bursty MMTP -- RESOLVED, NEED SPEC
-
-   Right now, an MMTP sender waits for the MMTP recipient to
-   acknowledge each packet before transmitting the next.  Bram claims
-   that TCP will be happier if senders burst as many packets as
-   possible without interruption, allowing the recipient to ACK each
-   one asynchronously.
-
-   Someone should confirm that this matters with the message sizes that
-   we're dealing with.  (32KB messages, <80B acks, over TLS).  If it
-   does matter, we should change MMTP to use bursty transmission.
-
-   [RESOLVED 3Aug: Do it.  It may affect client apis -- but old
-      implementations may be compatible.]
     
 2. Issues in MIX3:2: 'E2E-spec.txt'
 
@@ -305,7 +290,9 @@ Table of Contents
    to bootstrap from an existing PKI.  We should probably specify some
    way to bootstrap from PGP keys (or something).
 
-   [3Aug: Use gpg to dump parameters; add El Gamal.  No ECC.]
+   [3Aug: Use gpg to dump parameters; add El Gamal.  No ECC.
+          gpg --with-key-data --list-key KEYID
+     ]
 
 2.8. Multiple recipients
 
