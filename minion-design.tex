@@ -258,10 +258,13 @@ Headers addressed to each intermediate MIX are encrypted using RSA.
 They contain a secret 
 that can be used to generate padding and decrypt the rest
 of the message. They also contain the address of the next node to 
-which to message should be forwarded along with its expected signature 
-key fingerprint. To frustrate tagging attacks (see
-Section \ref{subsec:tagging}), the sub-header also contains a hash of
-the header.
+which the message should be forwarded along with its expected signature 
+key fingerprint.
+
+% we haven't said what a subheader is yet. too early to say this. -RD
+%To frustrate tagging attacks (see
+%Section \ref{subsec:tagging}), the sub-header also contains a hash of
+%the header.
 
 % This last paragraph assumes that the audience already knows the
 % material well enough to know that Alice encrypts each layer with the
@@ -311,9 +314,8 @@ forward and reply messages can share the same anonymity set.
 \subsection{Tagging attacks}
 \label{subsec:tagging-attacks}
 
-At this point it is useful to describe an attack that works against some
-MIX-net protocols, including Mixmaster and Babel, in order to motivate
-some aspects of the Mixminion design.
+To motivate some aspects of the Mixminion design, we describe an attack
+that works against many MIX-net protocols, including Mixmaster and Babel.
 
 A {\em tagging attack} is an active attack in which a message is
 modified by altering part of it (for example by flipping bits), so
@@ -699,7 +701,7 @@ Type II packet. In order to support different kinds of
 delivery, the header includes a type code for the action to be taken
 to deliver the message.  A few types --- such as `dummy', `SMTP', and
 `local delivery' --- are specified as a part of the Mixminion
-standard.  Others may be added by future extensions, in order to
+standard.  Others may be added by future extensions, to
 implement abuse-resistant exit policies (see Section
 \ref{subsec:exitpolicies}), to administer nymservers (see Section
 \ref{sec:nymservers}), to publish anonymously to Usenet, to relay
@@ -713,7 +715,7 @@ mailboxes in the protocol, because the display name and comment parts
 of an e-mail address could potentially be different for senders who
 have obtained an address from different sources, leading to smaller
 anonymity sets.}
-In our current design, this information is placed
+This information is placed
 in a variable-length annex to the final header.
 
 %\footnote{It must be
