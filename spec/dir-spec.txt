@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.19 2003/11/07 06:44:08 nickm Exp $
+$Id: dir-spec.txt,v 1.20 2003/11/20 08:04:33 nickm Exp $
 
 				MIX3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -279,7 +279,8 @@ Table of Contents
 
         'Nickname': A human-readable identifier for this server.  It
             MUST be no more than 128 characters.  It MUST contain only
-            the characters [A-Za-z0-9_@] and '-'.
+            the characters [A-Za-z0-9] and '-'.  It MUST NOT begin
+            with a '-' or a digit.
 
         'Identity': This Mix node's identity key, represented in ASN.1,
             and encoded in BASE64.  The modulus of this key should be at
