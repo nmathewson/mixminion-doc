@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.15 2003/10/31 05:28:24 arma Exp $
+$Id: E2E-spec.txt,v 1.16 2003/11/20 08:05:18 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -163,7 +163,7 @@ Table of Contents
 
    We also define DECOMPRESS as the inverse of COMPRESS: namely, ZLIB
    decompression as described in RFCs 1950 and 1951.  Note that
-   DECOMPRESS is not defined for every sequence of bytes.
+   DECOMPRESS is not defined for every sequence of octets.
 
 2.1.2. K-of-N fragmentation
 
@@ -470,17 +470,6 @@ Table of Contents
    it clear to the user which identity has been associated with each
    incoming SURB.
 
-   Client software MAY support export and import of identities.  If
-   they do, they SHOULD support the following format:
-
-     [SURB-Identity]
-     Version: 1.0
-     Nickname: <a sequence of ASCII printable characters>
-     Master-Secret: <the base64 encoded master secret (unencrypted)>
-
-   If more than one identity is exported at a time, the SURB-Identity
-   blocks are concatenated.
-
    Nickname comparisons SHOULD be done in a case insensitive
    manner.)
 
@@ -489,7 +478,7 @@ Table of Contents
 
       Repeat:
          Let SEED = a random 159-bit seed.
-      Until Hash(SEED | SEC | "Validate") ends with a 0 byte.
+      Until Hash(SEED | SEC | "Validate") ends with a 0 octet.
 
       Let K = Hash(SEED | SEC | "Generate")[0:KEY_LEN]
 
@@ -519,7 +508,7 @@ Table of Contents
 
    If a message decoder knows one or more SURB secrets, it then checks
    the decoding handle 'TAG' to see whether Hash(TAG | SEC |
-   "Validate") ends with a zero byte for any secret SEC.  If so, the
+   "Validate") ends with a zero octet for any secret SEC.  If so, the
    decoder generates secrets from TAG | SEC as in SURB generation, and
    successively decrypts the payload with up to MAX_PATH of them,
    checking each time for a plaintext payload.
@@ -528,7 +517,7 @@ Table of Contents
    plaintext payload, and the decoder knows one or more secret keys
    SK_i, it then checks whether PK_Decrypt(SK_i, TAG |
    P[0:PK_LEN-TAG_LEN]) has valid OAEP padding for some SK_i.  If so,
-   it extracts K from the first 20 bytes of the decrypted value, and
+   it extracts K from the first 20 octets of the decrypted value, and
    uses K to LIONESS-decrypt the rest of the payload.
 
    If none of these approaches works, the decoder has failed.  Upon
@@ -568,7 +557,7 @@ Table of Contents
    If DECODE_PLAINTEXT_PAYLOAD(P) is not "unknown", return it.
 
    For all SEC_i:
-      If H(TAG | SEC_i | "Validate") ends with a zero byte:
+      If H(TAG | SEC_i | "Validate") ends with a zero octet:
          K = H(TAG | SEC_i | "Generate")
          STREAM = ENC(K, Z(MAX_PATH * KEY_LEN))
          Let P_t = P.
@@ -937,3 +926,70 @@ A.1. Apendix: versioning and alphas
    '0.x' instead (currently '0.1' for all versions in this document).
    Production versions MUST NOT retain backward compatibility
    with pre-production releases.
+
+A.2. Appendix: storing client secrets
+
+   The following describes the format used by the Mixminion reference
+   software to store SURB keys.  Other software MAY use this format.
+   Clients that do so MUST implement it as described here.
+
+   [Rationale: earlier, we specified a standard export format for SURB
+   secrets. Exporting secret keys, however, is _bad_: once the ability
+   exists, the secret keys tend to get sucked out and
+   re-stored---often less securely---by other applications.  Peter
+   Gutmann describes several instances of this somewhere, and I'm not
+   the kind of guy to argue with Peter Gutmann. -NM]
+   
+   [XXX This format is supported by Mixminion 0.0.6 and later: earlier
+   versions of the software use a more Python-specific format that
+   you really shouldn't try to read.]
+   
+         magic       [8 octets]
+         format type [1 octet == 0]
+         salt        [8 octets]
+         encdata     [variable]
+
+   Where 'magic' is "KEYRING2" [ 4B 45 59 52 49 4E 47 32 ], 'salt' is
+   a randomly chosen octet sequence, and 'encdata' is computed from
+   the actual identity data 'data' and a user-selected password
+   'password' as follows:
+
+         Let padding = Rand(1024*CEIL(LEN(data)/1024) - LEN(data))
+         Let data' = Int(32, LEN(data)) | data | padding
+         Let hash = H(data' | salt | magic)
+         Let key = H(salt | password | salt)[0:KEY_LEN]
+         Let encdata = Encrypt(key, data' | hash)
+
+   The format of the actual data is as follows:
+
+         KeyData ::= Item *
+         Item ::= ItemType [1 octet] 
+                  ItemLen  [2 octets]
+                  ItemVal  [ItemLen octets]
+
+   Implementations MUST skip over items with unrecognized types, and
+   preserve them when modifying the keyring.  Implementations MUST NOT
+   depend on any order of items within the keyring.
+
+   SURB keys have the following format:
+         SURBKeyType    [00]
+         SURBKeyLen     [2 octets]
+         SURBKeyExpires [4 octets]
+         SURBKeyName    [Variable; NUL-terminated]
+         SURBKeySecret  [Variable]
+
+   SURBKeyType and SURBKeyLen confirm to the fields ItemType and
+   ItemLen as described above.  SURBKeyExpires is a 4-octet timestamp
+   (rounded to the nearest midnight GMT), after which the key should
+   be removed from the keyring.  SURBKeyName is a NUL-terminated name
+   for this identity, in lowercase.  SURBKeySecret is the master
+   secret for this SURB identity -- it should be at least 20 octets
+   long.
+
+   In order to implement key rotation, multiple SURB keys may exist
+   for the same identity.  Clients SHOULD always generate SURBs using
+   the latest-expiring key, and SHOULD accept reply messages using all
+   unexpired keys.  Client software SHOULD generate a new key for an
+   identity whenever they are generating a SURB, and newest existing
+   key for that identity would expire before the software expects to
+   receive messages sent using that SURB.
