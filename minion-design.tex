@@ -49,19 +49,20 @@ The Free Haven Project
   
 \begin{abstract}
 
-We describe a packet-based anonymous remailer protocol that supports
-secure single-use reply blocks and includes link-level encryption to
-provide forward anonymity. We include designs for directory servers and
-nymservers that work with these single-use reply blocks. Because many of
-our design choices impact anonymity in surprising ways, we also include
-careful discussion of the anonymity implications of each step.
+We present Mixminion, a message-based anonymous remailer protocol that
+supports secure single-use reply blocks. Mixminion reply messages are
+indistinguishable from forward messages, allowing all messages to share
+the same anonymity set. We add directory servers that allow users to
+learn public keys and performance statistics of participating remailers,
+and we describe nymservers that allow users to maintain long-term
+pseudonyms using single-use reply blocks as a primitive. Our design
+integrates link-level encryption between remailers to provide
+forward anonymity. Mixminion brings together the best solutions from
+previous work to create a conservative design that protects against most
+known attacks.
 
-% Mention conservativism of design to avoid reader let-down when they
-% find out we aren't Tarzan? -Nick
-
-% We include justification
-%for various design decisions and a detailed description of attacks and
-%defenses. And some other stuff.
+%Because many of our design choices impact anonymity in surprising ways,
+%we include careful discussion of the anonymity implications of each step.
 
 \end{abstract}
 
@@ -139,7 +140,11 @@ the MIX-net. Cascades can provide greater anonymity against a large
 adversary, because in a free-route system an
 adversary who owns many of the MIXes can use intersection attacks to
 dramatically reduce the set of possible senders or receivers for a given
-message \cite{disad-free-routes}.
+message \cite{disad-free-routes}. On the other hand, cascades are more
+vulnerable \cite{batching-taxonomy} to trickle attacks, where an attacker
+targeting a specific message going into a mix can manipulate the batch
+of messages entering that mix so the only unknown message in the batch
+is the target message \cite{mixmaster-attacks,babel}.
 MIX cascade research includes real-time MIXes \cite{realtime-mix} and
 web MIXes \cite{web-mix}.
 
