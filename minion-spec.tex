@@ -67,6 +67,9 @@ All fields are packed in Internet (MSB first) order.
       literature, the weaknesses in OAEP's security proofs only appear
       when you're using something other than RSA.  With RSA, I believe
       the claim is still that OAEP is secure. -NM]
+[XXXX I agree that for most practical purposes OAEP is secure. Using
+      the standard construction will allow implementors to use ready
+      made libreries. -GD]
 
 \subsection{The subheader structure and address extensions}
 
@@ -104,6 +107,8 @@ of headers when the node receives the message.
     I removed RTRN because it's redundant with respect to routing
        type.
     I removed SWAP because it makes address type redundant.   -NM]
+    [XXXX Cool! You are right they were, as long as we make clear that
+    routing types make the message being treated in different ways -GD] 	
 
 * The Routing Type of a message defines how the MIX should deliver or
   relay it.  Most routing methods require addition addressing information.
@@ -118,8 +123,9 @@ of headers when the node receives the message.
   using OAEP+, using a 1024 bit key.  This results in an encrypted block
   of 128 bytes.  If the routing info is longer than 86-42=44 bytes, then
   additional subheader have to be added.
+  [XXXX Should the above really be OAEP+? or simply OAEP? -GD]
 
-  When additional block is added to fit the routing info, it must be be a
+  When an additional block is added to fit the routing info, it must be be a
   multiple of 128 bytes and should have the following structure:
  
   Routing Extension:
@@ -132,6 +138,13 @@ of headers when the node receives the message.
   routing size. -NM]
 
   [XXXX What purpose does the magic number serve? -NM]
+  [XXXX It was originally there to make sure that the decryption was
+  correct. It is not releven any more because:
+	- we do not use a AONT for the additional block
+	  (could modify bits inside without modufying first 4 bytes)
+	- the integrity of the additional block is protected by the
+  	  message digest in the header (this should be made clear!).
+	-GD]
 
 * The magic number is set to be four zero bytes.
 * Padding of zeroes is used to make the size of the Address Extension a
@@ -175,6 +188,10 @@ the next node's tranport public key.
 
 [XXXX Are the TLS keys different from the keys used to encrypt the
       headers?  I claim they should be. -NM]
+[XXXX YES! They have to be different since they are discarded after
+      the key exchange. The signature/verifucation key pair can be
+      used for both purposes (signing ethemeral keys, and signing the
+      mix encryption keys).
 
 A SWAP routing type tells the node to exchange headers as described below.
 
@@ -189,6 +206,14 @@ free-form.
 (Tag fields can be used to  implement stateless reply blocks by
 reminding recipients of the master secrets they used to generate the
 reply block.)
+
+[XXXX Where has the RTRN type gone? I guess you can do the same job
+with the LOCAL field but I would prefer to have it specified as a
+separate type in the standard. 
+
+0x0101 RTRN  (HOPS: 1 byte , KEY: 20 bytes) : 21 bytes
+
+-GD]
 
 \subsection{The header structure}
 
@@ -248,6 +273,12 @@ The payload of a Mixminion message has a fixed length of 32 kb
 
   [XXXX Shouldn't size info go into the header, or no place?  Size
      info makes tagged payloads distinguishable from garbage. -NM]
+  [XXXX Size info is quite important as well as some type information.
+     Maybe in order to minimise the potential for tagging we should
+     encrypt the payload using an encryption key specified in the
+     reply block. So the reply block would be (SURB, encryption key,
+     first hop, deadline). That would make us waste another 128 bytes
+     of payload. -GD]
 
 Size:   2 bytes
 Data:   (Variable)
@@ -270,13 +301,16 @@ Output: M (the message)
 
 Process:
 	// Phase 1
-	if (H2 is a reply block)
+	if (H2 is *not* a reply block)
 		for i = N .. 0
 	            P = SPRP_ENC(SK2_i, "PAYLOAD ENCRYPT", P)
 		end
         else
            [ XXXX what do we use for H2 if we're not using a reply
 	           block? -NM ]
+	   [ XXXX The above processing is only happening if it is NOT
+	a reply block. Otherwise it is impossible to know the keys
+	SK2_i. For a reply block there is no other processing]
 
 	// Phase 2
 	H2 = SPRP(P, ``HIDE HEADER'', H2)
@@ -378,6 +412,12 @@ Messages are sent from client to server; the client must send a
 ClientHello packet to renegotiate session key between all
 messages. [XXXX why so often? -NM] If the client does not do so, the
 server must close the connection.  [XXXX Is this so? -NM]
+
+[XXXX If there is a key updating operation between every message it means
+that every message is encrypted under a different key. It also
+provides a very small time window for someone breaking down your door
+in order to decrypt what you have just transmitted. Is there a problem
+with having it so often? -GD]
 
 Protocol outline: (Portions marked with '*' are normative; other
 portions are non-normative descriptions of TLS.)
