@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
           "http://www.w3.org/TR/html4/transitional.dtd">
 <!-- *******************************************************
-     $Id: index.html,v 1.13 2003/09/16 15:08:57 nickm Exp $
+     $Id: index.html,v 1.14 2003/10/19 02:29:53 nickm Exp $
 
      This file is maintained in CVS; edit the version in the
      repository.
@@ -77,8 +77,15 @@ repository</span>:</p>
 <ul>
 <li>cvs -d :pserver:guest@cvs.seul.org:/home/minion/cvsroot login</li>
 <li>cvs -d :pserver:guest@cvs.seul.org:/home/minion/cvsroot co src doc</li>
-</ul></li>
 </ul>
+To checkout the current stable (bugfix only) cvs branch instead,
+  replace the last step with:<br>
+    cvs -d :pserver:guest@cvs.seul.org:/home/minion/cvsroot co -r
+    mixminion-v0-0-5-patches src doc
+</li>
+</ul>
+
+<p>(To specify 
 
 <p>You can see current network 
   <span class="heading">reliability/uptime stats</span> 
