@@ -12,8 +12,8 @@
 4. Description of mixing algorithm should go in descriptor blocks. -NM
    [XXXX Unless the mixing method requires special packaging of the message 
          we could require the servers to specify the amount of anonymity that
- 	 they expect to give to each message. The information theoretic one
- 	 presented by myself and Andrei could do the job quite well. -GD]
+         they expect to give to each message. The information theoretic one
+         presented by myself and Andrei could do the job quite well. -GD]
 
 6. We should specify: are 'DROP'-type messages dropped before they go
     into the mix pool, or after they're pulled from the pool?
@@ -56,7 +56,7 @@ have more stuff done.)
 1. Statistics Information Exchange format
    [Not for first cut]
 2. Specify: verification for directories.
-	[not for first cut]
+   [not for first cut]
    [Actually, we may need these first two pieces for Mixminion 1.0;
     else we won't be deployable. -NM]
 3. When do dummy messages get generated?
@@ -334,8 +334,8 @@ a digest of the subsequent subheaders and padding data.
 PROCEDURE: Create a single header.
 
 Inputs: A_1 .. A_N (addresses of intermediate nodes), 
-	PK_1 .. PK_N (Public keys of intermediate nodes),
-	SK_1 .. SK_N (Secret keys to be shared with intermediate nodes),
+        PK_1 .. PK_N (Public keys of intermediate nodes),
+        SK_1 .. SK_N (Secret keys to be shared with intermediate nodes),
         R Routing type and information of last header (FWD, DROP, SWAP, etc.)
 Output: H (The header)
 
@@ -345,26 +345,26 @@ Output: H (The header)
 Process: 
   // Calculate the sizes of the subheaders
   for i = 1 .. N
-	SIZE_i = 128 + Len(EXT(RI_i))
+        SIZE_i = 128 + Len(EXT(RI_i))
 
   // Calculate the Junk that will be appended during processing:
   J_0 = ``'';
   for i = 1 .. N
-	J_i = J_(i-1) | PRNG(HASH(SK_i | ``RANDOM JUNK'')[0:16], SIZE_i)
+        J_i = J_(i-1) | PRNG(HASH(SK_i | ``RANDOM JUNK'')[0:16], SIZE_i)
         Stream_i = PRNG(HASH(SK_i | ``HEADER SECRET KEY''), 128*15 + SIZE_i);
-	J_i = J_i XOR Stream_i[128*15 -Len(J_i) + SIZE_i:Len(J_i)];
+        J_i = J_i XOR Stream_i[128*15 -Len(J_i) + SIZE_i:Len(J_i)];
   end
 
   // Create the Header
   H_(N+1) = Rand(128*16 - sum(SIZE_1 .. SIZE_N));
 
   for i = N .. 1
-	K = HASH(SK_i | ``HEADER SECRET KEY'')[0:16];
-	IF i = N (set appropriate routing type and A_i)
-	EH = EXT( RI_i+1 )
+        K = HASH(SK_i | ``HEADER SECRET KEY'')[0:16];
+        IF i = N (set appropriate routing type and A_i)
+        EH = EXT( RI_i+1 )
         REST = Encrypt(K, (EH | H_(i+1)))
-  	DIGEST = HASH(REST | J_i-1)
-	H_i = ESHS(PK_i, V, SK_i, DIGEST, len(RI_i+1), RT_i+1, RI_i+1) | REST
+        DIGEST = HASH(REST | J_i-1)
+        H_i = ESHS(PK_i, V, SK_i, DIGEST, len(RI_i+1), RT_i+1, RI_i+1) | REST
   end
 
 return H_1;
@@ -399,20 +399,20 @@ Process:
         // Phase 1
         if (H2 is a reply block)
                 P = SPRP_ENC(SURB secret key, "PRIVATE SURB KEY", P)
-	else // (H2 is *not* a reply block)
-		for i = N .. 1
-	            P = SPRP_ENC(SK2_i, "PAYLOAD ENCRYPT", P)
-		end
+        else // (H2 is *not* a reply block)
+                for i = N .. 1
+                        P = SPRP_ENC(SK2_i, "PAYLOAD ENCRYPT", P)
+                end
         endif
-	// Phase 2
-	H2 = SPRP_ENC(SHA1(P), ``HIDE HEADER'', H2)
+        // Phase 2
+        H2 = SPRP_ENC(SHA1(P), ``HIDE HEADER'', H2)
         P = SPRP_ENC(SHA1(H2), "HIDE PAYLOAD", P)
 
-	for i = N .. 1
-		H2 = SPRP_ENC(SK1_i, "HEADER ENCRYPT",H2)
-		P = SPRP_ENC(SK1_i, "PAYLOAD ENCRYPT",P)
-	end
-	M = (H1, H2, P)
+        for i = N .. 1
+                H2 = SPRP_ENC(SK1_i, "HEADER ENCRYPT",H2)
+                P = SPRP_ENC(SK1_i, "PAYLOAD ENCRYPT",P)
+        end
+        M = (H1, H2, P)
 
 \section{Processing of Messages}
 
@@ -421,30 +421,30 @@ III transport protocol (see below) or email.  A node with private key
 PK receiving message M = (H1, H2, P) performs the following operations:
 
 PROCEDURE: Process a message M
-	SHS(V, SK, D, RS, RT, RI) = PK_Decrypt(PK,H1[0:128]);
+        SHS(V, SK, D, RS, RT, RI) = PK_Decrypt(PK,H1[0:128]);
         If there is any problem with the OAEP padding discard the message.
         Check that D = HASH(H1[128:15*128]), and discard if not.
         Let n_extra = number of extended headers = Ceil( (RS-44) / 128 )
                   
         H1 = H1[128:15*128] | PRNG(HASH(SK | "RANDOM 
                                                JUNK")[0:16],128+128*n_extra)
-	H1 = H1 XOR PRNG(HASH(SK, "HEADER SECRET KEY")[0:16], Len(H1))
+        H1 = H1 XOR PRNG(HASH(SK, "HEADER SECRET KEY")[0:16], Len(H1))
         RI = RI | H[0:128*n_extra]
         H1 = H1[128*n_extra:128*16]
-	H2 = SPRP_DEC(SK, ``HEADER ENCRYPT'',H2);
-	P = SPRP_DEC(SK, ``PAYLOAD ENCRYPT'',P);
+        H2 = SPRP_DEC(SK, ``HEADER ENCRYPT'',H2);
+        P = SPRP_DEC(SK, ``PAYLOAD ENCRYPT'',P);
 
-	if routing type is DROP:
+        if routing type is DROP:
                 End.
-	if routing type is SWAP-FWD:
+        if routing type is SWAP-FWD:
                 P = SPRP_DEC(SHA1(H2), "HIDE PAYLOAD", P)
-		H2 = SPRP_DEC(SHA1(P), ``HIDE HEADER'', H2)
-		Swap H1 and H2;
+                H2 = SPRP_DEC(SHA1(P), ``HIDE HEADER'', H2)
+                Swap H1 and H2;
         if routing type is SWAP-FWD or FWD:
-	   	Put (H1, H2, P) in queue to be sent to the address in RI.
+                Put (H1, H2, P) in queue to be sent to the address in RI.
         Otherwise:
-		Give (RT, RI, HASH(SK,``APPLICATION KEY''), P) to
-		Module manager. 
+                Give (RT, RI, HASH(SK,``APPLICATION KEY''), P) to
+                Module manager.
 
 The ``Application Key'' is provided to the module as a shared secret
 between the constructor of the header and the module that is in charge
@@ -473,10 +473,10 @@ Binary Format:
 * The begin marker is the ASCII 4-byte string 'SURB'. 
 * The version number contains the format version of the SURB.
   (should be hex 01 and 00 for this standard).
-* Routing type/routing size/routing info: Definded as in subheaders.  
+* Routing type/routing size/routing info: Defined as in subheaders.
   These fields encode the address of the hop which the SURB user should
   use as an exit point.
-* Use-by-Date: indicated the expiry date the SURB should be used by. Can
+* Use-by-Date: indicates the expiry date the SURB should be used by. Can
   be calculated using the key rotation frequencies of the intermediate
   nodes.  This field must be given as a number of seconds since
   midnight GMT on Jan 1, 1970 -- but must be aligned to the start of a
@@ -486,8 +486,7 @@ Binary Format:
   (Rationale: a seconds-level granularity allows us to move to a
   tighter schedule later on in order to support a synchronous mixnet.)
 
-* SURB data: Containst the SURB that is created as described
-  above. 
+* SURB data: Contains the SURB that is created as described above.
 * Encryption key: used to LIONESS-encrypt the payload before sending it
   into the network.  
 
@@ -589,8 +588,8 @@ portions are non-normative descriptions of TLS.)
 
        [Note that both cases require the same number of bytes and 
         processing time. Implementations must make sure the real message 
-	and the padding cases are indistinguishable to a third party, or 
-	even to the parties involved after the keys have been
+        and the padding cases are indistinguishable to a third party, or
+        even to the parties involved after the keys have been
         updated.]
 
 * After sending a batch of messages, A sends an TLS handshake
@@ -644,9 +643,9 @@ Key: Value
 
 (Notation:  X*: 0 or more occurrences of X.
             X+: 1 or more occurrences of X.
-	    X?: 0 or 1 occurrences of X.
+            X?: 0 or 1 occurrences of X.
             X Y: An occurrence of X followed by an occurrence of Y.
-	    X*{Y}: 0 or more occurrences of X separated by occurrences
+            X*{Y}: 0 or more occurrences of X separated by occurrences
                   of Y.
             X|Y: Either an occurrence of X, or an occurrence of Y.)
 
@@ -692,7 +691,7 @@ the entries:
          this key should be at least 2048 bits long and no more than
          4096 bits long.  The exponent of this key must be 65537.
 
-	 Clients should at least give a warning if the identity key of
+         Clients should at least give a warning if the identity key of
          any server should ever change.
      'Digest': The digest of this block. See below.
      'Signature': The signed digest of this block.  See below.
@@ -873,7 +872,7 @@ PROCEDURE: Choose sets of messages to transmit ("Cottrell-style batching")
 
 Inputs: Q (a queue of messages)
         N (the number of messages in the queue).
-	MIX_INTERVAL (algorithm parameter; time to wait between
+        MIX_INTERVAL (algorithm parameter; time to wait between
                       batches of messages.  Should be around
                       XXXXX. Must be >= 0.)
         POOL_SIZE (algorithm parameter; minimum size of pool.  Should
@@ -986,9 +985,9 @@ fact in their server descriptor by including a section of the form:
          [Incoming/Mix2]
          Address: (type II remailer's email address)
          Key: (type II key)
-	 KeyID: (type II keyid)
+         KeyID: (type II keyid)
          Signature: (signature of identity key with type II key)
-	 (Optionally, KeyID and Signature repeated any number of
+         (Optionally, KeyID and Signature repeated any number of
                       times.)
 
 This section advertises that the mix can handle type II messages
