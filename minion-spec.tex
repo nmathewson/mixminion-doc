@@ -334,6 +334,7 @@ Process:
 	H2 = SPRP_ENC(SHA1(P), ``HIDE HEADER'', H2)
 [XXXX We should add this to address George's attack of 15Aug.  George,
       is this correct?  Does it go here?
+ XXXX This is correct -GD
         P = SPRP_ENC(SHA1(H2), "HIDE PAYLOAD", P)
                                                        - NM]
 
@@ -368,6 +369,7 @@ PROCEDURE: Process a message M
 	if routing type is SWAP-FWD:
 [XXXX We should add this to address George's attack of 15Aug.  George,
       is this correct?  Does it go here?
+[XXXX I think this is correct -GD]
                 P = SPRP_DEC(SHA1(H2), "HIDE PAYLOAD", P)
                                                              -NM]
 		H2 = SPRP_DEC(SHA1(P), ``HIDE HEADER'', H2)
