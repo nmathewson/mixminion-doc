@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.2 2003/06/20 07:11:23 nickm Exp $
+$Id: E2E-spec.txt,v 1.3 2003/06/26 03:07:54 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -37,27 +37,34 @@ Table of Contents
    1.1.     Terminology
 
    2.       End-to-end message encoding
-   2.1.     Preliminaries
-   2.1.1.   Preliminaries: Types of messages
-   2.1.1.   Preliminaries: Compression
-   2.1.2.   Preliminaries: K-of-N fragmentation
+   2.1.     Building blocks
+   2.1.1.   Building blocks: Compression
+   2.1.2.   Building blocks: K-of-N fragmentation
+   2.1.3.   Building blocks: Whitening
    2.2.     Generating messages
-   2.2.1.   Generating plaintext forward messages
-   2.2.2.   Generating encrypted forward messages
-   2.2.3.   Generating reply messages
-   2.2.4.   Generating stateless SURBs
+   2.2.1.   Bare message format
+   2.2.2.   Generating plaintext forward messages
+   2.2.3.   Generating encrypted forward messages
+   2.2.4.   Generating reply messages
+   2.2.5.   Generating stateless SURBs
    2.3.     Decoding messages
    2.3.1.   Decoding algorithm
+   2.3.2.   Overcompressed messages
+   2.3.3.   Reconstruction issues
 
-   3.       Delivery types
-   3.1.     MBOX
-   3.1.1.   Formatting: Header data
-   3.1.2.   Formatting: Message body
-   3.1.3.   Server descriptor section
-   3.2.     SMTP
-   3.2.1.   Formatting: Header data
+   3.       Message Delivery
+   3.1.     General issues
+   3.1.1.   ASCII armor
+   3.2.     MBOX
+   3.2.1.   Formatting: Routing information
    3.2.2.   Formatting: Message body
-   3.2.3.   Server descriptor section
+   3.2.3.   Delivery
+   3.2.4.   Server descriptor section
+   3.3.     SMTP
+   3.3.1.   Formatting: Routing information
+   3.3.2.   Formatting: Message body
+   3.3.3.   Delivery
+   3.3.4.   Server descriptor section
 
    A.1.     Appendix: Versioning and alphas
 
@@ -107,167 +114,39 @@ Table of Contents
       * "Forward encrypted message" - A forward message encrypted to
         the public key of its recipient.
 
+      * "Corrupted packet" - A packet which has had its payload 
+        corrupted on the second leg of its path.  [Other forms of
+        corruption will result in the message's not being delivered.]
+
 2. End-to-end message encoding
 
-   This section 
+   This section describes a method for encoding messages of any size
+   into payloads for one or more Type III packets, using compression
+   to reduce bandwidth and K-of-N message fragmentation to improve
+   reliability with large messages.  This method limits opportunities
+   for end-to-end traffic analysis by making corrupted packets,
+   packets from forward encrypted messages, and packets from reply
+   messages indistinguishable to anyone besides their intended
+   recipients.  It allows forward plaintext messages, however, to be
+   read by exit servers, so that they can deliver them to recipients
+   who aren't running Type III client software.
 
+   This form of End-to-End encoding is used for the delivery types
+   SMTP and MBOX, and will likely be appropriate for other delivery
+   methods with similar needs.
 
+2.1. Building blocks
+   [XXXX]
 
-
-
-
-
-
-
-   
-   OVERVIEW
-   The current specification describes only how to send single Mixminion
-   packets from one user to another, either via forward-anonymous paths
-   or via single-use reply blocks.  It lacks support for the following
-   desirable features:
-   
-       1) End-to-end encryption on forward messages.  (Alice wants to send
-          a message to Bob.  Bob does not run a Mixminion node of his
-          own, but *does* have a long-term public key.  Alice encrypts
-          a packet with Bob's public key, and sends it along a path
-          ending with an exit node that delivers the message to Bob.  Bob
-          decrypts the contents of the packet with his public key.)
-   
-       2) "State-carrying" reply blocks.  (Formerly called 'Stateless'
-           reply blocks because they require no stored state on the
-           client side.)  (Bob wants to generate many SURBs without
-           having to store a separate set of keys for each SURB.)
-   
-       3) Message sizes.  (When Bob receives the contents of a packet
-          from Alice, he should be able to tell how much of the packet is
-          random padding and how much is the real message.)
-   
-       4) Multi-packet messages.  (Alice wants to send a message to Bob,
-          but the message is too long to fit into the payload of a single
-          packet.  Alice breaks the message into N packets, such that any
-          K of them are sufficient to reconstruct the original message.
-          IF Bob has the software to reassemble the original message,
-          Alice simply sends all the packets to Bob.  If, however, Bob is
-          not running Mixminion software, Alice sends all of the packets
-          to a single exit node, and the exit node reconstructs the
-          original message and delivers it to Bob.)
-   
-       5) In-system message compression.  (Alice wants to send a long
-          text message to Bob.  By compressing it, she can fit it into
-          far fewer packets.)
-   
-       6) A complete decoding algorithm. (Bob receives a message.  He
-          must be able to determine its contents without knowing whether
-          it plaintext forward, encrypted forward, or a reply.
-          Additionally, if the packet is corrupt, Bob should be able to
-          tell.)
-   
-   My last message addressed 1, 2, 3, and 6.  This document simplifies
-   that design, and adds 4 and 5.
-   
-   The following requirements complicate the design:
-       1) Exit indistinguishability between message types.  (If the exit
-          node is not operated by the recipient, it should learn as
-          little as possible about the messages it relays.  Obviously, it
-          can distinguish plaintext forward messages from all other
-          messages.  It should, however, be impossible for such an exit
-          node to tell whether a message is a reply, an end-to-end
-          encrypted forward message, or junk.)
-       2) Format homogeneity.  (All senders must compress and fragment
-          their messages in the same way, or else recipients will be able
-          to partition incoming messages based on the format used to send
-          them.)
-       3) Message recipients who don't run any Mixminion software.  (We've
-          always said that users who don't get any benefit of anonymity
-          should not need to run any special software.)
-       4) Message recipients who run Mixminion software, but who do not
-          run their own nodes.  (Such recipients may decline to run nodes
-          because they do not have long-term IP addresses, because they
-          do not have reliable network connections, or because they do
-          not want to run a 24/7 server for other reasons.)
-       5) No patent-encumbered algorithms.
-   
-   TERMINOLOGY
-   Last time I got in a bit of trouble by not defining my terms clearly.
-   Here's another try.
-   
-   **Roles** The following roles describe various users' and servers'
-   relationships to a given packet.  These roles are not entirely
-   static: a user may fill different roles for different packet.
-   
-   Sender: The user that creates a given message, and decides to send it
-      via the Mixnet.
-   Encoder: The user or server that converts a message into Mixminion
-      packets.  A user who runs Mixminion software acts as her own
-      encoder; one who uses an email-gateway to introduce packets into
-      the system does not.
-   Relay: An intermediary node in a Mixminion chain.
-   Exit node: The last node in the relay chain.  An exit node is "observable"
-      when it relays packets to recipients over an untrusted network,
-      and "private" when it delivers messages locally to recipients that
-      trust it.
-   Decoder: The user or server that parses mixminion packets, and
-      decrypts or reconstructs the original message.  Except in the case
-      of plaintext forward-anonymous messages, the decoder is identical
-      with the recipient.
-   Recipient: The intended target of a message.
-   SURB generator: The user who creates a SURB.
-   
-   **Data Structures**
-   Message: An arbitrary sequence of bytes which a sender wants to send
-      to a decoder.   It may be too long to fit into a single packet.
-   Packet: A 32K data chunk, containing two headers and a payload
-      as described in the current Mixminion spec.
-   Tag: A 20 byte sequence contained in the final subheader of every
-      packet.  Every routing-info field associated with an exit
-      routing-type has a Tag subfield as its first 20 bytes.
-   Payload: The 28K contents of a packet.
-   Tagged Payload:The 28K contents of a packet, plus the Tag from the
-      packet's header.
-   
-   **Kinds of packets**
-   Forward-anonymous: The sender is anonymous, and knows the receiver's
-       identity.  The sender creates all the headers.
-   Plaintext forward-anonymous: A forward-anonymous packet on which the
-       sender does not use end-to-end public-key encryption.  The exit
-       node sees the plaintext contents of a plaintext forward-anonymous
-       packet.  If the exit node is observable, any eavesdropper
-       between the exit node and the recipient can see the plaintext.
-   Encrypted forward-anonymous: A forward-anonymous packet encrypted by
-       the encoder using the recipient's public key.
-   Reply: a packet sent using a SURB.
-   Junk: a packet whose payload is garbled between the crossover point
-       and the recipient.
-   
-   **Kinds of SURBs**
-   
-   Stateless SURB: A mode of SURB generation in which the SURB generator
-       only needs to remember a single medium-to-long-term secret to
-       decrypt packets sent to any number of SURBs.   
-   
-       Note that a client must use a different secret for each
-       pseudonymous identity it maintains; otherwise, it could not
-       distinguish among messages sent to its different pseudonymous
-       identities.  (An attacker could then confirm that "Alice" and
-       "Bob" are the same person's pseudonym by sending the "Bob"
-       pseudonym a message addressed to Alice.)
-   
-       Note also that long-term secrets must be very hard to guess;
-       otherwise, exit nodes can mount an offline secret-guessing attack
-       to trivially break a client's SURBs.  Passwords are too easy to
-       guess; 20-byte random keys are more suitable.
-   
-=== The Design ===
-   
-   BUILDING BLOCK: COMPRESSION
+2.1.1. Compression
    
    We define a compression primitive based on ZLIB, as defined in
    RFC-1950 and RFC-1951.  Because these standards describe only a
-   message format, and do not mandate a single compression algorithm, we
-   must restrict the allowable means of compression further.  (If we
-   allowed encoders to choose among valid ZLIB compression algorithms,
-   they would become partitionable.)
-   
+   message format, and do not mandate a single compression algorithm,
+   we must restrict the allowable means of compression further.  (If
+   we allowed message encoders to choose among valid ZLIB compression
+   algorithms, they would become partitionable.)
+
    Specifically, we define COMPRESS(M) to equal the result of
    compressing M using zlib 1.1.4 (as available from www.gzip.org) with
    the following parameters, not forcing any explicit flushes until the
@@ -277,65 +156,59 @@ Table of Contents
          Window size          = 32K (default)
          Memory level         = 8 (default)
          Compression strategy = DEFAULT (default)
-   
-   Any software can be used, so long as it gives the same result as zlib
-   1.1.4 with these parameters.   Mark Adler from the Gzip team has 
-   averred that this is so with all zlib versions from 1.0.4 through
-   1.1.4, but *may* change in some future version.
-   
-   If I recall correctly, the zlib website says that COMPRESS(M) is no
-   longer than 12 bytes + 1.02 * len(M), and at least as long as
-   len(M)/1000.
+
+   Implementation note: Any software may be used, so long as it gives
+   the same result as zlib 1.1.4 with these parameters.  Mark Adler
+   from the Gzip team has averred that this is so with all zlib
+   versions from 1.0.4 through 1.1.4, but *may* change in some future
+   version.
    
    We also define DECOMPRESS as the inverse of COMPRESS: namely, ZLIB
    decompression as described in RFCs 1950 and 1951.  Note that not
    DECOMPRESS is not defined for every sequence of bytes.
    
-   [XXXX Allowing message compression creates a DOS opportunity: with
-     highly repetitive messages, zlib can give up to 1000-fold
-     compression.  This could allow an attacker to use a 28KB payload as
-     a mailbomb that uncompressed to 28MB.
-   
-     The current code takes the following approach:  when delivering a
-     message, if the uncompressed size is over 20K, and the compression
-     ratio is >20, we do not uncompress the message, but instead deliver
-     it as-is, with a warning that it may be a zlib bomb.
-   
-     Does that sound reasonable?  How about the parameters? -NM]
-   
-   [XXXX As a first compromise, I'm going to change this requirement to
-     say that this checking happens *only when* using an exit method
-     (such as SMTP) that doesn't do its own bombing-prevention. -NM]
-   
-   BUILDING BLOCK: ERASURE CORRECTING ENCODING
-   
-   We define a primitive, FRAGMENT, that breaks a K-packet message into
-   N>K packets, such that any K of those packets are sufficient to
-   reconstruct the original message.  FRAGMENT(M,K,N,i) is the i'th such
-   packet.
+2.1.2. K-of-N fragmentation
+
+   We define a primitive, FRAGMENT, that breaks a K-packet message
+   into N>K packets, such that any K of those packets are sufficient
+   to reconstruct the original message with high probability.
+   FRAGMENT(M,K,N,i) is the i'th such packet.
    
    We also define a primitive RECONSTRUCT(K,N,P_i1, P_i2,...P_iK) that
    reconstructs the original message.
-   
-   Specifically, we use the XXXX algorithm as described at XXXX.  This
-   algorithm has several advantages: first, it has freely-available
-   implementations in C and Java under a modified-BSD style license.
-   Second, it runs with acceptable performance for modest values of K
-   (less than 30 or so).  Third, it does not seem to be patent encumbered.
-   
+
+   Note that these primitives only need to provide the above property
+   of erasure correction, and need not provide "secret splitting": It
+   is harmless if the message can be reconstructed from less than K
+   packets.
+
+   Currently, we use the algorithm described by Luigi Rizzo in several
+   papers and implemented in software at
+             http://info.iet.unipi.it/~luigi/fec.html . 
+   This algorithm has
+   several advantages: first, it has freely-available implementations
+   in C and Java under a modified-BSD style license.  Second, it runs
+   with acceptable performance for modest values of K (less than 30 or
+   so).  Third, it does not seem to be patent encumbered.
+
    Of course, this algorithm has disadvantages.  First, it lacks a
-   complete, byte-level specification beyond that given at XXXX.  Second,
-   it performs poorly with very large K.  Sadly, it seems to be about the
-   best we can do.
-   
-   To avoid large K, we do not fragment messages directly.  Instead, we
-   first divide each large message into a set of chunks, with the size of
-   each chunk no larger than can fit in 16 packets.  We do K-of-N
-   fragmentation of the chunks.
-   
-   [XXXX Actually, fragmenting fragments may be a better approach; see
-      the mailing list. -NM]   
-   
+   complete, byte-level specification beyond that given at the URL
+   above.  Second, it performs poorly with very large K.  Sadly, it
+   seems to be about the best we can do without touching patented
+   algorithms.
+
+   To avoid large K, we split the message into chunks, and do K-of-N
+   fragmentation on the chunks.  With this scheme, a message can be
+   reconstructed if and only if K packets from each chunk arrive
+   intact. Because packet loss is likely to be nonuniformly concentrated
+   at specific remailers and links, this is not so dangerous to
+   reliability as it might initially appear. 
+
+   [NOTE: I am not happy with this current situation: there needs to
+    be _some_ unpatented probabilistic O(N) algorithm out there! -NM]
+
+   We divide and fragment as follows:
+
        PROCEDURE: Divide a message into packets.  [DIVIDE(M,PS,EXF)]
        ARGUMENTS
            M: the message to send
@@ -344,13 +217,14 @@ Table of Contents
                                  see below.)
    
        Let M_SIZE = CEIL(LEN(M) / PS)
+
        Let K = Min(16, 2**CEIL(Log2(M_SIZE)))
        Let NUM_CHUNKS = CEIL(M_SIZE / K)
    
        Let M = M | PRNG(Len(M) - NUM_CHUNKS*PS*K)
    
-       For i from 0 to NUM_CHUNKS - 1:
-          Let CHUNK_i = M[i*PS*K : (i+1)*PS*K]
+       For i from 1 to NUM_CHUNKS:
+          Let CHUNK_i = M[(i-1)*PS*K : i*PS*K]
        End
    
        Let N = Ceil(EXF*K)
@@ -362,508 +236,555 @@ Table of Contents
        End loop
    
        Return FRAGMENTS.
-   
-   Note that a message will arrive intact if and only if at least K
-   packets from each chunk arrive.  We examine the chance for a message
-   to arrive under three sets of assumptions.
-   
-   First, suppose we didn't support erasure correction: that is to
-   say, EXF=1.0.  Suppose that messages are lost with probability P.
-   Thus, a message arrives with probability
-   
-      P_msg = P ** N_PACKETS
-   
-   (If P=.99, a 1MB message arrives with probability < 69%.)
-   
-   Second, suppose that packets are lost independently and uniformly, such
-   that each packet arrives with probability P.  Thus, a message arrives
-   with probability:
-   
-                  _N_                                N_CHUNKS
-       P_msg = [  >    COMB(N,i) P**i (1-P)**(N-i)  ]
-                  ---
-                  i=k
-   
-     Where COMB(N,i) = the number of combinations of N elements, taken i
-     at a time.
-   
-   (If P=.95 and EXF=1.3, P_msg > .9986)
-   
-   Third, consider a different failure model. It's far more likely that
-   packets are lost due to entire paths failing.  In this case, it makes
-   sense to "stripe" each chunk over a set of paths, such that Packet 1
-   from Chunk 1 goes along the same path as Packet 1 from Chunk 2, Packet
-   1 from Chunk 3, and so on.  Thus, if we choose N different paths, we
-   can reconstruct the message so long as at least K paths are
-   functioning.  If we choose Q paths for Q<N, at least K*Q/N paths must
-   be functioning.  Assuming paths succeed with probability Ppath,
-   
-                _Q_
-       P_msg =  >    COMB(Q,i) Ppath**i (1-Ppath)**(Q-i)
-                ---
-                i=(k*Q/N)
-   
-   
-   [I'm leaving EXF and Q vague, since I have no idea of P or Ppath, and
-   since I don't actually plan to implement this for several versions. ]
-   
-   THE DESIGN ITSELF
-   
-   A) All exit routing types (such as SMTP and MBOX) have their Routing-Info
-      field begin with a 20-byte Tag.  To all entities but the recipient,
-      the Tag field should look like a 20-byte random number, with
-      MSB=0. (I.e., 0<=Tag<2**159.)  [See previous message for rationale.]
-   
-      The payloads of plaintext forward-anonymous packets, encrypted
-      forward-anonymous packets, and reply packets are all encoded
-      slightly differently.  To all entities except the recipient, the
-      contents of these packets look like 28KB of random data.
-      The recipient, however, can reconstruct the contents of a packet
-      given a payload and a tag.
-   
-   B) Every tagged payload eventually decodes to a 'fragment' or
-      'single-packet-message'.  The formats are:
-   
-      SINGLE-PACKET-MESSAGE Payload:  (overhead=22 bytes.)
-   
-        (Single-packet message flag) [1 bit: 0]
-        (Length of packet contents)  [15 bits]
-        (Hash of packet contents)    [20 bytes]
-        (Packet contents)            [up to capacity]
-   
-     FRAGMENT Payload (overhead = 46 bytes)
-   
-        (Multi-packet message flag) [1 bit: 1]
-        (Packet index)              [15 bits]
-        (Hash of remaining packet fields) [20 bytes]
-        (Message ID)                [20 bytes]
-        (Message size)              [4 bytes]
-        (Packet contents)           [capacity]
-   
-     [Note: this format allows at messages at most 4 GB in size.
-       Decoders (exit nodes and recipients) may impose additional limits.]
-   
-     [Note 2: Perhaps we should only use 8 or 10 bytes of he hash: after
-      all, we're not actually worried about collisions, and lioness
-      should prevent hostile alteration of the payload: we only need to
-      use it as a checksum.  On the other hand, we'd only be saving 10
-      bytes per packet.]
-   
-   C) The message encoder behaves as follows:
-   
-          1. First, determine the message type.  If we're using a SURB,
-             the message type is 'REPLY'.  If we're sending to a private
-             exit node, or we're sending a plaintext message, the message
-             type is 'PLAIN'.  If we're sending message via an observable
-             exit node to a sender with a known public key, the message
-             type is 'ENCRYPT'.
-   
-             If message-type  'PLAIN' or 'REPLY', let SZ = 28K. Else let
-                 SZ= 28K-38bytes.   (SZ is the amount of data that fits
-                 in a single payload.  'ENCRYPT' messages lose 42 bytes
-                 to OAEP padding and 16 to encode the session key, and 
-                 gain 20 by spilling the encrypted data into the decoding
-                 Tag.)
-   
-          2. Compress the message.   Call this CM.
-   
-          3. If Len(CM) > (SZ-22 bytes)
-                 Generate a random 20-byte number as a message ID.
-   
-                 Divide CM into fragments of length SZ-46 bytes according to
-                    the K-of-N procedure given above.
-   
-                 Construct a FRAGMENT payload for each of the fragments.
-             Else,
-                 Construct a SINGLE-PACKET-MESSAGE payload containing the
-                   size of the message and a hash to verify correct decoding.
-             Endif.
-   
-             Send each payload as described below.
-   
-          4. To send a payload P:
-   
-             Assert Len(P) == SZ.
-   
-             If the message type is PLAIN:
-                Generate a random 159-bit number for the Tag field.
-                Use the payload P as it is.
-             End if
-   
-             If the message type is ENCRYPT:
-                Let KS be the size of the recipient's public key.
-                do
-                   Generate a 128-bit temporary key Ksession.
-                     Let M = (Ksession | P)
-                     Let M' = OAEP/RSA encrypt S[0:KS-38]
-                while the MSB of M[0] = 1.
-                Let Tag = M'[0:20].
-                Let Payload = M'[20:KS] | SPRP_ENC(Ksession,
-                                                   "END-TO-END ENCRYPT",
-                                                 M[KS-38 : SZ+16])
-               Endif
-   
-           If Message type is 'reply':
-                (We don't generate Tag; it's part of the reply block.)
-                Use the payload P as it is.
-           Endif
-   
-   D) The exit node behaves as follows:
-   
-          If the payload begins with 0size, hash(X), X:
-              It is a short-payload, plaintext message.  Send msg[0:size]
-              to the recipient as-is.  If any characters in msg[0:size]
-              are not plaintext characters, send the message encoded in
-              base64.
-          Else if the payload begins with 1idx, hash(X), X:
-              Begin K-of-N reconstruction.  When the message is
-              complete, send it to the recipient.
-          Else:
-               Send the tag and payload to the recipient as they are; the
-                recipient will need to decode them.
-          Endif
-   
-   E) SURB generators behave as follows:
-   
-          Let SEC be our long-term secret.
-          Do
-               Generate a random 159 bit seed S.
-          Until H(S|SEC|"Validate") ends with a 0 byte.
-          // (We check for the 0 byte so we can recognize stateless
-          //  SURBs without doing many costly LIONESS operations.)
-   
-          Generate the encryption keys from the seed H(S|SEC|"Generate").
-          Let Tag=S.
-   
-          Generate a SURB using the encryption keys; use Tag as the
-              tag field in the final subheader.
-   
-   F) The recipient behaves as follows for non-plaintext messages.
-   
-          If we ever use stateless SURBs:
-             For every pseudonymous identity ID we maintain:
-               Let SEC = this identity's SURB secret.
-               If H(Tag|SEC|"Validate") ends with 0:
-                   Reconstruct decryption keys from PRNG(Tag|SEC|"Generate").
-                   Use the key set to decrypt the payload.
-   
-                   If the decrypted payload is of the form 0size, H(X), X:
-                       This packet is addressed to this identity.
-                       The message contents are X[0:size].  Return.
-                   Else if decrypted payload is of the form 1idx, H(X), X:
-                       This packet is addressed to this identity.
-                       Begin K-of-N message reconstruction. Return.
-                   Endif
-                   // If the hash is incorrect, we may have incorrectly guessed
-                   // the message to be a stateless SURB.  Continue.  
-                // (Implementations must inform users which identity
-                // has been used, in order to prevent a SURB-swapping attack)
-               Endif
-            Endloop
-          Endif.
-   
-          If we have an end-to-end public key of size KS,
-               Let M' = Tag | Payload[0:KS-20]
-               Decrypt M' with the public key and check the OAEP padding;
-                  call the decrypted value M.
-               If the padding is valid:
-                  Let Ksession = M[0:20].
-                  Let P' = SPRP_DEC(Ksession, "END-TO-END ENCRYPT", 
-                                    Payload[KS-20:28K])
-                  Let P = M[20:Len(M)] | P'
-                  If P is of the form 0size, H(X), X:
-                     The message contents are X[0:size]. Return.
-                  Else if P is of the form 1idx, H(X), X:
-                     Begin K-of-N reconstruction.  Return.
-                  Endif.
-               Endif.
-          Endif.
-   
-          If we reach this point, the message is junk.
-   
-   G) To implement K-of-N reconstruction, recipients and exit nodes that
-      support K-of-N reconstruction keep an internal, long-term map from
-      Message-ID to sets of fragments.  They behave as follows:
-   
-          Upon receiving a FRAGMENT payload, verify that it is of the
-          format 1Idx, H(X), X.  From X retrieve Message-ID,
-          Message-Size, and Contents.
-   
-          If have already reconstructed Message-ID, this packet is
-          superfluous. Discard it and return.
-   
-          If we have no packets for Message-ID, reconstruct NUM_CHUNKS, K,
-            and N from Message-Size as in the DIVIDE procedure above.
-            Associate <NUM_CHUNKS, K, N, Message-Size> with Message-ID.
-   
-          If Message-Size does not match the Message-Size associated with
-             Message-ID, the message is corrupt.  Drop all payloads for Message-ID
-             and remember that Message-ID is finished.
-   
-          If we already have a payload with this index stored for
-             Message-ID, check whether it is equal to Contents.  If the
-             payloads are equal, return.  If the payloads are unequal,
-             the message is corrupt: drop all payloads for Message-ID
-             and remember that Message-ID is finished.
-   
-          Let CHUNK = Floor(Idx/N).
-   
-          If we have already reconstructed chunk CHUNK,
-              return.
-          Else, if we have fewer than K-1 payloads with indices in the range
-            [N*CHUNK .. (N+1)*CHUNK - 1],
-              Store Contents under Message-ID with index Idx, and return.
-          Else,
-               Use Contents along with the payloads in the range
-               mentioned above to reconstruct Chunk, then discard all the
-               payloads in the range.  Store Chunk with index CHUNK.
-   
-               If all chunks are reconstructed:
-                   Concatenate the chunks in order to form M.
-                   The final payload is M[0:Message-Size]; uncompress it
-                       and deliver it.
-                   Remember that Message-ID is finished.
-               Endif.
-          Endif.
-   
-       [Notes:
-          1) We can safely forget all stored packets and lists of
-             delivered messages every time we rotate our server key.
-          2) Exit nodes that support reconstruction are vulnerable to a
-             DOS attack: Until the message is reconstructed, they must
-             hold all the payloads they have received for each
-             Message-ID.]
-   
-   H) Not all exit nodes support reconstruction.  We add a new section to
-      server descriptor blocks, "Delivery/Fragments".  It has the
-      following elements:
-          'Maximum-packets': The largest size of a message to be queued.
-             (NUM_CHUNKS * N) to be queued.  Must be an even power of 2.
-   
-   OPEN ISSUES:
-      1. Addresses.  (See message of Sep 20.)
-      2. Preventing DOS attacks on K-of-N reconstruction.
-      3. Encoding for keys for encrypted-forward messages.
-   
-   %%%%%% FOR REFERENCE, HERE ARE SOME SECTIONS FROM minion-spec.tex
-   %%%%%% THAT ARE NOW SUPERSEDED BY THIS DOCUMENT.  SOME OF THE
-   %%%%%% COMMENTS ARE STILL APROPOS. 
-   
-   \section{Decoding of messages}
-   
-   Messages that are received by a client can either be sent using the
-   forward path, or a SURB. They might either arrive in a mixminion
-   format, that includes all the headers, or stripped of the two headers
-   with only the a TAG field attached to them.
-   
-   A client that receives a message that is ultimately destined to them
-   should perform the following operations to decode it:
-   
-   [XXXX A note about the philosophical significance of the ``KEY'':
-        Here (and in the E2E document) the KEY that is used to test 
-        whether a message can be decoded is really attached to a 
-        particular pseudonym of the recipient. This, I think, must 
-        be made more explicit than it is otherwise people implementing 
-        protocols on top of MixMinion will get things wrong.
-   
-        Maybe it would even be a good strategy if we use something like
-        NYMLOGINNAME|KEY(or PASSWORD) just to stress that after this step 
-        any operation on the data is linkable to this pseudonym, 
-        and no operation should be performed that link two different 
-        pseudonyms together. 
+
+  [If we find an unpatented O(N) algorithm, we use it instead of this
+   junk. -NM]
+
+2.1.3. Building blocks: whitening
+
+   While some fragments of a message are stored, but before the entire
+   message has been received, a window of vulnerability exists on the
+   exit server.  To prevent any portion of a message from being read in
+   the clear before enough packets from the message have arrived,
+   the following whitening formula to messages before
+   fragmentation:
+
+   WHITEN(M) = SPRP_Encrypt(K_whiten, "WHITEN", M)
+   UNWHITEN(M) = DPRP_Decrypt(K_whiten, "WHITEN", M)
+
+   where K_whiten is equal to the octet sequence {57 48 49 54 45 4E}.
+
+   Note that applying K_whiten and DIVIDE together has the effect of
+   turning DIVIDE from an erasure correcting code into a full secret
+   sharing encoding: If insufficient packets are received to reconstruct
+   the whole message, none of the message can be reconstructed.
+   
+2.2. Generating messages
+
+   When sending a message as packets, a sender follows these steps:
+
+      1. Determine the type of the message: encrypted forward, plaintext
+         forward, or reply.
+      2. Compress and possibly fragment the message into a set of
+         payloads.  (The size of the payloads will depend on the type
+         of the message.)
+      3. Annotate each payload with a payload header.  (The payload
+         header includes size, integrity, and fragmentation
+         information.)
+      4. According to the type of the message, encode each payload into 
+         a final 28KB paylaod and (possibly) 20-octet decoding handle.
+      5. For each payload, select a list of servers to form a path
+         through the network.
+      6. Using the decoding handle, payload contents, and route for
+         each payload, generate a 32KB type III packet.
+      7. Deliver each packet 
+
+   This section will describe steps 1, 2, 3, 4.  Step 5 is described
+   more fully in "path-spec.txt".  Steps 6 and 7 are described in
+   "minion-spec.txt".   
+      
+2.2.1. Packet format
+
+   As described in minion-design.txt, every mixminion packet contains a
+   28KB playload and two 2KB headers.  In this design, the routing
+   information for the final hop in the final header contains a 20-octet
+   decoding handle or 'tag'.
+
+2.2.1.1. Decoding handles
+
+   The decoding handle is used by the recipient to determine how to
+   decode or decrypt the final message.
+
+   (Because it is part of the header, this decoding handle must
+   be generated by the same entity that creates the second leg of the
+   path: the message sender in the case of forward messages, and the
+   SURB generator in the case of reply messages.)
+
+   In all types of messages, the decoding handle looks like 159-bit
+   random number, preceeded by a single zero bit.
+
+   In the various packet types, the decoding handle is used as follows:
+
+      * Plaintext forward - the handle is unused; its value is random.
+
+      * Encrypted forward - the handle holds the first 20 octets of the
+        RSA-encrypted session key for this packet.  
+
+      * Reply - the handle (generated by the SURB creator) contains a 
+        random seed used to seed the RNG that generated the master
+        secrets for this SURB header.
+
+2.2.1.2. Payload formats
+
+   The payload of every packet, when decrypted, begins with the one of
+   the two following headers.  
+
+   SINGLE-PACKET-MESSAGE Payload:  [Header size is 22 octets]
+   
+      (Single-packet message flag) [1 bit: 0]
+      (Length of packet contents)  [15 bits]
+      (Hash of packet contents)    [20 octets]
+
+   The length field encodes the size of the contents of the packet
+   after compression. 
+
+   FRAGMENT Header:  [Header size is 47 octets]
+   
+      (Multi-packet message flag)       [1 bit: 1]
+      (Packet index)                    [23 bits]
+      (Hash of remaining fields and packet
+       contents)                        [20 octets]
+      (Message ID)                      [20 octets]
+      (Message size)                    [4 octets]
+
+   The packet index contains the position of the packet within the
+   FRAGMENTS list generated by DIVIDE.  The Message ID is a random
+   20-octet sequence.  The Message Size is the size of the whole
+   message after compression.
+
+   We define the constants FRAGMENT_HEADER_LEN = 47 and
+   SINGLETON_HEADER_LEN=22.
+   
+   To break a message into packets with headers (steps 2 and 3 in 2.2
+   above), an implementation follows these steps:
+
+      PROCEDURE: PACKETIZE_MESSAGE(M, OVERHEAD)
+      ARGUMENTS
+          M: the message to send
+          OVERHEAD: overhead needed for message type
+
+      Let M_C = COMPRESS(M).
+
+      If LEN(M_C)+SINGLETON_HEADER_LEN+OVERHEAD <= 28KB :
+          Let PADDING_LEN = 28KB - LEN(M_C) - SINGLETON_HEADER_LEN
+                            - OVERHEAD
+
+          Let PADDING = Rand(PADDING_LEN)
+          
+          Return a singleton payload containing:
+              Flag 0 | Int(15,LEN(M_C)) | Hash(M_C | PADDING) | M_C | PADDING
+
+      Otherwise:
+          Let FRAGMENTS = DIVIDE(M_C, 28KB-OVERHEAD-FRAGMENT_HEADER_LEN)
+   
+          Let ID = Rand(TAG_LEN)
+
+          Let SZ = Int(32,Len(M_C))
+
+          For every FRAGMENT_i in FRAGMENTS:
+             
+             Let PAYLOAD_i = a fragment payload containing:
+                Flag 1 | Int(23,i) | Hash(ID | SZ | FRAGMENT_i ) | ID
+                   | SZ | FRAGMENT_i
+
+          return every PAYLOAD_i.
+
+2.2.2. Generating plaintext forward messages
+
+   To send a plaintext forward message M, we first let PAYLOADS =
+   PACKETIZE(M, 28KB).  For every PAYLOAD_i, we set TAG_i = to a
+   randomly chosen 159-bit integer.
+
+   We then transmit each payload with its corresponding tag.
+
+2.2.3.   Generating encrypted forward messages
+
+   To send an encrypted forward message M to a user with an RSA public
+   key PK with length PKLEN (in octets), we set PAYLOADS =
+   PACKETIZE(M, 28KB-OAEP_OVERHEAD+TAG_LEN-SPRP_KEY_LEN).  (We lose 42
+   octets to OAEP padding and 20 to encode the session key, but gain
+   20 by spilling the encrypted data into the decoding tag.)
+
+   For every payload PAYLOAD_i:
+
+      Repeat:
+           Let K = Rand(SPRP_KEY_LEN).
+           Let P = K | PAYLOAD_i
+           Let P0 = PK_Encrypt(PK, P[0:PKLEN-OAEP_OVERHEAD])
+      Until the most significant bit of P0[0] is equal to 1.
+      Let P1 = SRPR_Encrypt(K, "END-TO-END ENCRYPT",
+                            P[PKLEN-OAEP_OVERHEAD: Len(P)-PKLEN-OAEP_OVERHEAD])
+      Let TAG_i = P0[0:TAG_LEN]
+      Let EPAYLOAD_i = P0[TAG_LEN:Len(P0)-TAG_LEN] | P1
+
+   We then transmit every payload EPAYLOAD_i with the corresponding tag TAG_i.
+
+2.2.4.   Generating reply messages
+
+   To send a reply message M to an anonymous recipient, we set
+   PAYLOADS = PACKETIZE(M, 28KB).   We send each PAYLOAD_i with a
+   separate SURB_i -- we must have enough to use a different SURB for
+   each message.  We do not need to include TAG (decoding handle)
+   fields: they are a part of the SURB.
+
+   SURB users SHOULD keep track of which SURBs they have used to
+   prevent multiple use, at least until the SURBs have expired.
+
+2.2.5.   Generating stateless SURBs
+
+   In order to avoid storing a set of keys for every outstanding
+   SURB, SURB generators use the following SURB generation
+   procedure.  To use this method, SURB generators must store a
+   separate long-term secret for each identity they wish to associate
+   with a chain of SURBs.
+   
+   (Client software MUST support multiple identities, and MUST make
+   it clear to the user which identity has been associated with each
+   incoming SURB.)
+
+   To generate a SURB for a path of length PATH_LEN, using a long-term
+   secret SEC:
+      
+      Repeat:
+         Let SEED = a random 159-bit seed.
+      Until Hash(SEED | SEC | "Validate") ends with a 0 byte.
+
+      Let K = Hash(SEED | SEC | "Generate")[0:KEY_LEN]
+
+      Let STREAM = Encrypt(K, Z(KEY_LEN*(PATH_LEN + 1)))
+
+      Let SHARED_SECRET = STREAM[PATH_LEN*KEY_LEN:KEY_LEN]
+
+      For i in 1 .. PATH_LEN
+         Let MS_i = STREAM[(PATH_LEN-i)*KEY_LEN : KEY_LEN]
+
+      Generate a reply block using MS_i as the master secret for the
+      i'th node in the hop, SEED as the tag, and SHARED_SECRET as the
+      end-to-end shared secret.
+
+2.3. Decoding messages
+
+   When a Type III mix receives an exit packet, it tries to decode it
+   (if it can) before delivery, and otherwise delivers it undecoded.
+   When a client receives an undecoded exit packet, it tries to
+   decode it before presenting it to the user.
+
+2.3.1. Decoding algorithm
+
+   Message decoders recognize plaintext (singleton or fragment)
+   payloads by checking whether the hash fields match the calculated
+   hash of the rest of the packet.  
+
+   If a message decoder knows one or more SURB secrets, it then checks
+   the decoding handle 'TAG' to see whether Hash(TAG | SEC |
+   "Validate") ends with a zero byte for any secret SEC.  If so, the
+   decoder generates secrets from TAG | SEC as in SURB generation, and
+   successively decrypts the payload with up to MAX_PATH of them,
+   checking each time for a plaintext payload.
+   
+   If no SURB secrets are known, or if no SURB secrets yield a
+   plaintext payload, and the decoder knows one or more secret keys
+   SK_i, it then checks whether PK_Decrypt(SK_i, TAG |
+   P[0:PK_LEN-TAG_LEN]) has valid OAEP padding for some SK_i.  If so,
+   it extracts K from the first 20 bytes of the decrypted value, and
+   uses K to LIONESS-decrypt the rest of the payload.
+
+   If none of these approaches works, the decoder has failed.  Upon
+   failure, an exit node simply delivers the undecoded message and
+   decoding handle to the message's recipient, in hopes that the
+   recipient will have SEC or SK values.  A client, however, marks
+   the message as JUNK.
+
+
+   PROCEDURE: DECODE_PLAINTEXT_PAYLOAD
+   ARGUMENTS:
+       P: a payload to decode
+
+   If the first bit of P[0] is 0:
+      If P[2:HASH_LEN] = Hash(P[2+HASH_LEN:Len(P)-2-HASH_LEN]):
+         SZ = P[0:2]
+         Return "Singleton", P[2+HASH_LEN : SZ]
+      Otherwise, 
+         Return "Unknown"
+   Otherwise, if the first bit of P[0] is 1:
+      If P[3:HASH_LEN] = Hash(P[3+HASH_LEN:Len(P)-3-HASH_LEN]):
+         IDX = P[0:3] & 0x7fffff
+         MSG_ID = P[3+HASH_LEN:20]
+         MSG_SZ = P[3+HASH_LEN+20:4]
+         FRAG = P[3+HASH_LEN+20+4:Len(P)-3-HASH_LEN-20-4]
+         Return "Fragment", IDX, MSG_ID, MSG_SZ, FRAG
+      Otherwise:
+         Return "Unkown"
+
+   PROCEDURE: DECODE_PAYLOAD
+   ARGUMENTS:
+       P: a payload to decode
+       TAG: decoding handle for the payload
+       SK_1 ... SK_n: Optionally, a list of RSA secret keys
+       SEC_1 ... SEC_n: Optionally, a list of SURB secrets.
+
+   If DECODE_PLAINTEXT_PAYLOAD(P) is not "unknown", return it.
+
+   For all SEC_i:
+      If H(TAG | SEC_i | "Validate") ends with a zero byte:
+         K = H(TAG | SEC_i | "Generate")
+         STREAM = ENC(K, Z(MAX_PATH * KEY_LEN))
+         Let P_t = P.
+         For j in 0 ... MAX_PATH-1:
+            Let P_t = SPRP_Encrypt(STREAM[j * KEY_LEN : KEY_LEN],
+                                   "PAYLOAD_ENCRYPT", 
+                                   P_t)
+            If DECODE_PLAINTEXT_PAYLOAD(P_t) is not "Unknown", return it.
+   
+   For all SK_i:
+      Let E0 = TAG | P[0:Len(SK_i)-TAG_LEN]
+      Let P0 = PK_Decrypt(SK_i, E0).
+      If the OAEP padding is valid:
+         Let K = P0[0:KEY_LEN]
+         Let P0' = P0[KEY_LEN:Len(P0)-KEY_LEN]
+         Let P1 = SPRP_Decrypt(K, "END-TO-END ENCRYPT", 
+                               P[Len(SK_i)-TAG_LEN : Len(P)-Len(SK_i)+TAG_LEN])
+         If DECODE_PLAINTEXT_PAYLOAD(P0'|P1) is not "Unknown", return it.
+
+   Otherwise, return "Unknown".
+
+2.3.2. Overcompressed messages
+
+   Because zlib allows up to 1000-fold compression, using zlib for
+   message compression creates opportunities for serious mailbombing.
+
+   When decoding a message, decoders MUST check whether the
+   decompressed size of the message will be "far longer" than the
+   compressed size.  In general, if C = COMPRESS(P), and Len(P) > 20K,
+   and Len(P)/Len(Z) > 20, then P SHOULD BE considered overcompressed.
+
+   Decoders MUST decode incrementally, so that they can notice
+   overcompressed messages without using too much space.  Upon
+   encountering an overcompressed message, an exit node MUST mark it
+   as such and deliver it to the user without uncompressing it.
+
+   Upon encountering an overcompressed message, client software SHOULD
+   alert the user and require explicit confirmation before
+   decompressing the message.
+
+3. Delivery
+
+   This section describes the standard message delivery types provided
+   with the Mixminion Type III mix implementation.  Other
+   implementations MAY implement other types in other ways, though
+   they SHOULD avoid adding new types in ways that would exacerbate
+   partitioning attacks.
+
+   This document *does not* describe routing types or transfer methods
+   used for mix-to-mix communication; see "minion-spec.txt" for those.
+
+3.1. General issues
+
+3.1.1. ASCII armor
+
+   When encoding an overcompressed or undecodeable Type III message,
+   exit nodes MUST apply OpenPGP ASCII armor, as defined in RFC2440,
+   section 6.2.  The header text is "BEGIN TYPE III ANONYMOUS
+   MESSAGE".  There are two armor headers: "Message-type" (required)
+   and "Decoding-handle" (optional).  The value of "Message-type" must
+   be "encrypted" for an undecodeable message, and "overcompressed"
+   for an overcompressed message.  For an undecodeable message, the
+   decoding handle MUST be included, base-64-encoded, as the value
+   of "Decoding-handle".  Otherwise, the "Decoding-handle" header
+   MUST be omitted.
+
+   When encountering a plaintext fragment, an exit node that does not
+   support message reconstruction, or that is not willing to
+   reconstruct a message of the given size, SHOULD deliver the
+   fragment as-is, with armor described above, and "Message-type" set
+   to "fragment".
+
+   When encoding a plaintext Type III message, exit nodes MAY apply
+   OpenPGP ASCII armor if the message contains characters other than
+   printing ASCII, and no encoding is specified in the message.  When
+   doing so, the "Message-type" header must be "binary".
+
+   Otherwise, exit nodes MAY format the message with OpenPGP armor
+   headers and dash-escaped text.  In this case, the "Message-type"
+   header MUST be "plaintext".
+
+   [XXXX Right now, there's no way to specify an encoding in a
+   message.  Don't worry--you didn't misread. -NM] 
+
+3.1.2. RFC822 headers
+
+   Delivery types that deliver messages via email or news protocols
+   need to support setting limited set of headers from message
+   payloads.
+
+   Headers can fall in 4 classes:
+      1. Set by exit node, not by message sender.  (Example: "Date")
+      2. Set in packet header by path generator.  (Example: "To")
+      3. May be set by message sender. (Example: "Subject")
+      4. May be set partially by message sender. (Example: "From")
+
+   To encode header values, we use the following message format:
+      MESSAGE ::= HEADERS DATA
+      HEADERS ::= HEADER HEADERS | HEADER_END
+      DATA ::= (any sequence of octets)
+      HEADER ::= HEADER_NAME COLON HEADER_VAL NL
+      HEADER_END ::= NL
+      NL ::= (ascii NL, hex 0A).
+      COLON ::= (ascii ':', hex 3A).
+      HEADER_VAL ::= HEADER_VAL_CHAR HEADER_VAL |
+      HEADER_VAL_CHAR ::= (any character in the range hex 20 through
+                           hex 7E inclusive)
+      HEADER_NAME ::= HEADER_NAME_CHAR HEADER_NAME | HEADER_NAME_CHAR
+      HEADER_NAME_CHAR ::= (any character in the range hex 21 through
+                           hex 7E inclusive, excluding hex 3A.)
+
+   Design note: We explicitly decline to implement full RFC[2]822.  This
+   would add to the implementation complexity of Type III
+   implementations, and endanger anonymity by allowing nonuniformity
+   among client software packages.
+
+   Unlike RFC[2]822, clients MUST use only recognized header names,
+   and SHOULD normalize header values by removing leading or trailing
+   space.  Unlike RFC[2]822, servers MUST remove unrecognized headers.
+
+3.2. MBOX
+
+   The routing type 0x101 corresponds to MBOX delivery.  Conceptually,
+   an MBOX is an internally visible, Type III-only delivery address,
+   specific to a single exit node.
+
+3.2.1. Formatting: Routing information
+
+   The routing info for an MBOX header MUST contain a 20-octet
+   decoding handle, followed by a variable width MBOX name.  Exit
+   nodes MUST drop packets addressed to unknown MBOXes, or packets
+   with malformed routing info fields.
+
+   The interpretation of the MBOX name is left to the exit node, and
+   will vary between exit nodes.  Typically, exit nodes map from
+   'username' to 'username@localhost' for a limited set of their user
+   names, and deliver messages via sendmail.  Exit nodes MAY implement
+   other schemes.
+
+3.2.2. Formatting: Message body
+
+  Header encoding is as described in 3.1.2 above.  
+
+  The following headers are allowed:
+        "SUBJECT"  (any)
+        "FROM"     (any sequence of printing ASCII characters
+                    excluding '"', '[', ']', and ':'.)
+ 
+        "IN-REPLY-TO" (an RFC2822 msg-id)
+        "REFERENCES" (a list of RFC2822 msg-ids)
         
-        In fact a test as described below allows a particular pseudonym 
-        to check if a message if for it. It is WRONG to give it a sequence 
-        of KEYs and just get back a set of messages that is not annotated 
-        with the identity of the decoder. -GD]
-   
-   
-   PROCEDURE: Decode a message.
-   
-   Input:  KEY is the long term key of one of the identities of the receipient.
-        TAG field of sub-header or header where 
-           TAG = ( Encrypt(KEY, nHops | seed) | padding up to 44b).
-           M the body of the message.
-   Output: P, the plaintext of the message.
-   
-        If the message was sent using the forward-path then 
-                P = M; exit;
-        Otherwise, we regenerate all keys used to encrypt the payload:
-                (seed, nHops) = Decrypt(KEY,TAG)[0:17]
-                SK_1..SK_16 = PRNG(seed, nHops*16)[0:16*nhops]
-                For i = nHops to 0
-                        M = SPRP_DEC(SK_i, ``PAYLOAD ENCRYPT'',M);
-                end
-   
-                // We need here a convention for creating the
-                //   Encryption key in the SURB.
-                M = SPRP_DEC(seed, "PRIVATE SURB KEY",M);
-                
-                P = M; exit;
-   
-   [XXXX We do not actually specify how the TAG field and the BODY are
-   found, prior to be given to this function. So the above works for
-   delivery via SMTP but not if the final hop is reached via FWD/IP4. The
-   options are the following: 
-        - We require the final recipient to have a public/private key
-          and decode the header to extract the TAG/BODY messages.
-        - We use symmetric encryption for the final header and extract
-          the TAG field using a secret key.
-   Any of the two can be used, and it does not have to be standardized
-   since this operation only affects the final client, but we can give
-   some advice. -GD]
-   
-   [I am a bit uneasy that we have not defined any redundancy, or marker,
-   that would allow the final recipient to decide if this is a forward
-   path message or a SURBed message. Also the size of valid bytes has
-   been scrapped, which does not help in extracting the valid bits from
-   the junk. -GD I guess this comment is now covered by the E2E document -GD]
-   
-   %%%%%%
-   
-     [XXXX This prevents the crossover point from seeing an
-       unencrypted payload.  However, using symmetric crypto requires the
-       SURB generator to keep SURBs confidential from everyone but their
-       users.  George has suggested that we use PK instead, but generating
-       a fresh RSA key for each SURB slows SURB generation down by a factor
-       of 30-70.   Perhaps a two-mode system is in order.  Hmm. -NM]
-     [XXXX A bit more discussion on this topic: In fact there is, from an
-       anonymity point of view, very little to gain from using asymetric
-       crypto. The original point I had in mind had to do with
-       observability. If the key is symetric then crooked nodes can do
-       the following:
-        - observe all users noting which SURB's they are receiving.
-          They can then note down the keys used.
-        - When a message is seen at a cross over point, all keys are
-          tried on it, making the forward path useless, since it can
-             be linked to a SURB received by someone specific.
-   
-       My original idea was to use a key-private cryptosystem, to hide
-       which key was used to encrypt the payload.
-       I just realised that the above is rubish. If the SURB is not
-       delivered to receipient anonymously and privately, then it cannot
-       be used by the recipient anonymously, since it appears as it is in
-       the header of the packet at the crossover point. Therefore
-       symetric cryptography is as good as asymetric, key-privat in that
-       scenario. But this is a point we need to emphasise, that is
-       obvious when mentioned:
-   
-        ``Do not use SURB's that have been delivered non anonymously
-        for establishing sender-anonymous communications with others.''
-                                                                -GD]
-   
-   %%%%%%%%%%
-   \subsection{'Stateless' reply blocks}
-   
-   4. Stateless replies and SMTP (depends on 2 and 3, if I understand correctly)
-   
-   If a client does not wish to remember all of her outstanding
-   reply blocks, she may generate them in 'stateless' mode.  She  
-   does so by using an SMTP or MBOX delivery type, and setting
-   the TAG field to 
-   
-              ( Encrypt(KEY, nHops | seed) | padding up to 44b)
-              [nHops: 1 byte; seed: 16 bytes.]
-   
-   She uses PRNG(seed, nHops*16) to form the up-to-16 SK's for the reply.
-   She also uses the seed to create the symetric key present in the SURB
-   as KEYX = HASH(seed| ``PRIVATE SURB KEY'')[0:16];
-   
-   To understand a message later, the client need only remember (or be
-   able to reconstruct) KEY.  
-   
-   [Note 1: It would be best for deniability if KEY were the SHA1 hash of
-   some secure password.  On the other hand, since an adversary could
-   then mount an off-line passing attack on KEY, and since most people
-   can't construct or remember a good password, it would probably be
-   safest to store KEY on disk, password-encrypted.  All implementations
-   of stateless replies must support at least this latter mode.]
-   
-   [Note 2: 'Encrypt' here is not AES in counter mode; that would be
-   madness.  Instead, we use AES in CBC mode.]
-   [ XXXX if we use CBC mode we will need to use a different IV everytime -GD]
-   [ XXXX we now use a hash and therefore this is not relevent any more -GD]
-   
-   [ XXXX It seems that the TAG generated takes up all the space that the TAG 
-        is allowed to use. Would it be a good idea if we allow the constructor
-        of the SURB to embed more (even propriatery) information in the TAG?
-        That would require us to use ENCRYPTION instead of H(.) as in the new
-        E2E document. -GD]
-   
-   
-   ======================
-   
-   \section{Appendix: MBOX delivery}
-   
-   Servers that want to support MBOX delivery have an internal list of
-   users they accept messages to, and an internal mapping from those
-   users to some delivery mechanism for each one.  Typically, this is a
-   mapping from 'username' to 'username@localhost', and delivery defaults
-   to local delivery via sendmail.  Servers are free to provide other
-   implementations for MBOX delivery.
-   
-   MBOX delivery differs from SMTP delivery in that it is not intended
-   for addressing messages to arbitrary SMTP addresses.
-   
+  [XXXX Are msg-ids really what we want? Should we say more?  Should
+        we restrict encoding? -NM]
+
+  Unrecognized or malformatted headers MUST be removed.
+
+3.2.3. Delivery
+
+   When delivering an MBOX message via email, an exit node MUST
+   construct an RFC2822 message as follows:
+
+   The "To" line is the mailbox of the corresponding recipient.
+
+   The "Subject" line is taken from the contents of the "SUBJECT"
+   header, removing trailing and leading whitespace.  OPTIONALLY,
+   implementations may prepend a short marker (e.g., "[ANON]" or
+   "[MBOX]").  If no "Subject" line is provided in the message, exit
+   nodes SHOULD include preconfigured one, such as "Type III Anonymous
+   Message".
+
+   The "From" line is generated as follows:
+      Let F be the contents of the "FROM" header in the message.
+      Remove all leading or trailing whitespace from F.
+      Replace all sequences of 2 or more space characters in F with a
+        single space.
+
+      Prepend a double quote, a preconfigured marker (e.g., "[ANON]"),
+        and a preconfigured exit node mailbox (e.g.,
+        <nobody@____.com>).
+
+      (Thus, if the sender specifies a "FROM" header of 'Lance
+      Cottrell', an implementation could generate a 'From' header of
+      the form:  "From: "[ANON] Lance Cottrell" <nobody@___.org>".)
+ 
+   The "Date" line should be the current date.
+
+   The "In-Reply-To" and "References" lines should be taken verbatim
+   from the corresponding headers, if those headers are present.
+   [XXXX Is this sensible? -NM]
+
+   The "X-Anonymous" line should be present, and set to "yes".
+
+   Note again that all unrecognized or misformatted headers MUST be
+   rejected.
+
+   The payload SHOULD be excaped as described in 3.1.1.
+
+3.2.4. Server descriptor section
+
    Servers that support MBOX delivery MAY include a [Delivery/MBOX]
-   section, containing only the entry "Version: 1.0".
+   section, containing the entry "Version: 1.0".  Other servers
+   MUST NOT include a [Delivery/MBOX] section.
    
-   The MBOX routing type is used for messages to be delivered to a local
-   user.  The USER field must be NUL-terminated; the TAG field is
-   free-form. 
+   If the server supports message reconstruction, the section MAY
+   include a "Maximum-size" line, containing the maximum permitted
+   message size in KB (before compression).
+
+3.3. SMTP
+
+   The routing type 0x100 corresponds to SMTP (email) delivery.
+
+3.3.1. Formatting: Routing information
+
+   The routing information for an SMTP header MUST contain a 20-octet
+   decoding handle, followed by a variable-width mailbox.
+
+   A mailbox MUST be the "username@host" part of an RFC2821 mailbox.
+   (Using full RFC2822 allows too much distinguishability between
+   senders, and makes blacklisting hard.)  A mailbox MUST obey the
+   following format:
+
+      MAILBOX ::= LOCALPART AT HOSTPART
+      LOCALPART ::= ATOM | LOCALPART DOT ATOM
+      HOSTPART ::= ATOM | LOCALPART DOT ATOM
+      ATOM ::= ATOMCHAR | ATOM ATOMCHAR
+      ATOMCHAR ::= Any character in the range hex 21 through hex 7E,
+             excluding '[', ']', '(', ')', '<', '>', '@', ',', '.', 
+             ';', ':', '\', and '"'.
+      AT ::= '@' (ASCII hex 40)
+      DOT ::= '.' (ASCII hex 2E)
+
+   Additionally a HOSTPART MUST NOT be an IP address -- it would make
+   blacklisting hard, and encourage senders to resolve target hosts.
+
+3.3.2. Formatting: Message body
+       
+   The message body format is exactly as the MBOX format, as
+   described above in 3.2.2.
+
+3.3.3. Delivery
+
+   To deliver an SMTP message, an exit node that supports the SMTP
+   delivery type SHOULD construct an RFC2822 message as described in
+   3.2.3 above, additionally setting the 'To' line to the mailbox
+   given in the message header.  
+
+   Implementations SHOULD allow exit node operators to configure
+   additional fields, and to block specific 'To' addresses.
+       
+3.3.4. Server descriptor section
+
+   Servers that support SMTP delivery MAY include a [Delivery/SMTP]
+   section, containing the entry "Version: 1.0".  Other servers
+   MUST NOT include a [Delivery/SMTP] section.
    
-   \section{Appendix: SMTP delivery}
-   
-   [XXXX This paragraph is no longer accurate. -NM]
-   At the final hop, when the delivery mechanism is SMTP, we proceed as
-   follows.  If the message is a series of printable characters followed
-   by some number of NULs, assume we're delivering in ASCII an ISO-XXXX
-   character set, and send the text portion of the message as an email.
-   (Where printable == {all characters but hexadecimal 00-06,0E-1F}).
-   Otherwise, ASCII-armor the message as in 'email transport exchange
-   format' below.
-   
-   [This way, plaintext forward messages are delivered as plaintext,
-   and tagged messages, reply messages, and non-plaintext messages are
-   all delivered as junk.]
-   
-   Servers supporting SMTP MAY include a [Outgoing/SMTP] section,
-   containing only the entry "Version: 1.0".
-   
-   Servers SHOULD include a note with every SMTP, explaining that the
-   message is delivered anonymously, and providing an opt-out address and
-   an abuse contact.
-   
-   The EMAIL field in the SMTP routing type should be a valid mailbox
-   [RFC2821]. A mailbox is the canonical form of the "user@domain"
-   part of an e-mail address. Mixminion uses only mailboxes, because the
-   display name and comment parts of an e-mail address could potentially be
-   different for senders who have obtained an address from different
-   sources (leading to smaller anonymity sets). The EMAIL field must be
-   NUL-terminated.
-   [XXXX Be more specific about which mailboxes we allow -- e.g., forbid
-     supremor@"whitehouse".gov and friends. -NM]
-   
-   The TAG field is appended to the message in an X-Remailer-Tag header.
-   [XXXX Not now it isn't.  I need to rewrite this section to reference
-   the E2E spec. -NM]
-   
-   [XXXX Until we have better answers about abuse prevention, nobody should
-     actually implement an SMTP module. :) -NM]
-   [XXXX Actually, I already did.  Oops!  Let's say that an SMTP module
-     should support, at least, the ability for the server operator to
-     blacklist specific hosts, domains, usernames, and addresses. -NM]
-   [XXXX We need to reference the E2E spec here to explain how to
-     encapsulate nonprinting messages consistently. -NM]
-   
-   ===============
-   
-   X. Open Questions.
-   
-   [All of these are mentioned in more detail below.]
+   If the server supports message reconstruction, the section MAY
+   include a "Maximum-size" line, containing the maximum permitted
+   message size in KB (before compression). [XXXX is "before"
+   reasonable?]
+
+A.1. Apendix: versioning and alphas
+
+   Today's alpha code does not publish its version as '1.0'; it uses
+   '0.x' instead (currently '0.1' for all versions in this document).
+   Production versions MUST NOT retain backward compatibility
+   with pre-production releases.
+
+X. Open issues
    
    1. Mail gateways. We should specify these.
-      [Should go into appendix]
-      [Agreed.  We should make an actual list of appendices that we
-       need, and start writing them all.-NM]
    
