@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.17 2003/10/06 18:52:08 nickm Exp $
+$Id: dir-spec.txt,v 1.18 2003/10/07 19:49:37 nickm Exp $
 
 				Mix3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -32,8 +32,9 @@ Table of Contents
    2.       Type-III information exchange format
    2.1.     Message format
    2.2.     Processing unrecognized information
-   2.3.     Representing data
-   2.4.     Calculating digests and signatures
+   2.3.     Processing corrupt information
+   2.4.     Representing data
+   2.5.     Calculating digests and signatures
    3.       Server descriptor format
    3.1.     Server identity
    3.2.     Descriptor liveness
@@ -166,7 +167,36 @@ Table of Contents
    When encountering an entry with an unrecognized identifier, the
    processor must ignore the entry.
 
-2.3. Representing data
+2.3. Processing corrupt information
+
+   In case an implementation encouters information that is not correctly
+   signed or does not conform to the syntax specified in this document
+   the following behaviour is RECOMMENDED.
+
+   If a mandatory section of the directory is missing, or any field in
+   any of the mandatory directory sections is missing or does not
+   conform to the specified syntax, then entire directory SHOULD be
+   rejected.
+
+   If a server descriptor's digest or signature does not verify then the
+   entire directory SHOULD be rejected, as this is a sign of a
+   malfunctioning directory server.
+
+   If a mandatory section of a server descriptor, or a mandatory field
+   in a mandatory section of a server descriptor is missing, then this
+   server descriptor SHOULD be ignored.
+
+   If the value of any field (mandatory or not) of a mandatory section
+   in a server descriptor does not conform to the specified syntax, then
+   this server descriptor SHOULD be ignored.
+
+   If a mandatory field in an optional section is missing, then this section
+   SHOULD be ignored.
+
+   If the value of any field (mandatory or not) of an optional section does not
+   conform to the specified syntax, then this section SHOULD be ignored.
+
+2.4. Representing data
 
    All formats use the following conventions to convert encoded values
    to and from their underlying semantic meaning:
@@ -211,7 +241,7 @@ Table of Contents
        for 0.0.0.0/0.0.0.0.  An omitted PortSpec defaults to 48099 for
        'allow' entries and 0-65535 on 'deny' entries.
 
-2.4. Calculating digests and signatures
+2.5. Calculating digests and signatures
 
    Several places in this specification require Messages to be
    self-signed with a given identity key.  The digest of a message is
@@ -241,8 +271,9 @@ Table of Contents
    promise, by a mix's administrators, to provide a given set of
    services, keys, and exit policies over a set period of time.
 
-   The first section must be a 'Server' section.  This section MUST
-   include each of the following entries in any order, exactly once.
+   A server descriptor consists of one or more sections.  The first
+   section must be a 'Server' section.  This section MUST include each
+   of the following entries in any order, exactly once.
 
         'Descriptor-Version':  the string '1.0'
 
@@ -256,11 +287,11 @@ Table of Contents
             exponent of this key must be 65537.
 
         'Digest': The digest of this descriptor.  The value of this
-            entry is unsigned.  (See section 2.4)
+            entry is unsigned.  (See section 2.5)
 
         'Signature': The signed digest of this block, signed by the
             Identity key.  The value of this entry is unsigned.  (See
-            section 2.4)
+            section 2.5)
 
         'Published': The time when this block was generated.
 
@@ -453,11 +484,11 @@ Table of Contents
        between 2048 and 4096 bits long, and the exponent must be 65537.
 
      - 'DirectoryDigest' : The digest of the entire directory.  The
-       value of this entry is unsigned. (See section 2.4)
+       value of this entry is unsigned. (See section 2.5)
 
      - 'DirectorySignature' : The signature of the directory digest
        with the directory server's identity key.  The value of this
-       entry is unsigned. (See section 2.4)
+       entry is unsigned. (See section 2.5)
 
    The 'Recommended-Software' section MUST contain the following
    entries:
