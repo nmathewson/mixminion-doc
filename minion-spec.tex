@@ -67,8 +67,8 @@ with the smallest building block.
 - Len(M) (2 bytes) is the length of message M (* bytes).
 - x|y (Len(x)+Len(y) bytes) denotes x concatenated with y.
 
-- PAD(M,L) (L bytes) pads the message M (Len(M) <= L) to length L
-  using zeroes.
+- PAD(M,L)=M|Z(L-Len(M)) (L bytes) pads the message M (Len(M) <= L)
+  to length L using zeroes.
 - HASH(M) (20 bytes) is the SHA-1 hash of M (* bytes).
 - PK_Encrypt(K,M) (128 bytes) The RSA-encryption of a header M 
   using the public key K.  M is padded using RSA-OAEP, and encoded
@@ -408,7 +408,7 @@ Binary Format:
 
    Total: 14 bytes + Header size + Routing info size.
 
-* The magic marker contains the ASCII 4-byte string 'SURB'. 
+* The begin marker is the ASCII 4-byte string 'SURB'. 
 * The version number contains the format version of the SURB.
   (should be hex 01 and 00 for this standard).
 * Routing type/routing size/routing info: Definded as in subheaders.  
@@ -417,7 +417,7 @@ Binary Format:
 * Use-by-Date: indicated the expiry date the SURB should be used by. Can
   be calculated using the key rotation frequencies of the intermediate
   nodes.  This field must be given as a number of seconds since
-  midnight GMT on Jan 1, 1970--but must be aligned to the start of a
+  midnight GMT on Jan 1, 1970 -- but must be aligned to the start of a
   day (in other words, it must be divisible by 60*60*24).
   (Misaligned dates must be rejected as invalid.)
 
@@ -567,7 +567,7 @@ portions are non-normative descriptions of TLS.)
   A supports.
 
   (Future clients that support more protocols should transmit
-   "PROTOCOL", a list of comma-separated protocol versions, and a CRLF.)
+   "MMTP", a list of comma-separated protocol versions, and a CRLF.)
 
 * If B is not willing to use any protocol A supports, B closes the 
   connection.
