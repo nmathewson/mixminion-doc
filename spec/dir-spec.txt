@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.10 2003/07/28 00:49:08 nickm Exp $
+$Id: dir-spec.txt,v 1.11 2003/09/02 22:04:07 arma Exp $
 
 				Mix3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -98,21 +98,23 @@ Table of Contents
    Formally, a Mix Information Message is a sequence of ASCII
    characters, consisting of zero or more Sections.  Each Section
    contains a Header, and one or more Entries.  Each Header consists
-   of an left square-bracket ('[', ASCII 91), an Identifier, a right
+   of a left square-bracket ('[', ASCII 91), an Identifier, a right
    square-bracket (']', ASCII 93), and an EOL.  Each Entry consists of
    an Identifier, a colon (':', ASCII 58), a Space, a Value, and an
    EOL.  An Identifier is a sequence of one or more printable nonspace
    characters other than colon and brackets (ASCII 33-57, 59-90, 92,
-   94-126 inclusive).  A Space is a sequence of one or more space ('
-   ', ASCII 32) or tab ('\t' ASCII 9) characters.  A Value is a
-   sequence of zero or more printing ASCII characters, excluding NL
+   94-126 inclusive). A Space is a sequence of one or more tab ('\t',
+   ASCII 9) or space (' ', ASCII 32) characters.  A Value is a sequence
+   of zero or more printing ASCII characters, excluding NL
    and CR (ASCII 9, 32-126 inclusive), and not beginning with a space
    or a tab.  An EOL is an optional Space, followed by either a CR
-   ('\r', ASCII 13), an NL ('\n', ASCII 10), or a CR-NL sequence.
+   ('\r', ASCII 13), a NL ('\n', ASCII 10), or a CR-NL sequence.
 
    [XXXX Is there any reason to handle non-ASCII here?  I don't want to
     walk down the road of having a dozen competing charsets and
     encodings. -NM]
+   [XXXX Everybody using Minion is going to support ASCII, so I think
+    it's fine to make them use it here. -RD]
 
    Here is a grammar, using C syntax for characters:
 
@@ -152,7 +154,7 @@ Table of Contents
    processors of Mix Information Exchange Messages MUST behave as
    follows when encountering unrecognized headers or entries.
    
-   When processessing a section with an unrecognized identifier, the
+   When processing a section with an unrecognized identifier, the
    processor must ignore the section completely.
    
    When processing a section with a recognized identifier, the
@@ -186,13 +188,13 @@ Table of Contents
         both styles and generate only ISO-style.  Version 0.0.7 will
         accept and generate only ISO style.]
 
-     - All binary data is base-64 encoded, with all linebreaks and space
-       removed.
+     - All binary data is base-64 encoded (with no whitespace, as
+       recommended by RFC 3548).
 
      - All boolean values are encoded as 'yes' or 'no'.
 
      - All RSA public keys are first encoded to binary with ASN.1, then
-       encoded in base-64, with all linebreaks and space removed.
+       encoded in base-64 (again with no whitespace).
 
      - 'Address Patterns' are encoded according to the following
        grammar:
@@ -221,7 +223,7 @@ Table of Contents
       - Second, the message is converted to a "stub" format: the values
         of any unsigned entries in the message are replaced with the
         empty string.  (Their entry lines now contain an identifier, a
-        colon, a single ' ' character, and single a NL character.)
+        colon, a single ' ' character, and a single NL character.)
 
       - Third, a SHA-1 digest is computed over the resulting stub
         message.
@@ -241,7 +243,7 @@ Table of Contents
    The first section must be a 'Server' section.  This section MUST
    include each of the following entries in any order, exactly once.
    
-        'Descriptor-Version':  the string "1.0".
+        'Descriptor-Version':  the string '1.0'
 
         'Nickname': A human-readable identifier for this server.  It
             MUST be no more than 128 characters.  It MUST contain only
@@ -270,8 +272,8 @@ Table of Contents
             descriptor.  This date MUST be at least one day after the
             date in Valid-After.
 
-        'Packet-Key': The public key used to encode encode subheaders
-            for Type-III packets.
+        'Packet-Key': The public key used to encode subheaders for
+            Type-III packets.
 
         'Packet-Versions': A comma-separated list of allowable
             major.minor versions for packets this server will process.
@@ -291,7 +293,7 @@ Table of Contents
             PGP key. Must be no more than 128 characters.
 
         'Comments': Human-readable information about this server.  Must
-            be <1024 bytes long.  It *must not* be necessary to read this
+            be <1024 bytes long.  It MUST NOT be necessary to read this
             information to use the server properly.
 
         'Software': A string description of the software this server is
@@ -331,14 +333,15 @@ Table of Contents
         'Protocols': A comma-separated list of the versions of MMTP this
               server accepts.
    
-   The 'Incoming/MMTP' section MAY contain any number of entries of 
-   and any number of entries of the form:
+   The 'Incoming/MMTP' section MAY contain any number of entries of
+   the form:
 
         'Allow': AddressPattern
         'Deny': AddressPattern
    
-   If this server supports outgoing MMTP connections, it MAY have a
-   'Outgoing/MMTP' section, with one entry each of the form:
+   If this server supports outgoing MMTP connections, it MAY have an
+   'Outgoing/MMTP' section, with the following entries, exactly once
+   each:
    
          'Version': The string '1.0'
 
@@ -354,11 +357,11 @@ Table of Contents
    These entries are order-significant; the first one to match wins.
    The default policy is 'Deny: *'.
 
-   The 'Testing' section MAY be generated some type III remailers to
-   describe other information about their configuration that may be
-   useful for debugging.  Implementations MUST NOT require any
-   specific entries or within 'Testing'; implementations also MUST
-   NOT require any specific format for entries that may be present.
+   The 'Testing' section MAY be generated to describe other information
+   about their configuration that may be useful for debugging.
+   Implementations MUST NOT require any specific entries within 'Testing';
+   implementations also MUST NOT require any specific format for entries
+   that may be present.
    
    If this server supports outgoing delivery mechanisms, it MAY have
    corresponding delivery sections.  See 'E2E-spec.txt' for more details
@@ -368,7 +371,7 @@ Table of Contents
    
    Note: A server MAY omit some of its capabilities from its descriptor.
    It is permissible (for example) for a server that supports incoming
-   MMTP connections to omit the Incoming/MMTP section.)  A server
+   MMTP connections to omit the Incoming/MMTP section.  A server
    MUST NOT, however, advertise any capabilities it does not support.
    
 3.1. Server Identity
@@ -381,7 +384,7 @@ Table of Contents
 
    For user convenience, a mix's Nickname also serves as a unique
    identifier.  Every nickname SHOULD correspond to a single identity
-   key: directory servers and clients SHOULD reject descriptors that use
+   key: directory servers and clients SHOULD reject descriptors that
    use the same nickname as a previously encountered descriptor but
    change the identity key.
 
@@ -390,18 +393,18 @@ Table of Contents
 3.2. Descriptor liveness
 
    When choosing between multiple server descriptors for the same Mix
-   valid at the same time, implementations SHOULD choose the most
-   recently published descriptor.
+   that are valid at the same time, implementations SHOULD choose the
+   most recently published descriptor.
    
    The interval of time between a descriptor's 'Valid-After' and
-   'Valid-Until' dates is called its 'Lifetime'.
+   'Valid-Until' dates is called its Lifetime.
 
    If some descriptor's lifetime is in the past, that descriptor is said
-   to be 'Expired'.  
+   to be Expired.
 
    If a descriptor's lifetime is all either in the past or contained
    within the lifetimes of more recently published descriptors for the
-   same server, that descriptor is said to be 'superceded'.
+   same server, that descriptor is said to be Superceded.
 
 4. Directory Format
    
@@ -411,7 +414,7 @@ Table of Contents
       - A 'Directory' section,
       - A 'Signature' section, 
       - A 'Recommended-Software' section, 
-      - One or more server decriptors (see section 3 above).
+      - One or more server descriptors (see section 3 above).
 
    The 'Directory' section MUST contain the following entries:
      
@@ -433,7 +436,7 @@ Table of Contents
    The 'Signature' section MUST contain the following fields:
 
      - 'DirectoryIdentity' : The Identity key of the directory server
-       that generated this directory.  This modulus of this key must be
+       that generated this directory.  The modulus of this key must be
        between 2048 and 4096 bits long, and the exponent must be 65537.
 
      - 'DirectoryDigest' : The digest of the entire directory.  The
@@ -447,7 +450,7 @@ Table of Contents
    entries:
    
      - 'MixminionClient' : A comma-separated list of up-to-date versions
-       versions of Mixminion.  If a client is running a version more
+       of Mixminion.  If a client is running a version more
        recent than any on the list, it SHOULD issue a warning.  If a
        client is running a version not on the list, and some version on
        the list is more recent than the client's version, the client
@@ -493,7 +496,7 @@ Table of Contents
    parameter, 'desc'.
 
    The server MUST reply to an upload with a message of Content-Type
-   test/plain, and contents of the form
+   text/plain, and contents of the form
 
         UploadReply ::= StatusLine MessageLine
         StatusLine ::= "Status: " Bit EOL
@@ -512,7 +515,7 @@ Table of Contents
    Finally, if the upload was successful, but the descriptor will only
    be accepted into the directory when manually approved by the
    administrator, the status MUST be 1, and the message MUST be a
-   description of the status of the desctiptor, and MUST NOT be
+   description of the status of the descriptor, and MUST NOT be
    'Accepted.'.
    
 6. Generating server descriptors
