@@ -1,0 +1,149 @@
+   
+   Choosing Paths in Type-III Remailers
+   ====================================
+   
+   Overview: This document is an appendix to the Type III remailer spec
+   (``minion-spec.tex'') that describes how to pick paths.  All software
+   that does any form of path selection must[*] implement this
+   specification.
+   
+   This spec reflects the current state of the Mixminion implementation.
+   It may be grievously wrong.  Please critique it.
+   
+   [*] This spec is not optional; if client A and client B pick paths
+      differently, an attacker can use this information to distinguish
+      between them.
+   
+   NOTATION:
+   
+     SD_U -- the set of all server descriptors
+     SD_dir -- the set of all server descriptors in the most recently
+       downloaded directory.
+     SD_relay -- the set of all server descriptors for servers that can relay
+       packets.  A server can relay messages if it contains both an
+       Incoming/MMTP and an Outgoing/MMTP section.
+     SD_SMTP -- the set of all server descriptors for servers that support SMTP
+       delivery.  A server support SMTP delivery if it has both a
+       [Delivery/SMTP] and an [Incoming/MMTP] section.
+     SD_MBOX -- the set of all server descriptors for servers that support MBOX
+       delivery.  A server support MBOX delivery if it has both a
+       [Delivery/MBOX] and an [Incoming/MMTP] section.
+     Start(s) -- the time at which server descriptor s becomes valid.
+       Per the spec, this is rounded to midnight GMT.
+     End(s) -- the time at which server descriptor s becomes invalid.
+       Per the spec, this is rounded to midnight GMT.
+     Nickname(s) -- the nickname of the server descriptor s.
+   
+   INPUTS:
+   
+     ExitType: one of 'SMTP', 'MBOX', 'DROP', or 'OTHER'.
+     PathLength: An integer between 2 and 32 inclusive.
+     InitialServers: A (possibly empty) list of nicknames of servers to
+        use at the start of the path.
+     FinalServers: A (possibly empty) list of nicknames of servers to use
+        at the end of the path.
+     SwapPoint: Optionally, an integer between 1 and PathLength.
+     SendTime: The time at which we expect to send the message.
+        Defaults to 'now'.
+     ReceiveTime: The time at which we expect the message to be delivered.
+        Defaults to SendTime plus 3 hours. 
+       [XXXX This is very dumb.  It lets an attacker distinguish sharply
+         between messages sent before and after 9 GMT. -NM]
+   
+   ALGORITHM:
+   
+   1. If we have not downloaded a new directory since before the most
+      recent midnight, GMT, download a new directory.
+   
+   2. Find all currently valid server descriptors:
+   
+      Let SD_current = { s | s is in SD_U and Start(s) < SendTime
+                                          and ReceiveTime < End(s) }.
+   
+   3. Find all _distinct_ currently valid servers.
+      Let N_current = { Nickname(s) | s in SD_current }
+      [We assume for now, that distinct nicknames imply distinct servers.]
+   
+      Find the best server for each nickname.  For each nickname N, choose
+      SD_N from { s | SD_current and Nickname(s)=N }, picking the s with
+      the latest End(s). 
+   
+      Let Ncurrent_RELAY = { n | n in N_current and SD_n in SD_RELAY }
+      Let Ncurrrent_SMTP =  { n | n in N_current and SD_n in SD_SMTP }
+   
+   4. Now, resolve all provided servers.  
+      For all N[i] in InitialServers
+        Let InitialPath[i] = SD_{N[i]}.  If InitialPath[i] does not exist,
+        or is not a member of SD_relay, exit with an error.
+      
+      For all N[i] in FinalServers
+        - Let FinalPath[i] = SD_{N[i]}.  If FinalPath[i] does not exist,
+          exit with an error.
+        - If N[i] is other than the last node in the path, and FinalPath[i]
+          is not a member of SD_relay, exit with an error.
+   
+   5. Make sure the final server supports the correct exit type.
+   
+      If FinalPath is not empty,
+         - Let sd_Exit be the last element of FinalPath.
+         - If ExitType is SMTP, and sd_Exit is not in SD_SMTP, exit with
+           an error.
+         - If ExitType is MBOX, and sd_Exit is not in SD_MBOX, exit with
+           an error.
+         (- If ExitType is DROP, don't worry: all servers support DROP.)
+         (- If ExitType is OTHER, we have no way of telling whether the
+            server supports it; carry on.)
+   
+      If FinalPath is not empty, choose a final node.
+         - If ExitType is SMTP, let FinalPath[1] = a random member of
+           Ncurrent_SMTP.
+         - If ExitType is MBOX, exit with an error; MBOX addresses are
+           server-specific, and require the user to specify a final server.
+         - Otherwise, we're fine with relay nodes, or we've already
+           caught the error. Do nothing.
+   
+   6. Let N_Used = { Nickname(s) | s in InitialPath OR s in FinalPath }.
+   
+      Let N_Unused = Ncurrent_RELAY - N_used.
+    
+      Let PathLeft = PathLength - Len(InitialServers) - Len(FinalServers)
+      This is how many hops we still have to generate.
+   
+   7. If PathLeft < #N_Unused,
+   
+      Let MidServers = PathLeft members of N_unused, chosen at random
+      without replacement.
+   
+   8. ELSE, if N_Unused >= 3,
+   
+      Let MidServers = PathLeft members of N_unused, chosen at random
+      with replacement such that no two consecutive members are equal;
+      and the first member of MidServers is not the Nickname of the last
+      server in InitialServers, and the last member of MidServers is not
+      the nickname of the first server in FinalServers.
+   
+   9. ELSE, if N_Unused = 2,
+   
+      Let MidServers = PathLeft members of N_unused, chosen at random
+      with replacement such that no two consecutive members are equal.
+      (If N_Unused = { N1, N2 }, this will be either N1,N2,N1,N2... or
+      N2,N1,N2,N1...).
+   
+   10. ELSE, if N_Unused = 1 or 0,
+   
+      Let MidServers = N_Unused.  Warn the user that the path will be
+      too short.
+   
+   11. Let Path = InitialServers | MidServers | FinalServers.  If
+       Len(Path) < 4, warn the user.  If Len(Path) < 2, exit with an
+       error.
+   
+   12. If the swap point is provided, then split the path along the swap
+       point.  Else, swap at server CEIL(Len(Path)/2).
+   
+   
+   
+X. Open Questions
+  
+7. Path selection algorithm.
+   

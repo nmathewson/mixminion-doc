@@ -1,0 +1,1072 @@
+$Id: minion-spec.txt,v 1.1 2003/05/05 01:06:48 nickm Exp $
+
+	   Type III (Mixminion) Mix Protocol Specifications
+				   
+			    George Danezis
+			   Roger Dingledine
+			    Nick Mathewson
+			     (who else?)
+
+Status of this Document
+
+   This draft document ("minion-spec.txt") describes a proposed
+   specification for Type III remailers.  It is not a final version.
+   It has not yet been submitted to any standards body.
+
+   It supersedes the old "minion-spec.tex", which was never really a
+   TeX file in the first place.  When you edit it, try to keep it
+   looking like an RFC.
+
+   The organization of this document is kinda stolen from RFC2440.
+
+   TODO:
+      - Resolve XXXXs, esp: 3.2.3 - 4.
+      - Describe crossover and server operations
+      - Who else to add to authors?
+      - Process E2E-spec
+        - Incorporate Text-spec
+
+Abstract
+
+   This document describes the message formats and protocols required
+   to implement an anonymizing Type III relay mix server compatible
+   with the Mixminion reference implementation, and with the
+   forthcoming Mixmaster 4.  It does not provide information about
+   end-to-end message encoding as performed by client software and
+   delivery mixes; nor does it describe the formats and protocols used
+   by servers to publish their identities and capabilities: these
+   issues are described in the adjunct documents "E2E-spec.txt" and
+   "dir-spec.txt" respectively.
+
+   Although this document discusses security issues in implementing
+   Type III mix software, it is not comprehensive, nor does it discuss
+   all implementation issues.
+
+   Type III mix software uses a fairly conventional mix-net design to
+   provide sender and recipient anonymity services for (comparatively)
+   high latency electronic messages.  When senders and recipients use
+   the system, an adversary should not be able to learn who is
+   communicating with whom.  The Type III mix system is not
+   steganographic, nor is it designed to tunnel arbitrary TCP or IP
+   traffic.
+
+Table of Contents
+
+            Status of this Document                                    X
+	    Abstract
+            Table of Contents
+   1.       Introduction
+   1.1.     Terminology
+   2.       System overview
+   2.1.     Sender anonymity
+   2.2.     Recipient anonymity
+   2.3.     Bidirectional anonymity
+   3.       Message format
+   3.1.     Preliminaries and Definitions
+   3.1.1.   Cryptographic primitives
+   3.1.2.   Notation
+   3.2.     The Type III Packet Format
+   3.2.1.   Subheaders
+   3.2.1.1. Routing information
+   3.2.2.   Header structure
+   3.2.3.   The payload
+   3.2.4.   Constructing a Type III packet
+   3.2.4.1. Building a header
+   3.2.4.2. Encrypting the payload
+   3.2.4.3. Constructing messages
+   3.2.5.   Processing a Type III packet
+   3.2.5.1. Replay avoidance
+   3.2.5.2. Message delivery.
+   3.3.     SURB exchange formats
+   4.       Transport protocol
+
+   A.1.     Appendix: A suggested pooling rule
+   A.2.     Appendix: Compatibility with Type II mixes
+   A.3.     Appendix: Versioning and alphas
+
+   X.       Open questions
+   
+
+1. Introduction
+
+   This document describes the operation of servers on a Type III mix
+   network.  It does not describe the history of mix-nets and other
+   anonymity systems; nor does it provide a full design rationale for
+   the Type III mix service.  For the latter, see "Mixminion: Design
+   of a Type III Anonymous Remailer Protocol".
+
+   [XXXX In fact, until you've read the design paper above, you'll
+   have a hard time understanding below what we mean about 'crossover
+   points' and so on.  Go read it now, then come back. XXXX]
+
+1.1. Terminology
+
+     * Mix - a server that provides anonymity to clients by accepting
+       messages encrypted to its public key, which it then decrypts,
+       batches, re-orders, and transmits either to another mix or to
+       a final recipient (as specified in the messages).  [The term is
+       due to Chaum; 'remailer' is used elsewhere.]
+
+     * Mixminion - a project to design an improved Mix service as
+       described in this specification.  Also, the name of the
+       reference software to implement this service, currently under
+       development.
+
+     * Type I - an anonymity service originally written by Eric Hughes
+       and others, based on the PGP message format, using SMTP for an
+       underlying transport.  Also known as the "cypherpunk"
+       implementation.
+     
+     * Type II - an anonymity service originally designed by Lance
+       Cottrell to address the flaws of the Type I system, and
+       implemented in the software "mixmaster".
+
+     * Type III - the anonymity service described in this document.
+
+     This document uses the terms "MUST", "SHOULD", "MAY", "MUST
+     NOT", "SHOULD NOT", and "MAY NOT" as defined in RFC 2119.
+     [XXXX is this wise? Observable variation=linkability. -NM]
+  
+2. System overview
+
+   In this section, we provide an overview of the operations of Type
+   III remailers
+   
+   [XXXX We need to be more explicit here, or somewhere, about
+   crossover points and what exactly is encrypted with what. XXXX]
+
+2.1. Sender (forward) anonymity
+
+   When a sender wishes to send a message to a known recipient without
+   revealing to any parties that the sender has done so, the following
+   steps occur:
+
+      1. The sender creates a message, and chooses a recipient.
+
+      2. The sender compresses the message, splits it into fixed-sized
+         chunks, and (optionally) encrypts the chunks with a known
+         public key for the recipient.  [Described in "E2E-spec.txt".]
+
+      3. The sender learns about the Type III mixes on the network.
+         [Described in "dir-spec.txt".]
+
+   For each chunk from step 2:
+
+      4. The sender chooses a list of the mixes from step 3 to
+         constitute a path through the mix-net. [Described in
+         "path-spec.txt".]
+
+      5. The sender successively wraps the chunk in a layer of
+         encryption for each node in the chosen path, from last to
+         first.  Along with the data encrypted for each mix, the
+         sender includes the address of the succeeding mix.  Along
+         with the data encrypted for the final mix, the sender
+         includes the address of the recipient. [Described in section
+         3.2.4 below.]
+
+      6. The sender delivers the Type III packet to the first server
+         in the path.  [Described in section 4 below.]
+
+   For each server in the path:
+
+      7. The server receives the Type III packet, decrypts it, and
+         determines whether to discard it, deliver it to another mix,
+         or deliver it to a final recipient. [Described in section
+         3.2.5 below.]
+
+      8. The server waits until enough time has passed, and enough
+         packets have been received.  [A suggested rule is described
+         in appendix A.1 below.]
+ 
+      9. If the server is not the final mix on the path, it delivers
+         it to the next mix [as described in section 4] or delivers
+         it to the recipient [as described in section 3.2.5.2.].
+
+2.2. Anonymous reply messages
+
+   When a recipient wishes to receive messages from one or more
+   senders without revealing his identity, the following steps occur:
+
+      1. As in steps 2 and 3 from section 2.2 above, the recipient
+         learns about the available Type III mixes, and chooses one
+         or more paths through the network.
+
+   For each Type III packet the recipient wishes to receive:
+
+      2. The recipient generates a Single-Use Reply Block (SURB), by
+         successively encrypting his address for each mix in the
+         chosen path, from the last to the first.  Along with the
+         data encrypted for each mix, the recipient includes the
+         address of the succeeding mix.  [Described in section
+         3.3. below].
+
+      3. Through some means not described in this document, the
+         recipient delivers the SURBs anonymously to the sender,
+         possibly as the contents of a forward message.
+
+      4. The sender constructs one or more packets for the recipient
+         and inserts them into the network to be delivered, as in
+         steps 4-9 in section 2.2 above.  The sender uses a different
+         SURB for each packet.  (The only difference in the sender's
+         behavior is that the second half of the path is already
+         encoded in the SURB.  To the mixes, the delivery process
+         procedes identically: rather than decrypting the packet
+         contents, the nodes in the second half of the path
+         effectively encrypt it.)
+
+      5. When the recipient receives the final message, he removes a
+         layer of encryption for each of the nodes in the chosen
+         path, and learns the message's contents. [Described XXXX]
+
+2.3. Bidirectional anonymity
+
+   Because an anonymous recipient can tell which SURB was used to
+   encode which packet, the process in section 2.2. above does not
+   provide bidirectional anonymity.  For a scheme which does, see the
+   Type III nymserver specification at "nym-spec.txt".  [XXXX this
+   document isn't there yet. XXXX]
+
+3. Message Format
+   [XXXX]
+
+3.1. Preliminaries and Definitions
+   [XXXX]
+
+3.1.1. Cryptographic primitives
+   [XXXX]
+
+3.1.1.1. Message digest
+
+   For our message digest we use SHA-1.  Message digests are
+   HASH_LEN=20 octets long.
+
+3.1.1.2. Stream generator
+
+   To generate predictable random padding, and to implement a stream
+   cipher, we use AES (Rijndael) in counter mode with a 128-bit
+   blocksize and 128-bit keys, and an all-zero Initial Vector (IV).
+
+   Specifically, to generate N octets of a random stream with key K, we
+   successively encrypt the following ceil(N/16) blocks (given in
+   hexadecimal):
+         [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00]
+         [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01]
+	 [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02]
+	 [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 03]
+	         ....
+   We then return the first N bytes of the concatenated result.
+
+3.1.1.3. Super-pseudorandom permutation
+
+   To encrypt an octet array so that any change in the encrypted
+   value will make the decryption look like random bits, we use an
+   instance of the LIONESS SPRP, with SHA-1 for a hash and the
+   stream described in 3.1.1.2 above.
+   
+   Thus, in the notation described below, we encrypt a message M with
+   a key K as follows:
+           K1 = K
+	   K2 = K ^ [00 ... 01]
+	   K2 = K ^ [00 ... 02]
+	   K4 = K ^ [00 ... 03]
+	   L := M[0:20]
+	   R := M[20:Len(M)-20]
+	   R := Encrypt( Hash(K1 | L | K1)[0:16], R )
+	   L := L ^ Hash(K2 | R | K2)
+	   R := Encrypt( Hash(K3 | L | K3)[0:16], R )
+	   L := L ^ Hash(K4 | R | K4)
+	   SPRP_Encrypt(K, M) = L | R
+
+   We decrypt a message M with a key K as follows:
+           K1 = K
+	   K2 = K ^ [00 ... 01]
+	   K2 = K ^ [00 ... 02]
+	   K4 = K ^ [00 ... 03]
+	   L := M[0:20]
+	   R := M[20:Len(M)-20]
+	   L := L ^ Hash(K4 | R | K4)
+	   R := Encrypt( Hash(K3 | L | K3)[0:16], R )
+	   L := L ^ Hash(K2 | R | K2)
+	   R := Encrypt( Hash(K1 | L | K1)[0:16], R )
+	   SPRP_Decrypt(K, M) = L | R
+
+   K must be 20 octets long; M must be at least 20 octets long.
+
+3.1.1.4. Public-key cipher
+
+   For a public-key cipher, we use RSA with PKCS1 encoding.  To make
+   messages non-malleable, we use OAEP padding with SHA-1 as the hash
+   function and MGF1 as our mask function.  The security parameter (P
+   in the OAEP specification) is set to the following 84-character
+   ASCII string (a quotation from Thomas Paine):
+
+     "He who would make his own liberty secure, must guard even his
+      enemy from oppression." 
+
+   (In hexadecimal, the hash of P is: 
+    [90 89 60 BC 88 EF 92 B0 9c 58 26 C4 BE 32 B3 34 A7 1C AA 5A].)
+
+   For all public key operations in Type III packets, we use 2048-bit
+   keys.  We define:
+  
+       PK_OVERHEAD_LEN = 42   (octets added by OAEP padding)
+       PK_ENC_LEN = 256       (size of RSA-encrypted data)
+       PK_MAX_DATA_LEN = PK_ENC_LEN - PK_OVERHEAD_LEN = 214
+            (Longest octet array that can be RSA-encrypted.)
+
+   All keys must use 65537 as their exponent.
+
+3.1.2. Notation
+
+   We use the following function-style notations in describing our
+   packet format.
+   
+   - Len(A) - The length, in octets, of an octet array A.
+
+   - A[i:j] - If A is an octet array, A[i:j] is a subarray starting at
+     octet i with length j.   (Len(A[i:j]) = j)
+   
+   - Rand(n) - Generates n random octets by any secure method.
+     Successive instances of Rand generate different and uncorrelated
+     sequences.  (Len(Rand(n)) = n)
+
+   - Z(n) - Generates n octets with value 0.  (Len(Z(n)) = n)
+
+   - A|B - The concatenation of octet array A with octet array B.
+     (Len(A|B) = Len(A)+Len(B))
+
+   - A^B - The bitwise exclusive or of two octet arrays A and B with
+     equal lengths.  (Len(A^B) = Len(A) = Len(B))
+
+   - Hash(M) - A cryptographic digest of an octet array M.
+     (Len(Hash(M)) = HASH_LEN = 20)
+
+   - <PK, SK> - Denotes a keypair for our public key encryption system.
+
+   - PK_Encrypt(PK, M) - The public-key encryption of an octet array M
+     using the public key PK.  (Len(M) <= PK_MAX_DATA_LEN = 214;
+     Len(PK_Encrypt(PK,M) = PK_ENC_LEN = 256)
+
+   - PK_Decrypt(SK, M) - The private-key decryption of an octet array
+     M using the secret key SK.  
+     (0 <= Len(PK_Decrypt(SK,M)) <= PK_MAX_DATA_LEN = 214)
+
+   - PK_Encode(PK) - The ASN.1 encoding of a public key PK.
+
+   - PRNG(K, n) - Uses a cryptographic stream generator to produce n
+     octets, using key K.  (Len(K) = KEY_LEN = 16; Len(PRNG(K,n)) = n)
+   
+   - Encrypt(K, M) = M ^ PRNG(K,Len(M)) - The encryption of an octet array
+     M with our stream cipher, using key K.  (Encrypt(Encrypt(M)) = M.)
+
+   - SPRP_Encrypt(K, M) - The encryption of an octet array M using our 
+     super-pseudorandom permutation with key K.  
+     (Len(K) = SPRP_KEY_LEN = 20; Len(SPRP_ENC(K,M)) = Len(M))
+
+   - SPRP_Decrypt(K, M) - The decryption of an octet array M using our
+     super-pseudorandom permutation with key K.  
+     (Len(K) = SPRP_KEY_LEN = 20; Len(SPRP_DEC(K,M)) = Len(M))
+
+   To improve the readability of our specification, we use the
+   following symbolic constants: 
+   
+   - HASH_LEN = 20
+   - KEY_LEN = 16
+   - PK_OVERHEAD_LEN = 42
+   - PK_ENC_LEN = 256
+   - PK_MAX_DATA_LEN = 214
+   - SPRP_KEY_LEN = 20
+
+   All fixed strings are encoded in ASCII.
+
+   All fields are packed in Internet order (MSB first).
+
+3.2. The Type III Packet Format
+
+   Each Type III packet is composed of a header section and a payload.
+   The header section has a main header and a secondary header, both
+   of which have identical structure.  Each header is further composed
+   of a series of subheaders, which are addressed and encrypted to the
+   intermediate mixes.
+
+   The packet is laid out as follows:
+      Main header       [2K]
+      Secondary header  [2K]
+      Payload           [28K]
+                       	[Total: 32K]
+
+3.2.1. Subheader structure
+
+   A subheader is a variable-length structure containing all the
+   information that a mix needs to decrypt a message, check its
+   integrity, and route it to the next hop on its path.  Every
+   subheader contains the following fields:
+
+       V   Version Major    1 octet
+       V   Version Minor    1 octet
+       SK  Shared Secret    KEY_LEN=16 octets
+       D   Digest           HASH_LEN=20 octets
+       RS  Routing Size     2 octets
+       RT  Routing Type     2 octets    [Total 42 octets]
+       RI  Routing Info     [Variable length; RS=Len(RI).]
+
+   (We use the symbolic constant MIN_SH=42 below to indicate the
+   length of the invariant part of a subheader.)
+
+   The fields in the subheader are used as follows:
+
+     * The Version field is used to manage concurrent versions of the
+       protocol. If a Mix receives a packet with an unrecognized
+       version, it must discard that packet.  (Nodes must advertise in
+       their status blocks what versions of the protocol they support;
+       see "dir-spec.txt".)
+
+     * The Shared Secret is the base secret that is used to generate
+       all other keys for the operations the node performs on the
+       packet. It must be kept secret and discarded as soon as the
+       packet has been processed.
+
+     * The Digest contains an integrity check of the remainder of the
+       current header. The digest does not cover the current
+       subheader: modifications to it are detected because of the OAEP
+       padding. [XXXX not subheader, rsa part.]
+
+     * The Routing Type defines how the mix should deliver or relay the
+       message. If a mix receives a routing type it does not recognize,
+       it must discard the message. [XXXX values where? ref]
+
+     * Most routing methods require additional addressing information,
+       which is given in the Routing Info field.
+
+     * The Routing Size field indicates the total size in octets of
+       the Routing Information.
+
+   We will refer to the fixed-size part of the subheader structure as:
+      FSHS(V, SK, D, RS, RT)  [MIN_SH = 42 octets]
+    
+   We will refer to the entire subheader as:
+      SHS(V, SK, D, RS, RT, RI) = FSHS(V,SK,D,RS,RT) | RI  
+           [42+Len(RI) octets]
+
+3.2.1.1. Routing information
+
+   There are currently 7 defined routing types:
+
+   0x0000-0x00FF: PROTOCOL SUPPORT: NON-EXIT TYPES
+
+   0x0000 DROP    (0 bytes of routing information)
+   0x0001 FWD/IP4 (IP: 4 bytes, PORT: 2 bytes, KEYID: 20 bytes): 26 bytes
+   0x0002 SWAP-FWD/IPV4 (same info as FWD/IP4)
+   0x0003 FWD/IP6 (IP: 16 bytes, PORT: 2 bytes, KEYID: 20 bytes): 38 bytes
+   0x0004 SWAP-FWD/IPV6 (same info as FWD/IP6)
+
+   0x0100-0x0FFF: PREDEFINED DELIVERY TYPES.
+
+   0x0100 SMTP   (TAG: 20 bytes, EMAIL ADDRESS: variable) Variable bytes
+   0x0101 MBOX   (TAG: 20 bytes, USER: variable) Variable bytes
+   0x0102 MIX2   (EMAIL ADDRESS: variable).  Type II remailer support.
+
+   0x1000-0xEFFF: UNALLOCATED
+
+   0xF000-0xFFFF: FOR EXPERIMENTAL USE
+
+   A DROP routing type indicates a dummy message. It must be
+   discarded.  To prevent servers from distinguishing among clients,
+   every DROP message should have a random payload.
+
+   A FWD/IP4 routing type indicates that the message must be
+   retransmitted using the TLS/Mixminion transport protocol. The IP
+   field represents the IPv4 address.  The KEYID field contains the
+   SHA1 hash of the ASN.1 representation of the next node's identity
+   public key.
+
+   A SWAP routing type tells the node to exchange headers as described below.
+
+   The FWD/IP6 and SWAP-FWD/IP6 routing types are analogous to FWD/IP4
+   and SWAP-FWD/IP4, except that they use IPv6 addresses rather than
+   IP4 addressed.  Path generation in this case is an open issue.
+
+   See appendices for more information about SMTP and MBOX delivery.
+
+3.2.2. Header Structure
+
+   A header contains a set of variable-length subheaders, one for each
+   mix in the corresponding leg of the path.  Each node sees the main
+   header as a 256-octet portion encrypted with the node's public key,
+   followed by a 1792-octet portion encrypted with a stream cipher.
+   The key for the stream cipher is derived from the master secret SK
+   as follows:
+           K = H(SK | "HEADER SECRET KEY")[0:16]
+
+   The subheader is always at the start of the RSA-encrypted portion,
+   and is followed by header material intended for the next mix.  Note
+   that because the full subheader (including routing information) may
+   be more or less than PK_MAX_DATA_LEN=214 octets long, some of the
+   RI field may spill into the stream-encrypted portion, or some of
+   the next mix's header may spill into the RSA-encrypted portion.
+   
+   These diagrams should help explain:
+
+     1. If the subheader is less than PK_MAX_DATA_LEN bytes long, it
+        fits into a single RSA encryption along with some of the data
+        from the rest of the header.
+   
+        Before: (S is the new subheader, H is the existing header material)
+           SSSSSSSSSS   HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH.....
+
+        After: 
+           (Encrypted with RSA)   (Encrypted with AES)
+           SSSSSSSSSSHHHHHHHHHH   HHHHHHHHHHHHHHHHHHHHHHHHHHHHHH.....
+
+     2. Otherwise, the subheader won't fit into a single RSA
+        encryption, so we spill some of it over:
+
+        Before:
+           SSSSSSSSSSSSSSSSSSSSSSSSS   HHHHHHHHHHHHHHHHHHHHHHHHH.....
+
+        After:
+           (Encrypted with RSA)   (Encrypted with AES)
+           SSSSSSSSSSSSSSSSSSSS   SSSSSHHHHHHHHHHHHHHHHHHHHHHHHH.....
+
+3.2.3. The entire message  
+   [XXXX writeme]
+
+3.2.4. Constructing a Type III packet
+   [XXXX]
+
+3.2.4.1. Building a header
+   [XXXX rewrite to use new terms]
+
+   Each type III message has two headers with identical structure. These
+   headers are swapped at the crossover point. [XXXX describe crossover]
+
+   A header is HEADER_LEN=2048 bytes long and contains up to
+   2048/(OAEP_OVERHEAD+MIN_SH)=24. subheaders. Starting with N
+   subheaders SH_0..SH_N containing secrets SK_0..SK_N (and placing
+   routing extension blocks directly after their respective
+   subheaders), the header is constructed by appending random padding
+   to achieve a total size of 2048 bytes. Then, each subheader key is
+   used to create a key Hash(SharedSecret | "HEADER SECRET KEY") with
+   which the part of the header after the subheader (but including its
+   routing extension) is encrypted using counter-mode AES.
+
+   We construct the subheaders from last to first, so that each can contain
+   a digest of the subsequent subheaders and padding data.
+
+   [XXXX We should include a full English description as well.]
+
+   PROCEDURE: Create a single header.
+
+   Inputs: RI_1..RI_n, RT_1..RT_N (addresses of intermediate nodes), 
+           PK_1 .. PK_N (Public keys of intermediate nodes),
+           SK_1 .. SK_N (Secret keys to be shared with intermediate nodes),
+           R Routing type and information of last header (FWD, DROP,
+               SWAP, etc.)
+   Output: H (The header)
+
+   Process: 
+     // Calculate the sizes of the subheaders.
+     for i = 1 .. N
+        // OAEP Padding plus invariant parts plus routing info.
+        SIZE_i = MIN_SH + OAEP_OVERHEAD + Len(RI_i)
+        JUNK_KEY_i = HASH(SK_i | "RANDOM JUNK")[0:16]
+        K_i = HASH(SK_i | "HEADER SECRET KEY")[0:16]
+     end
+
+     PADDING_LEN = 2048-SUM(SIZE_1 ... Size_N)
+
+     // Calculate the Junk that will be appended during processing.
+     // J_i is the junk that node i will append, and node i+1 will see.
+     J_0 = "";
+     for i = 1 .. N
+        J_i = J_(i-1) | PRNG(JUNK_KEY_i, SIZE_i)
+        Stream_i = PRNG(K_i, 2048 + SIZE_i);
+        // Before we encrypt the junk, we encrypt all the data, and all
+        // the initial padding, but not the RSA-encrypted part.
+        //    OFFSET = PADDING_LEN + SUM(SIZE_i ... SIZE_N) - 256
+        //           = 2048 - SUM(SIZE_1 ... SIZE_N) + SUM(SIZE_i ... SIZE_N)
+        //             -256
+        //           = 2048-256 - SUM(SIZE_1 ... SIZE_(i-1))
+        //           = 2048 - 256 - len(J_{i-1})
+        OFFSET = PADDING_LEN  + Len(J_i) - 256
+        J_i = J_i XOR Stream_i[OFFSET:Len(J_i)];
+     end
+
+     // Create the Header, starting with the padding.
+     H_(N+1) = Rand(PADDING_LEN)
+
+     for i = N .. 1
+        IF i = N (set appropriate routing type and A_i)
+
+        // Decide whether to spill RI out of the RSA-encrypted chunk
+        // (unlikely), or to include some of the rest of the header
+        // in the RSA-encrypted chunk (likely).
+        if Len(RI_(i+1)) > MAX_RSA-MIN_SH then
+             RI_SPILL_LEN = Len(RI) - MAX_RSA + MIN_SH
+             H_INCL_LEN = 0
+        else
+             RI_SPILL_LEN = 0
+             H_INCL_LEN = MAX_RSA - MIN_SH - Len(RI_(i+1))
+        endif
+
+        REST = RI_(i+1)[Len(RI_(i+1)) - RI_SPILL_LEN : RI_SPILL_LEN]
+               | H_(i+1)[H_INCL_LEN : Len(H_(i+1))-H_INCL_LEN]
+
+        EREST = Encrypt(K, REST)
+        DIGEST = HASH(EREST | J_i-1)
+
+        SH = SHS(V, SK_i, DIGEST, len(RI_(i+1)), RT_(i+1), RI(i+1))
+        ESH = PK_ENCRYPT(PK_i, 
+                         SH[0:Len(SH)-RI_SPILL_LEN] |
+                         H[0:H_INCL_LEN]) 
+        H_i = ESH | EREST
+     end
+
+   return H_1;
+
+3.2.4.2. Encrypting the payload
+   [XXXX rewrite to use new terms, move]
+
+   The payload of a Mixminion message has a fixed length of 32 kb
+   - 2*16*128 bytes = 28kb.   Payloads indicate their size.
+
+   (When sending a reply message with a SURB, we use payload encryption
+   to prevent the crossover point from seeing an unencrypted payload. See
+   the 'end-to-end encoding' spec for more information.)
+
+   We denote a payload as P.
+
+3.2.4.3. Constructing messages
+   [XXXX rewrite to use new terms; move]
+   [XXXX We should include a full English description as well.]
+
+   Given two headers and a payload one can construct a message. The
+   first header must contain a subheader with routing type SWAP.
+
+   PROCEDURE: Construct a message.
+
+   Input: H1 (header containing keys SK1_1... SK1_N)
+             and H2 (either a header containing keys SK2_1... SK2_N if
+             we constructed it, or a header with unknown keys if we're
+             using a reply block and a SURB secret key.)
+          P (Payload)
+   Output: M (the message)
+
+   Process:
+        // Phase 1
+        if (H2 is a reply block)
+                P = SPRP_ENC(SURB secret key, "PRIVATE SURB KEY", P)
+        else // (H2 is *not* a reply block)
+                for i = N .. 1
+                        P = SPRP_ENC(SK2_i, "PAYLOAD ENCRYPT", P)
+                end
+        endif
+        // Phase 2
+        H2 = SPRP_ENC(SHA1(P), "HIDE HEADER", H2)
+        P = SPRP_ENC(SHA1(H2), "HIDE PAYLOAD", P)
+
+        for i = N .. 1
+                H2 = SPRP_ENC(SK1_i, "HEADER ENCRYPT",H2)
+                P = SPRP_ENC(SK1_i, "PAYLOAD ENCRYPT",P)
+        end
+        M = (H1, H2, P)
+
+3.2.5. Processing a Type III packet
+
+   Messages are transferred from node to node using either the custom
+   Type III transport protocol (see below) or email.  A node with
+   private key PK receiving message M = (H1, H2, P) performs the
+   following operations:
+
+   PROCEDURE: Process a message M
+        PK_PART = PK_Decrypt(PK,H1[0:256]);
+        If there is any problem with the OAEP padding discard the message.
+
+        If Len(PK_PART) != MAX_RSA, discard the message.
+
+        SHS(V, SK, D, RS, RT, ..) = <extract from PK_PART[0:MIN_SH]>
+        Check that D = HASH(H1[256:2048-256]), and discard if not.
+
+	Check for replays, as described in 3.2.5.1.
+
+        JUNK_KEY = HASH(SK | "RANDOM JUNK")[0:16]
+        H1 = H1[RSA_LEN : 2048-RSA_LEN] | 
+             PRNG(JUNK_KEY, OAEP_OVERHEAD + MIN_SH + RS)
+        HEADER_KEY = HASH(SK | "HEADER SECRET KEY")[0:16]
+        H1 = H1 XOR PRNG(HEADER_KEY, Len(H1))
+
+        If RS > MAX_RSA-MIN_SH then 
+            // RI is incomplete.
+            RI = PK_PART[MIN_SH:MAX_RSA-MIN_SH]
+            MISSING_RI_LEN = RS - (MAX_RSA-MIN_SH)
+            EXTRA_H = ""
+        else
+            RI = PK_PART[MIN_SH:RS]
+            MISSING_RI_LEN = 0
+            EXTRA_H = PK_PART[MIN_SH+RS:Len(PK_PART)-MIN_SH-RS]
+        endif
+
+        RI = RI | H1[0:MISSING_RI_LEN]
+        H1 = EXTRA_H | H1[MISSING_RI_LEN:2048-MISSING_RI_LEN]
+        H2 = SPRP_DEC(SK, "HEADER ENCRYPT",H2);
+        P = SPRP_DEC(SK, "PAYLOAD ENCRYPT",P);
+
+        if routing type is DROP:
+                End.
+        if routing type is SWAP-FWD:
+                P = SPRP_DEC(SHA1(H2), "HIDE PAYLOAD", P)
+                H2 = SPRP_DEC(SHA1(P), "HIDE HEADER", H2)
+                Swap H1 and H2;
+        if routing type is SWAP-FWD or FWD:
+                Put (H1, H2, P) in queue to be sent to the address in RI.
+        Otherwise:
+                Give (RT, RI, HASH(SK, "APPLICATION KEY"), P) to
+                Module manager.
+
+   The "Application Key" is provided to the module as a shared secret
+   between the constructor of the header and the module that is in
+   charge of processing it.  The hash step above prevents the module
+   from using the master secret Sk in any way that could inadvertently
+   compromise its other functions (such as the decryption of the
+   unlinkability of the message).
+
+3.2.5.1. Replay avoidance
+
+   The nodes MUST implement a mechanism to make sure that messages
+   cannot be replayed. To do this a hash of the secret contained in
+   the subheader is kept for as long as the public key under which it
+   was encrypted is in use. The Hash should be computed in the
+   following way:
+
+   X = HASH(SharedSecret | "REPLAY PREVENTION")
+
+   The value X is not secret, and its secrecy should not be relied
+   upon.  The integrity of the list should be secured and the X values
+   lists may be made public.
+
+3.2.5.2. Message delivery
+
+   [XXXX writeme]
+
+3.3. SURB exchange format.
+
+   [XXXX rewrite to new language]
+
+   A SURB can be encoded in a standard binary or ASCII format.
+ 
+   Binary Format:
+
+      Begin Marker: 4 bytes
+      Version:      2 bytes
+      Use-by-Date:  4 bytes
+      SURB header:  2048 bytes
+      Routing Size: 2 bytes
+      Routing Type: 2 bytes
+      Encryption key: 16 bytes
+      Routing Info: (Routing Size) bytes
+
+      Total: 30 bytes + Header size + Routing info size.
+
+   * The begin marker is the ASCII 4-byte string 'SURB'. [53 55 52 42]
+
+   * The version number contains the format version of the SURB.
+     (should be hex 01 and 00 for this standard).
+
+   * Routing type/routing size/routing info: Defined as in subheaders.
+     These fields encode the address of the hop which the SURB user
+     should use as an exit point.
+
+   * Use-by-Date: indicates the expiry date the SURB should be used
+     by. Can be calculated using the key rotation frequencies of the
+     intermediate nodes.  This field must be given as a number of
+     seconds since midnight GMT on Jan 1, 1970 -- but must be aligned
+     to the start of a day (in other words, it must be divisible by
+     60*60*24).  (Misaligned dates must be rejected as invalid.)
+
+     (Rationale: a seconds-level granularity allows us to move to a
+     tighter schedule later on in order to support a synchronous
+     mixnet.)
+
+   * SURB data: Contains the SURB that is created as described above.
+   * Encryption key: used to LIONESS-encrypt the payload before
+     sending it into the network.
+
+   The ASCII Encoding of SURBs.
+
+   The  ASCII compatible format of SURBs is:
+   ======= BEGIN TYPE III REPLY BLOCK ========
+   Version: x.x
+   Base64 encoded binary SURB 
+   ======== END TYPE III REPLY BLOCK =========
+
+   [XXXX move to openpgpish format]
+
+   The version number should be in decimal ASCII and is the same as the
+   binary version.
+
+4. Transport protocol
+
+   A special channel should be established between mixes that provides
+   forward secrecy making it impossible to recognize or decrypt any
+   message that went through it in the past. In order to establish
+   this channel one of the two mixes initiates the connection but at
+   the end of the key exchange protocol the channel is
+   bi-directional. The protocol should be used when the SWAP-FWD/IP4
+   or FWD/IP4 address type is specified in a subheader.
+
+   Servers must not connect to themselves over the network when
+   routing packets to their own published IP/Port combination.
+
+   The Mixminion protocol uses TLS (the IETF standardization of SSL)
+   with the ciphersuite "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" (defined in
+   tls-ciphersuite-03.txt).  No other ciphersuite is permitted for
+   mix-to-mix communications.
+
+   [Servers must allow incoming connections via
+   SSL3_RSA_DES_192_CBC3_SHA for clients written with older SSL
+   libraries.  However, servers must never initiate connections with
+   this suite.]
+
+   The X.509 certificate must be signed by the server's identity key,
+   and a certificate containing the server's identity key must be
+   included with the certificate chain set to the client.  If the
+   identity key doesn't match the KEYID portion of the header's
+   routing data, the client closes the connection.
+
+   Messages are sent from client to server.  Session suspension is not
+   permitted.
+
+   Protocol outline: (Portions marked with '*' are normative; other
+   portions are non-normative descriptions of TLS.)
+
+   - A invents a new Diffie Hellman key (of at least 1024 bits
+     modulus) and makes a certificate signed by her signing key.  A
+     then initiates the SSL Handshake protocol with B.
+
+   - B invents a DH key and sends a certificate chain containing:
+      - a certificate with B's transport public key, signed by B's
+        identity key. 
+      - a self-signed certificate containing B's identity key.
+
+   * A checks that the Hash of the identity key is the same as
+     the one contained in the routing info of the subheader.
+
+   - The SSL handshake protocol proceeds as normal until a session key
+     has been established. All communications are then encrypted using
+     this session key.
+
+   * A sends "MMTP 1.0", CRLF.  This indicates the protocol versions that
+     A supports.
+
+    (Future clients that support more protocols should transmit
+    "MMTP ", a list of comma-separated protocol versions, and a CRLF.)
+
+  * If B is not willing to use any protocol A supports, B closes the 
+    connection.
+
+    B sends "MMTP 1.0", CRLF.  This indicates B's choice of protocol.
+
+    If A is not willing to support B's choice, A closes the connection.
+
+  * Message case:
+
+     * A sends "SEND", CRLF, M, HASH(M|"SEND") (6 + 32k + 20 bytes)
+     * B sends "RECEIVED", CRLF, HASH(M|"RECEIVED") (10 + 20 bytes)
+
+    [Note that A does not wait for B's reply before sending further
+     messages; rather, A begins sending its next message immediately.
+     Node A waits until the reply is received, however, before
+     removing the message from its local storage.  Node A pauses,
+     however, if it is waiting for 16 hashes at a time.]
+
+  * Padding case:
+
+     * A sends "JUNK", CRLF, Junk, HASH(Junk|"JUNK") (6 + 32k + 20 bytes)
+       (where Junk is an arbitrary 32k sequence.)
+     * B sends "RECEIVED", CRLF, HASH(Junk|"RECEIVED JUNK") (10 + 20 bytes)
+
+       [Note that both cases require the same number of bytes and
+        processing time. Implementations must make sure the real
+        message and the padding cases are indistinguishable to a third
+        party, or even to the parties involved after the keys have
+        been updated.]
+
+  * Error case:
+
+     * A sends "SEND", CRLF, M, HASH(M|"SEND") (6 + 32k + 20 bytes)
+     * B sends "REJECTED", CRLF, HASH(M|"REJECTED") (10 + 20 bytes)
+    
+       [B must reject a message if their hash is incorrect; if the
+        disk is full, or if for some other reason B cannot accept the
+        message.  Again, implementations should not be distinguishable
+        in their timing in the case where the message is accepted or
+        rejected.  When A receives a "REJECTED" reply, it must behave
+        is if delivery had failed, and retry the message later (up to
+        a reasonable retry interval).]
+
+  * If a connection persists for longer than 15 minutes, the client
+    must initiate key renegotiation.  If it has not, the server must
+    close the connection.
+ 
+   NOTE:
+
+   The old keys must be permanently overwritten. Special care should be
+   taken to permanently erase them from the Hard Disk and memory. 
+
+   The standard transport mechanism over which the MixMinion Transfer
+   Protocol talks is TCP over IP. The standard listening TCP port should be 
+   number 48099 (until we register a port with www.iana.org)
+
+   All possible checks should be performed during the transfer protocol
+   and if any fail the connection MUST stop and all state MUST
+   be deleted. An error MAY be logged. 
+
+A.1. Appendix: A suggested pooling rule
+
+   In order to allow room for future experimentation, we do not
+   require a single batching rule.  Nonetheless, we describe a
+   recommended rule (as used in Mixmaster) which is somewhat resistant
+   to flooding attacks.  Implementors are strongly encouraged to use
+   this algorithm, or another equally robust against active and
+   passive attacks.  (Be sure to read \cite{batching-taxonomy}.)
+
+   PROCEDURE: Choose sets of messages to transmit ("Cottrell-style batching")
+
+   Inputs: Q (a queue of messages)
+        N (the number of messages in the queue).
+        MIX_INTERVAL (algorithm parameter; time to wait between
+                      batches of messages.  Should be around
+                      XXXXX. Must be >= 0.)
+        POOL_SIZE (algorithm parameter; minimum size of pool.  Should
+                   be at least XXXXXXXX.  Must be >= 0.)
+        MAX_REPLACEMENT_RATE (algorithm parameter; largest allowable
+                   rate for messages to be removed from the
+                   pool. Should be between XXXX and XXXX.  Must have
+                   0.0 < MAX_REPLACEMENT_RATE <= 1.0)
+
+   Outputs: (A set of messages sent to the network).
+
+   1. Wait for MIX_INTERVAL seconds.
+
+   2. If N > POOL_SIZE, then let 'max_send' =
+      FLOOR(N*MAX_REPLACEMENT_RATE).  [If 'max_send' < 0, let max_send
+      = 1.]  Choose Min(N-POOL_SIZE, max_send) messages from Q.
+      Transmit the selected messages.
+
+   3. Repeat indefinitely.
+  
+A.2. Appendix: Backward compatibility with Type II remailers
+
+   In order to share anonymity sets with Type III remailers while
+   retaining type II support, some remailers may wish to use Mixminion
+   to deliver type II messages.  This is done as follows:
+
+   Nodes that accept both type II and type III messages may advertise
+   the fact in their server descriptor by including a section of the
+   form:
+ 
+         [Incoming/Mix2]
+         Address: (type II remailer's email address)
+         Key: (type II key)
+         KeyID: (type II keyid)
+         Signature: (signature of identity key with type II key)
+         (Optionally, KeyID and Signature repeated any number of
+                      times.)
+
+   This section advertises that the mix can handle type II messages
+   intended for a given type II identity (email address) and set of
+   keys.
+
+   The value of 'key' is the base-64 representation of the ASN.1
+   encoding of the Mix node's type II key. The value of 'Signature'
+   must be the base-64 representation of the RSA-OAEP/PKCS1 signature
+   (using the type II remailer key) of the SHA-1 hash of the ASN.1
+   representation of this node's identity key.
+
+   Directory servers and bridging nodes _must_ verify that keyid and
+   signature are correctly computed.
+
+   Upon receiving a type II message via SMTP, a bridging node checks
+   whether the destination node is also a type III node, by looking
+   for a type III node whose KeyID matches the KeyID for the
+   packet. [See below] If it finds one, the bridging node unbase64's
+   the type II message's contents, and uses them (plus random padding)
+   as the payload of a type III message for that node.  The routing
+   type must be 'MIX2' (0x0102); the routing info must be equal to the
+   destination mix's type II address.
+
+
+   \subsection{Non-normative note: extracting KeyID and message contents}
+
+   (This information is included in the Type II remailer spec; it is
+   included here only for reference.)
+
+   A type II message follows the format:
+   "-----BEGIN REMAILER MESSAGE-----" NL
+   PacketLength NL
+   Checksum NL
+   Packet NL
+   "-----END REMAILER MESSAGE-----" NL
+
+   PacketLength is the length of the packet in bytes, encoded as a
+   decimal integer."Checksum" is equal to the MD5 hash of the packet,
+   encoded in Base 64.  The packet is also encoded in base 64; The
+   first 16 bytes of the packet are the KeyID of the recipient.
+
+   The KeyID of a type II node is calculated by taking the public key
+   <n,e>, expressing n and e as zero-padded, big-endian integers,
+   concatenating them, and taking the MD5 hash of the result.
+
+   When encoding a type II message for transmission in a type III
+   payload, a type III node should include:
+
+   S   [2 bytes] (Size, big-endian)
+   CHK [16 bytes] (MD5 checksum as given in type II packet, base-64 decoded)
+   PKT [S bytes] (Packet as given in in type II packet, base-64 decoded)
+   PAD [28KB-16-2-S bytes] (Random padding)
+
+A.3. Appendix: Versioning and alphas
+
+   Today's alpha code does not publish its version as '1.0'; it uses
+   '0.x' instead (currently '0.3' for packets, '0.2' for MMTP, and
+   '0.1' for everything else).  Production versions MUST NOT retain
+   backward compatibility with pre-production releases.
+
+X. Open questions
+
+3. We should specify: are 'DROP'-type messages dropped before they go
+    into the mix pool, or after they're pulled from the pool?
+
+  [Before. -NM]
+  [My feeling is After, but I should think about it... -GD]
+  [Roger seemed pretty sure that it should be 'before', but I don't
+   remember why.  Roger? -NM
+
+4. We should specify: what happens when a message is undeliverable?
+
+  [We retry for a while, then drop it. -NM]
+  [Specifically: we retry the message with subsequent message pools
+   until it is delivered, or until a certain amount of time has
+   passed. -NM]
+
+3. When do dummy messages get generated?
+   [Current hypothesis: As a first cut, we're going to have nodes add
+    dummies to the outgoing batch every mix interval, with a geometric
+    distribution, with 5 hops, with the sender as the last hop. -NM]
+
+4. When does link padding get generated?
+   [Both active research areas; not for first cut]
+
+[XXXX 
+   WRT The pooling rule
+
+   Paul and/or Andrei describe a variant that checks N>=POOL_SIZE+THRESHOLD, 
+   with THRESHOLD>= 1.  Roger claims (verbally) that he isn't sure whether
+   this would buy us anything, since (he says) adding 1 to POOL_SIZE would
+   always increase anonymity more than adding 1 to THRESHOLD.  Once they've
+   come to some agreement, maybe we should do that instead.
+
+   Then there are binomial mixes, where instead of sending b messages,
+   you send each message with probability=b/POOLSIZE.  Roger/Paul/Andrei
+   seem to like those, but I don't have a clear sense of how sure they are,
+   and how much everyone agrees with them. -NM]
