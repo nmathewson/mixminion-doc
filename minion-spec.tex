@@ -162,9 +162,9 @@ them.
 We will formally refer to the subheader structure as:
 SHS(V, SK, D, RS, RT, RI)     [MIN(86, 42+Len(RI)) bytes] 
 And to the RSA-OAEP encrypted portions of the subheader structure as:
-ESHS(PK, SK, D, RS, RT, RI)   [128 bytes]
+ESHS(PK, V, SK, D, RS, RT, RI)   [128 bytes]
 And to the extension blocks for a given subheader as:
-EXT(RI)                       [Ceil((Len(RI)-44)/128) bytes]
+EXT(RI)                       [Ceil((Len(RI)-44)/128) * 128 bytes]
 
 \subsection{Routing information}
 
