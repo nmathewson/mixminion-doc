@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.13 2003/10/07 19:56:10 nickm Exp $
+$Id: E2E-spec.txt,v 1.14 2003/10/30 17:32:18 weasel Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -468,7 +468,21 @@ Table of Contents
 
    (Client software MUST support multiple identities, and MUST make
    it clear to the user which identity has been associated with each
-   incoming SURB.)
+   incoming SURB.
+
+   Client software MAY support export and import of identities.  If
+   they do, they SHOULD support the following format:
+
+     [SURB-Identity]
+     Version: 1.0
+     Nickname: <a sequence of ASCII printable characters>
+     Master-Secret: <the base64 encoded master secret (unencrypted)>
+
+   If more than one identity is exported at a time, the SURB-Identity
+   blocks are concatenated.
+
+   Nickname comparisons SHOULD be done case in a case insensitive
+   manner.)
 
    To generate a SURB for a path of length PATH_LEN, using a long-term
    secret SEC:
@@ -479,7 +493,7 @@ Table of Contents
 
       Let K = Hash(SEED | SEC | "Generate")[0:KEY_LEN]
 
-      Let STREAM = Encrypt(K, Z(KEY_LEN*(PATH_LEN + 1)))
+      Let STREAM = PRNG(K, KEY_LEN*(PATH_LEN + 1))
 
       Let SHARED_SECRET = STREAM[PATH_LEN*KEY_LEN:KEY_LEN]
 
