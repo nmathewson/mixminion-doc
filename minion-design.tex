@@ -279,32 +279,75 @@ distinguishing between them.
 %   message's contents than from the fact of the message's receipt.
 \subsection{Known attacks against mix-nets}
 
-The largest class of passive attacks against 
+Attacks against mix-networks aim at reducing the anonymity of users by
+linking messages injected in a network or a node to messages comming
+out of it. These attacks either try to subvert the process of
+selecting routes or hiding the correspondance by corrupting mixes, or
+they try to use side channels containing some information that can be
+used to link messages together. Finally is none of the above are
+possible traffic analysis can take place whereby the flows of messages
+are processed to find out the most likely recipients or senders. This
+attack can happen in conjunction with injecting traffic controlled by
+the attacker.
 
--control servers
--compromise servers
+\begin{itemize}
 
--replay
+% control servers - I do not get this -GD
+\item \textbf{Compromised servers.} The most obvious attack that can be
+performed against any system using trusted intermediaries, is for an
+attacker to corrupt them. This can be done either by the attacker
+running its own servers, or by hacking into otherwise honest machines
+or using legal compulsion powers to force them to cooperate and reveal
+secrets. In order to avoid the possibility that compromised servers
+would compromise the anonymity of a communication, a series of mixes is
+used hopping that at least one of them will be honest.
+
+\item \textbf{Directory-related attacks.} A variant of compromising the core
+mix servers is to compromise servers making the infrastructure of the
+network such as the ones responsible for giving out information about
+the addresses and keys of mixes. An attacker that is able to tamper
+with this information will be able to divulge wrong information, such
+as a corrupt subset of the network or wrong keys, that could allow
+them to compromize the anonymity of the users. % so what do we do
+					       % about this?
+\item \textbf{Intersection attacks.} In case different messages have
+some characteristics that can be persistantly observed throughout
+their journey in the network, they can be separated from rest of the
+traffic and therefore confused with fewer messages. In order to
+minimize the side channels provided mixminion hides from all
+intermediaries information such as their position on the path or the
+length of the path (althouth there is a miximium of 32
+hops). Additionally the forward and reply paths are indistingushable
+making it it very difficult to divide packets into two distinc
+categories to partition the anonymity set.
+% Does the above cover partitioning attacks as well ?
+
+\item \textbf{Tagging attacks.} An attacker instead of just observing
+characteristics and side channels in the communications could
+additionally try to inject some characteristics that he would hope to
+observe later to trace the message. The simplest way of doing so is by
+slightly modyfying the message, in a way that produces an observable
+result. Mixminion protects against this attack by making sure that all
+information that is destined to intermediate mixes has integrity
+checks, and messages are dropped if they have been modified. All
+information that is not integrity protected id hidden using random
+function whose keys should not be known to an adversary. Therefore it
+should not be possible for him to distinguish between a normal message
+and a tagged one. Finally the decision was taken that it is better to
+discard malformed ot tagged messages rather than risking compromizing
+the anonymity of users.
 
 -delaying
 -dropping
 -textual analysis
-
--partitioning
-
--tagging attacks
-
+-replay
 -(n-1) attack
 
--directory-related attacks
-
 -flooding attack
-
 -delaying attack
-
 -timing attacks
 
--intersection attacks
+\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -502,7 +545,25 @@ message is destroyed if the payload is modified by an adversay.
 \label{subsec:replies}
 
 The rest of this section describes the mechanism for secure replies,
-including how we defeat tagging-related attacks. Mixminion's reply
+including how we defeat tagging-related attacks. 
+Mixminion allows Alice to send messages to Bob in one of three ways:
+
+\begin{enumerate}
+\item \textbf{Forward} messages where only Alice remains anonymous
+($(A)^x \rightarrow B: M$.) 
+\item \textbf{Direct Reply} messages where only Bob remains anonymous 
+($A \rightarrow (B)^y: M$.)
+\item \textbf{Anonymized Reply} messages where Alice \emph{and} Bob
+   remain anonymous ($(A)^x \rightarrow (B)^y: M$.)
+\end{enumerate}
+
+We denote as $(A)^x$ Alice communicating anonymously under the
+pseudonym $x$. In the context of message contents we denote as
+$(A)^x_i$ a single use reply block destined to the pseudonym $x$ of
+Alice. The subscript $i$ makes explicit the fact that a SURB can only
+be used once and a new one has to be used for every communication.
+
+Mixminion's reply
 model is in part inspired by Babel \cite{babel}, as it requires the
 receiver of a reply block to keep no other state than its secret keys,
 in order to read the reply.  All the secrets used
@@ -528,17 +589,6 @@ Therefore, since we choose to make forward messages and replies
 indistinguishable, we cannot include hashes for forward messages either.
 Our approach to defending against these attacks is discussed in more
 detail in Section \ref{subsec:tagging-defenses}.
-
-Mixminion allows Alice to send messages to Bob in one of three ways:
-
-\begin{enumerate}
-\item \textbf{Forward} messages where only Alice remains anonymous
-($(A) \rightarrow B: M$.) 
-\item \textbf{Direct Reply} messages where only Bob remains anonymous 
-($A \rightarrow (B): M$.)
-\item \textbf{Anonymized Reply} messages where Alice \emph{and} Bob
-   remain anonymous ($(A) \rightarrow (B): M$.)
-\end{enumerate}
 
 We require parties that benefit from anonymity properties to run dedicated
 software.  Specifically, senders generating forward messages must be able
@@ -1191,10 +1241,10 @@ each mailbox, and use a reply block for each incoming message.
 
 \begin{equation}
 \begin{aligned}
-(A) \rightarrow \mathrm{Nym}&: \{\mathrm{Register} ,A', V_{A'}, (A)_1 \dots
-(A)_n\}_{S_{A'}} \\ 
-B \rightarrow \mathrm{Nym}&: A', M \\ 
-\mathrm{Nym} \rightarrow (A)_i&: M \\
+(A)^\alpha \rightarrow \mathrm{Nym}&: \{\mathrm{Register} , \alpha, V_{\alpha}, (A)^\alpha_1 \dots
+(A)^\alpha_n\}_{S_\alpha} \\ 
+B \rightarrow \mathrm{Nym}&: \alpha, M \\ 
+\mathrm{Nym} \rightarrow (A)^\alpha_i&: M \\
 \end{aligned}
 \end{equation}
 
@@ -1213,11 +1263,11 @@ blocks so the nymserver can deliver that mail.
 
 \begin{equation}
 \begin{aligned}
-(A) \rightarrow \mathrm{Nym}&: \{\mathrm{Register} ,A', V_{A'}\}_{S_{A'}}\\
-B \rightarrow \mathrm{Nym}&: A', M \\
-(A) \rightarrow \mathrm{Nym}&: \{\mathrm{Query} ,A', (A)_1 \dots
-(A)_n\}_{S_{A'}} \\
-\mathrm{Nym} \rightarrow (A)_i&: M
+(A)^\alpha \rightarrow \mathrm{Nym}&: \{\mathrm{Register} , \alpha, V_{\alpha}\}_{S_{\alpha}}\\
+B \rightarrow \mathrm{Nym}&: \alpha, M \\
+(A)^\alpha \rightarrow \mathrm{Nym}&: \{\mathrm{Query} ,\alpha, (A)^\alpha_1 \dots
+(A)^\alpha_n\}_{S_{\alpha}} \\
+\mathrm{Nym} \rightarrow (A)^\alpha_i&: M
 \end{aligned}
 \end{equation}
 
