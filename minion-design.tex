@@ -1,6 +1,9 @@
 
 \documentclass{llncs}
 
+\usepackage{url}
+\usepackage{graphics}
+
 \newcommand{\workingnote}[1]{}        % The version that hides the note.
 %\newcommand{\workingnote}[1]{(**#1)}   % The version that makes the note visible.
 
@@ -195,7 +198,12 @@ to make forward message and replies indistinguishable, we cannot provide
 hashes for forward messages either. This choice introduces a new class
 of attacks known as \emph{tagging attacks}.
 
-
+\begin{figure}
+\begin{center}
+\resizebox{10cm}{!}{\includegraphics{SWAP.eps}}
+\caption{The operations requered by the ``swap'' method} 
+\end{center}
+\end{figure}
 
 
 
