@@ -113,26 +113,23 @@ A subheader contains the following fields:
 
 Subheader fields:
 
-Version Major:   1 byte
-Version Minor:   1 byte
-Shared Secret:   16 bytes
-Digest:          20 bytes
-Routing Size:    2 bytes
-Routing Type:    2 bytes  [total 42 bytes]
-Routing info:    [Routing Size] bytes
+V   Version Major:   1 byte
+V   Version Minor:   1 byte
+SK  Shared Secret:   16 bytes
+D   Digest:          20 bytes
+RS  Routing Size:    2 bytes 
+RT  Routing Type:    2 bytes [total 42 bytes]
+RI  Routing Info:    [Routing Size] bytes
 
 * The Version is present to manage concurrent versions of the
 protocol. If a packet is received with a version that is not supported
 it should be discarded. Nodes must advertise what versions of the
 protocol they support in their status blocks; see below.
-(Because users using different versions can be more easily tracked,
-we would like to minimize the number of different version numbers in
-use at a time.)
-[XXXX we should probably remove the parenthetical. it doesn't add
-      much? -RD]
+
 * The Shared Secret is the base secret that is used to generate all
 other keys for the operations of the node on the packet. It must be
 kept secret and discarded as soon as the packet has been processed. 
+
 * The Digest contains an integrity check of the remainder of the current
 header (128*15 bytes in total). The digest does not cover the current
 subheader: modifications to it are detected because of the OAEP padding.
@@ -159,25 +156,15 @@ subheader: modifications to it are detected because of the OAEP padding.
   multiple of 128 bytes.
 
 The Routing Extension corresponding to a particular subheader is
-encrypted using the Encrypt function with key=Hash(Shared Secret,
-``ROUTING EXTENSION SECRET KEY'') and appended to the RSA-encrypted
-subheader.
+prepended to the rest of the subheaders, and encrypted along with
+them.
 
 We will formally refer to the subheader structure as:
-SHS(V, SK, D, F, A)
-And to the RSA-OAEP encrypted subheader structure as:
-ESHS(PK, SK, D, F, A)
-
-[XXXX What are F and A here? Is SHS always 68 bytes, or "up to 68 bytes",
-      or 68+68n {n:1,...} bytes, or an arbitrary number of bytes, or what?
-      Similarly, ESHS is always 128 bytes? Or 128+128N?
- -RD]
-
-[XXXX They used to be Flags and Address. We do not have a Flags
-anymore since all the information is contained in the address. -GD]
-
-[XXXX so should we remove F and rename A to R? Does SHS include the
-routing extension blocks? -RD]
+SHS(V, SK, D, RS, RT, RI)     [MIN(86, 42+Len(RI)) bytes] 
+And to the RSA-OAEP encrypted portions of the subheader structure as:
+ESHS(PK, SK, D, RS, RT, RI)   [128 bytes]
+And to the extension blocks for a given subheader as:
+EXT(RI)                       [Ceil((Len(RI)-44)/128) bytes]
 
 \subsection{Routing information}
 
@@ -343,7 +330,8 @@ Output: H (The header)
 Process: 
   // Calculate the sizes of the subheaders
   for i = 1 .. N
-	SIZE_i = Len(ESHS(PK_i, V, SK_i, Z(16), Z(1), A_i))
+	SIZE_i = Len(ESHS(PK_i, V, SK_i, Z(16), Z(1), 0, 0, RT_i))
+                    + Len(EXT(RI_i))
 
   // Calculate the Junk that will be appended during processing:
   J_0 = ``'';
@@ -358,9 +346,10 @@ Process:
   for i = N .. 1
 	K = HASH(SK_i, ``HEADER SECRET KEY'')[0:16];
 	IF i = N (set appropriate routing type and A_i)
-	EH = ( extended_headers for routing info, if len(A_i) won't fit.
+	EH = EXT( RI_i )
   	DIGEST = HASH( Encrypt(K, EH | H_(N+1)) | J_i ) )
-	H_i = ESHS(PK_i, V, SK_i, DIGEST, F, A_i) | Encrypt(K, EH | H_(N+1))
+	H_i = ESHS(PK_i, V, SK_i, DIGEST, F, len(RI_i), RT_i, RI_i)
+                  || Encrypt(K, EH | H_(N+1))
   end
 
 return H_1;
@@ -460,15 +449,16 @@ transport protocol or email.  A node with private key PK receiving
 message M = (H1, H2, P) performs the following operations:
 
 PROCEDURE: Process a message M
-	SHS(V, SK, D, F, A) = PK_Decrypt(PK,H1[0:128]);
+	SHS(V, SK, D, F, RS, RT, RI) = PK_Decrypt(PK,H1[0:128]);
         If there is any problem with the OAEP padding discard the message.
         Check that D = H(H1[128:15*128])
-        Let n_extra = number of extended headers
+        Let n_extra = number of extended headers = Ceil( (RS-44) / 128 )
+                  
         H1 = H1[128:15*128] | PRNG(HASH(SK, "RANDOM 
                                                JUNK")[0:16])[0:128*n_extra]
 	H1 = H1 XOR PRNG(HASH(SK, "HEADER SECRET KEY"), Len(H1))
-        Reconstruct A_i from H1[0:128*n_extra]
-        H1 = H1[0:n_extra]
+        RI = RI || H[0:28*n_extra]
+        H1 = H1[128*n_extra:128*16]
 	H2 = SPRP_DEC(SK, ``HEADER ENCRYPT'',H2);
 	P = SPRP_DEC(SK, ``PAYLOAD ENCRYPT'',P);
 
@@ -478,9 +468,9 @@ PROCEDURE: Process a message M
 		H2 = SPRP_DEC(SHA1(P), ``HIDE HEADER'', H2)
 		Swap H1 and H2;
         if routing type is SWAP-FWD or FWD:
-	   	Put (H1, H2, P) in queue to be sent to A.
+	   	Put (H1, H2, P) in queue to be sent to the address in RI.
         Otherwise:
-		Give (A, H(SK,``APPLICATION KEY''), P) to
+		Give (RT, RI, H(SK,``APPLICATION KEY''), P) to
 		Module manager. 
 
 \section{Single Use Reply Block exchange formats}
@@ -577,8 +567,8 @@ portions are non-normative descriptions of TLS.)
 
   If A is not willing to support B's choice, A closes the connection.
   
-* A sends "SEND", M, H(M,"SEND") (4 + 32k + 20 bytes)
-* B sends "RECEIVED", H(M,"RECEIVED") (8 + 20 bytes)
+* A sends "SEND", NL, M, H(M,"SEND") (4 + 32k + 20 bytes)
+* B sends "RECEIVED", NL, H(M,"RECEIVED") (8 + 20 bytes)
 
 * A sends an SSL handshake renegotiation message.
   (and MUST not reuse the same key for 
