@@ -1,0 +1,842 @@
+$Id: nym-spec.txt,v 1.1 2003/07/24 08:02:28 nickm Exp $
+
+                               Mix3:Nym
+    Underhill: A Proposed Type 3 Nymserver Protocol Specification
+
+                            Nick Mathewson
+
+Status of this document
+
+   This document is an initial draft for a specification of nymservers
+   designed to work with Type III (Mixminion) remailers.  It has not
+   yet been reviewed by anybody.
+
+   This protocol is tentatively codenamed "Underhill", until somebody
+   comes up with a more descriptive name.  Who knows; maybe it will
+   stick.
+
+Abstract
+
+   XXXX write me.
+
+Acknowledgments
+
+   Thanks are due to George Danezis and Roger Dingledine, and
+   everybody else who has worked on the Type III remailer
+   specification, especially the members of the Mixmaster team,
+   including Len Sassaman and Peter Palfrader.
+
+   The idea of using SURBs to implement a conversation between
+   nymserver and nymholder was hit upon at a meeting between me,
+   Roger, George, and David Mazieres.  [XXXX who else?]  The
+   necessity of a POP or IMAP-like protocol was  [XXXX AFAICR] first
+   suggested there.
+
+   Earlier drafts and sketches of nymserver protocols for a type III
+   remailer network have been written by George Danezis and Peter
+   McIntyre.  This document incorporates certain elements of their
+   designs.
+
+Table of Contents
+
+            Status of this Document                                    X
+            Abstract
+            Acknowledgments
+            Table of Contents
+   1.       Introduction
+   1.1.     Roles
+   1.2.     Terminology
+   1.3.     Design goals
+   1.3.1.   Non-goals
+   1.4.     Overview
+   2.       Nymserver operation
+   2.1.     Information associated with each nym
+   2.2.     Processing incoming emails
+   2.3.     Relaying emails to the user
+   2.4.     Deleting emails
+   3.       Nymholder client operation
+   4.       Message formats
+   4.1.     Generating synopses
+   4.2.     Message encryption
+   4.3.     Control message format: messages to the nymserver
+   4.3.1.   CREATE [0x00]
+   4.3.2.   CREATE2 [0x01]
+   4.3.3.   SURB [0x02]
+   4.3.4.   NEWPK [0x03]
+   4.3.5.   RELAY [0x04]
+   4.3.6.   GET [0x05]
+   4.3.7.   SUMMARIZE [0x06]
+   4.3.8.   DELETE [0x07]
+   4.3.9.   POLICY [0x08]
+   4.4.     Control message format: messages to the nymholder
+   4.4.1.   CREATED [0x00]
+   4.4.2.   STATUS [0x01]
+   4.4.3.   SUMMARY [0x02]
+   4.4.4.   MSGS [0x03]
+   4.4.5.   DROPPED [0x04]
+   4.4.6    ERROR [0x05]
+   5.       Filtering and abuse prevention
+
+1. Introduction
+
+   A nymserver provides long-term pseudonymous identities.
+
+   As in previous nymserver designs, this protocol uses an anonymity
+   network to relay messages from the holder of a pseudonym to a
+   nymserver, and uses reply blocks to send messages from the
+   nymserver back to the holder of the pseudonym.  Unlike previous
+   designs, this one uses Single-Use Reply Blocks (SURBs) as provided
+   by the Type III anonymity network design.
+
+   Because we use SURBs, the nymserver can no longer relay an
+   arbitrarily large number of emails to the nymholder with a single
+   reply block.  Instead, the nymholder must periodically send a fresh
+   supply of SURBs to the nymserver. If the nymserver runs out of
+   SURBs, it must hold messages until the client can retrieve them.
+
+   To minimize the volume of messages sent over the anonymity network,
+   and reduce the traffic-analysis impact of a flooding or spamming
+   attack, we allow clients to view synopses of emails, and
+   selectively download only the ones they choose and delete the rest.
+   This explicit email selection is used only when accounts are
+   heavily loaded --- when traffic is light, the nymserver relays all
+   email automatically after batching them into type III packets.
+   When traffic becomes heavier, the nymserver sends only synopses of
+   incoming emails.  When the nymserver runs out of SURBs entirely,
+   the nymholder sends control messages to explicitly retrieve the
+   synopses and emails she wants.
+
+   The nymserver tries to provide a reliable service on top of an
+   unreliable message protocol.  Thus, when the nymserver has the
+   space to do so, it holds emails that it has relayed until they have
+   been acknowledged by their recipients.  When the nymholder sends an
+   important control message to the nymserver, it MAY choose to
+   remember the message until the nymserver has acknowledged it.
+
+1.1. Roles
+
+   Nymserver - A piece of software running on a well-known host.
+      Provides pseudonymous identities.
+
+   Nym - The pseudonymous identity of a user.
+
+   Nymholder - The user who controls a given nym.
+
+   Sender - A user who sends email to a nym
+
+   Recipient - A user who receives email sent by a nym.
+
+1.2. Terminology
+
+   Control Message - A message sent via Type III remailers; either
+      from the nymserver to the nymholder, or from the nymholder to
+      the nymserver.
+
+   Email - A message relayed via a nymserver; either from a sender to
+      the nymholder, or from the nymholder to a recipient or set or
+      recipients.
+
+   Packet, SURB - As used in the Type III remailer specification.
+
+   Additionally, we use below a number of cryptographic operations
+   described more fully in the type III remailer specification.
+
+1.3. Design goals
+
+   Pseudonymity:
+
+      - There should be no feasible way for an attacker to gain
+        information about the identity of the holder of a given nym,
+        even if the attacker compromises or controls the nymserver.
+
+      - There should be no feasible way for an attacker to learn
+        which nyms a given user holds, even if the attacker
+        compromises or controls the nymserver.
+
+      - If the nymserver is not compromised, only a nymholder should
+        be able to receive emails sent to a given nym.
+
+      - If the nymserver is not compromised, only a nymholder should
+        be able to send emails originating from a given nym.
+
+   Message secrecy
+
+      - The protocol should be compatible with systems such as
+        OpenPGP and SMTP/TLS that seek to prevent an attacker from
+        eavesdropping on mail.  When possible, the protocol should
+        facilitate use of these systems.
+
+   No software for non-users
+
+      - Users who do not receive pseudonymity from the system should
+        not need to run any software in order to send emails to nyms
+        or receive emails from nyms.
+
+      - Additionally, users can shut down their accounts without
+        special software by sending a shutdown phrase to the
+        nymserver via ordinary or anonymous email.
+
+   Forward security (limited)
+
+      - If an attacker compromises a nymserver, the attacker should
+        gain as little additional information as possible about
+        previous use of the system.
+
+   Availability
+
+      - Nymholders should receive their emails in as timely a manner
+        as is possible given their security requirements.
+
+      - The system should be resilient to spam, abuse, and DoS
+        attacks.
+
+1.3.1. Non-goals
+
+   The following properties are *not* goals or requirements of this
+   protocol. 
+
+      - Full transport neutrality.  
+
+        (Although this protocol does not require a Type III mix
+        network specifically, it assumes that its underlying transport
+        has many properties of a Type III mixnet.  Specifically, it
+        assumes the existence of a high-latency, message-based open
+        anonymity network with single-use reply blocks.  It further
+        assumes that the underlying transport prevents forward
+        messages to a given remailer from being received or decrypted
+        by an attacker; and that the transport also prevents replies
+        from being received or decrypted by anybody but the SURB
+        generator.)
+
+      - Minimal nymserver storage requirement
+      
+        (This protocol assumes that nymservers will have to devote a
+        certain amount of space to each nym in order to store SURBs
+        (under ordinary load) and pending messages (under high load).
+        Although we allow nymservers to drop pending messages, there
+        seems no way to provide reliable service to nymholders under
+        high load without storing at least some messages on the
+        nymserver.)
+
+      - Latency-free retransmission.
+
+      - Design minimalism.
+
+1.4. Overview
+
+   In this design, a Nymserver provides pseudonymous identities to its
+   users as follows:
+
+     - Internally, it associates an identity public key with each
+       pseudonym.  Nymholders anonymously send control messages to the
+       nymserver and authenticated with their private identity key.
+
+     - To communicate anonymously with the nymserver, the nymholder
+       uses the Type III remailer network to send its control messages
+       to the nymserver.  Every nymserver acts as a Type III Remailer
+       for the purposes of accepting Incoming/MMTP.  A nymserver need
+       not support Outgoing/MMTP, or any delivery type but 'NYM3'.
+
+       (Because Type III messages to a Type III node are encrypted to
+       the node's public key, no further encryption is needed to
+       ensure that only the nymserver can read messages from the
+       nymholder.)
+
+       (Because Type III is replay-proof, no further replay
+       prevention is needed.)
+
+     - To allow the nymserver to communicate back to the anonymous
+       nymholder, the nymholder provides the nymserver with a stock of
+       SURBs, and replenishes them periodically. 
+
+       (Because the nymholder uses a separate SURB identity secret for
+       each pseudonym it generates, it can distinguish reply messages
+       sent to these SURBs from any other messages it might receive.
+       Thus, because only the nymserver receives these SURBs, no
+       further authentication from the nymserver to the nymholder is
+       needed.  Because replies can only be read by the user who
+       generated the SURB, no further encryption is needed from the
+       nymserver to the nymholder.)
+
+       (Because Type III is replay-proof, no further replay
+       prevention is needed.)
+
+     - To send a pseudonymous email to a given recipient, a nymholder
+       sends a control message to the nymserver, containing the text
+       of the email to send.  The nymserver checks the authentication,
+       and relays the email as appropriate.
+
+       [XXXX Should there be some way for the nymholder to
+          authenticate to the final recipient?  I'd say, "Just use
+          PGP", but PGP distinguishability is an issue.]
+
+     - Nymservers accept emails to nyms from senders via SMTP and
+       SMTP/TLS, and relay them to the appropriate nymholders.
+
+     - Because a SURB can only be used once, nymservers try to send as
+       few messages as possible to users.  They do this by batching
+       multiple incoming emails into single Type III packets.
+
+     - To prevent flooding attacks against nymholders, the nymserver
+       does not automatically relay all emails to their user.
+       Nymservers support incoming email blocking, configured by the
+       holder of each nym.
+
+     - To reduce message load, but still retain performance under
+       load or DoS attacks, the nymserver and client follow different
+       behavior patterns under different loads.  (See section 1 above
+       for a description.)
+
+     - To minimize the impact of a compromise, a nymserver encrypts
+       all incoming email upon receipt.  Below, we specify a way for
+       the nymserver to do so while at the same time allowing users
+       to receive header synopses, and disguising email sizes.
+       [XXXX There's a neat way to hide linkage between emails sent
+       to the same identity, but it makes a lot of other stuff really
+       hard to do. Thus, I'm not going to recommend it.]
+
+2. Nymserver operation
+
+2.1. Information associated with each nym
+
+   For each nym, a nymserver maintains the following information:
+
+     [User adjustable options]
+      - Identity public key of the nymholder
+      - Encryption public key of the nymholder
+      - A filtering policy (described below)
+      - A maximum email latency, in 30-minute increments. (described below)
+      - A maximum synopsis latency, in 30-minute increments. (described
+        below)
+      - A maximum SURB usage rate, in SURBs-per-day.
+      - A maximum unencrypted synopsis time, in 30-minute
+        increments. (described below)
+      - A hold-until-ack level (one of "Never", "Quota", or "Always")
+      - The hash of a 'shutdown' passphrase
+
+      [XXXX I'm not so sure that it's a good idea to have so many
+       user-adjustable options, but I can't think of a single policy
+       that allows both security and any reasonable efficiency.
+       Others may be able to strike a better balance.]
+
+     [Administrator adjustable options]
+      - Maximum number of queued emails
+      - Maximum email size
+      - Maximum disk space used
+
+   Additionally, the nymserver stores on behalf of the user:
+
+      - A set of emails, each consisting of:
+            An encrypted synopsis
+            An encrypted emails
+        Each message also has:
+            A 32-byte message identifier
+            A 'sent' tristate: "Nothing sent", "Synopsis-sent", "Sent-In-Full".
+            A time of receipt.
+
+      - A set of SURBs 
+
+2.2. Processing incoming emails
+
+   When a nymserver receives an incoming email, it follows these
+   steps:
+
+      1. The nymserver decides whether to accept the email.  If any
+         of the following apply, the nymserver rejects the email:
+         - The email is not addressed to a valid nym.
+         - The email violates the nymserver's abuse or spam policies.
+         - Accepting the email would violate the nym's quota.
+         - The email is rejected by the nym's filtering policies.
+
+         [XXXX when do we send a bounce?]
+
+      2. The nymserver then forms a synopsis of the email; generates a
+         random 20-octet message ID for the email; encrypts the email
+         for receipt by the nymholder, and decrements the email's size
+         from the user's available quota.
+
+2.3. Relaying emails to the user
+
+   Later, the nymserver will send a synopsis of a pending message to a
+   nymholder if:
+      - The nymholder has requested the synopsis, and the user has any
+        stored SURBs.
+      - The nymholder's maximum synopsis latency has passed, and there
+        are enough SURBs to send the synopsis to the nymholder with
+        at least N [XXXX 2?] left over, and sending the message would
+        not exceed the max-surbs-per-day rate.
+      - The nymserver is sending a control message to the nymholder,
+        and there is enough unused space in the message's packets to
+        include the synopsis, and the synopsis is older than any
+        currently unsent synopsis.
+   After sending a synopsis, the nymserver marks the corresponding
+   email as 'synopsis-sent'.
+
+   Also, the nymserver will send the email to the nymholder if any
+   of the following conditions hold:
+      - The user has requested the email, and there are enough SURBs
+        stored for the user to send the email.
+      - The user's maximum email latency has passed since the email
+        arrived, and there are enough SURBs to send the email to the
+        nymholder with at least 5 left over, and sending the message
+        would not exceed the max-surbs-per-day rate.
+      - The nymserver is sending a control message to the nymholder,
+        and there is enough unused space in the message's packets to
+        include the email, and the email is older than any other email
+        that could be sent.
+   After sending an email to a nymholder, the nymserver marks that
+   as 'sent-in-full'.
+
+   If the rules above allow either email or synopses to be sent, first
+   priority is given to sending the user some information about every
+   email, and second priority is given to sending the most information
+   possible about each email.  (Thus, if there is room for every email
+   to be sent in full, every email is sent in full and no synopses are
+   sent.  But if only some emails can be sent in full, it is better
+   to synopsize as many emails as possible, and then include as many
+   emails as fit.)
+
+   [XXXX I need to clean this section up--it's more verbose and
+      byzantine than it needs to be.]
+
+2.4. Deleting emails
+
+   A nymserver deletes a stored email if any of the following reasons apply:
+      - The nym's account has been closed.
+      - The nymholder has requested that the email be deleted.
+      - The email's state is "Sent-In-Full", and the nym's
+        hold-until-ack level is "Never".
+      - The email's state is "Sent-In-Full", and deleting the email
+        would free enough room to allow the nymserver to accept an
+        incoming email for the nym, and the nym's hold-until-ack level
+        is "Quota".  (When choosing between multiple emails in this
+        case, the nymserver deletes the oldest.)
+
+3. Nymholder client operation
+
+   [XXXX This section is grossly underwritten.]
+
+   In this design, nymholders must run client software in order to
+   decode control messages from the nymserver; to resupply the
+   nymserver with SURBs; and to send other control messages to the
+   server.
+
+   When the load is light enough for the server to relay all emails to
+   the nymholder, the client simply replenishes the nymserver's SURB
+   pool when it is low, and tells the server to delete all the
+   messages it receives.
+
+   Under heavier load, the client retrieves synopses explicitly as
+   needed; presents the user with a list of known retrievable
+   messages, and requests that the nymserver retrieve/delete messages
+   as appropriate.
+
+   When sending an 'update' command to the nymserver (for example, to
+   change the nymholder's public key or configuration options), the
+   client keeps a copy of the command in local storage until the
+   server has acknowledged it.
+
+4. Message formats
+
+4.1. Generating synopses
+
+   The 'synopsis' of an email is an RFC822-formatted octet sequence
+   containing a subset of the email's RFC822 headers, and the first
+   128 characters of the email body.  The following headers are
+   included in the synopsis, if they present:
+
+         Cc
+         From
+         Date
+         In-Reply-To
+         Message-Id
+         References
+         Subject
+         To
+         X-Anonymous
+         X-Spam-Level
+
+   The final received header (added by the nymserver's MTA) is also
+   included, as well as a 'X-Octets' header indicating the total size
+   of the email.  [XXXX is there a standard way to do this?]
+
+   To prevent DoS attacks, only the first 80 characters of any header
+   are included in the synopsis.
+
+4.2. Message Encryption
+
+   After synopsizing an email, the nymserver encrypts it immediately
+   with the nymholder's private key.
+
+   If a nymserver holds a set of synopses for longer than the
+   nymholder-specified length of time, it encrypts those synopses with
+   the nymholder's private key.
+
+   To encrypt an octet sequence, the nymserver first compresses the
+   octet sequence (as described in E2E-spec.txt).  Next, the nymserver
+   pads the octet sequence to the nearest multiple of 128 octets in
+   length.  The nymserver then generates a random 128-bit key;
+   LIONESS-encrypts the padded compressed data with the key; and
+   prepends to the encrypted data the RSA-encrypted key.  We use the
+   same trick as minion-spec.txt to minimize wasted space.
+
+   PROCEDURE: Encrypt an octet sequence to a nymholder.
+   INPUTS:
+           PK_nym -- The nymholder's encryption public key
+           M -- The octet sequence to encrypt
+           P -- The padding granularity -- either 1024 or 128.
+
+     Let M_C = COMPRESS(M).
+     Let PADDING_LEN = CEIL(LEN(M_C)/P) - LEN(M_C).
+     Let M_P = M | Z(PADDING_LEN).
+   
+     Let K = R(16).
+     Let M_Enc = SPRP_Encrypt(K, "", M_P)
+     Let RSA_LEN = Len(PK_nym) - OAEP_OVERHEAD - 16
+     Let RSA_PART = PK_Encrypt(PK_nym, K | M_Enc[0:RSA_LEN])
+
+     Return RSA_PART | M_Enc[RSA_LEN:Len(M_Enc)-RSA_LEN] 
+
+   For efficiency reasons, a nymserver tries to encrypt several
+   synopses at once, so that zlib can compress them effectively.
+   (This can increase by a factor of 2 to 3 the number of synopses
+   that fit in a single type III packet.)  There is a tension here
+   between forward security (which would mandate encrypting each
+   synopsis as soon as possible) and between efficiency and
+   traffic-analysis resistance (which would mandate minimizing the
+   number of packets sent between client and server).  
+
+   We strike the following compromise: a nymserver encrypts synopses
+   for a user whenever it has eight or more pending synopses to
+   encrypt, or whenever a synopsis has waited without encryption for a
+   given interval of time, or whenever the synopses are about to be
+   sent to the nymholder.
+
+   When encrypting a group of synopses, the nymserver first packages them
+   by prepending to each one the following 22 octet header, and then
+   concatenating the synopses.
+
+        ID     [20 octets]   (A randomly generated message ID.)
+        LEN    [2 octets]    (Length of the synopsis, in octets.)
+
+   (Note that the nymserver must associate with each encrypted set of
+   synopses the message ID of every synopsis, in order, contained
+   therein.  It can only delete the set of synopses when it has
+   deleted every corresponding email.)
+     
+4.3. Control message format: messages to the nymserver
+
+   This section describes the control messages sent from the
+   nymholder to the nymserver.
+
+   A control message is a signed list of commands from the nymholder
+   to the nymserver.  Commands are identified by command type, and are
+   of variable length.
+
+   All of the control messages described below follow the following
+   format.
+      
+       Header:
+            SIG    Signature             (PK_LEN=256 octets)
+            NL     Nym Length            (1 octet)
+            NYM    Nym                   (variable length)
+            SEQNO  Sequnce #             (20 octets)
+       Body:
+          Sequence of:
+            CT    Command type      (1 octet)
+            CS    Command data size (3 octets)
+            CD    Command data      (variable length)
+
+   The 'Signature' field is equal to the RSA-OAEP+ signature of a
+   SHA-1 hash of the remainder of the message.  The NL field is equal
+   to the length of NYM.  The NYM field is equal to the Nym to which
+   these commands apply.  The SEQNO field holds a random value used
+   by the nymserver later to acknowledge this message.
+
+   The value of each 'CS' field must be the big-endian representation
+   of the size of the immediately following CD field.
+
+   The following values for CT are recognized:
+        0x00 : CREATE  (Create a new nym)
+        0x01 : CREATE2 (Confirm a new nym)
+        0x02 : SURB    (Supply the nymserver with new set of SURBs)
+        0x03 : NEWPK   (Set or replace public keys)
+        0x04 : RELAY   (Send an email to a recipient)
+        0x05 : GET     (Retrieve a list of emails)
+        0x06 : SUMMARY (Retrieve a list of synopses)
+        0x07 : DELETE  (Expunge a list of emails from the nymserver)
+        0x08 : POLICY  (Adjust user settings)
+
+4.3.1. CREATE [0x00]
+
+   A CREATE command begins the nym creation handshake.
+
+   The body of a CREATE command has the following structure:
+         NNym  Number of candidate nyms  (1 octet)
+         PW    Proof of work             (??? octets)
+       Sequence of:
+         NL    Candidate Nym Length      (1 octet)
+         Nym   Candidate Nym             (variable length)
+
+   (To create a new Nym, a nymholder send a new control message
+   containing a CREATE command, a NEWPK command, and a SURB command
+   with at least 3 SURBs.  This initial control message should have an
+   empty (0-octet) nym, and should be signed with the identity key
+   given in the NEWPK command.  The nymserver replies with a CREATED
+   command, which the nymholder confirms with a CREATE2 command.)
+   
+   [XXXX specify a proof-of-work system.]
+
+4.3.2. CREATE2 [0x01]
+
+   A CREATE2 command creates the nym creation handshake.
+
+   The body of a CREATE2 command has the following structure:
+        CR    Response to challenge      (variable length)
+
+4.3.3. SURB [0x02]
+
+   A SURB command provides one or more SURBs for the server to contact
+   the client.
+
+   The body of a SURB command has the following structure:
+        SURB         (variable length)
+
+   If the body of the SURB command is empty, the nymserver deletes
+   all currently held SURBs.
+
+4.3.4. NEWPK [0x03]
+
+   A NEWPK command sets the nymholder's public keys at the server.
+
+   The body of a SURB command has the following structure:
+      Identity key length   (2 octets)
+      Identity key          (variable length)
+      Encryption key length (2 octets)
+      Encryption key        (variable length)
+
+   The key length fields MUST be 128 or 256.  The key fields hold
+   ASN.1 encoded RSA public keys.  Their exponents must be 65537.
+
+   Because the nymserver may not receive the message, the nymholder
+   should continue to sign commands with its previous identity key
+   until the new one has been acknowledged, and accept messages
+   encrypted with the previous encryption key until a given amount of
+   time has elapsed.
+
+4.3.5. RELAY [0x04]
+
+   A RELAY command tells the nymserver to send an email from the nym.
+
+   The body of a RELAY command has the following structure:
+     Destination:
+        RS   Routing Size    (2 octets)
+        RT   Routing Type    (2 octets)
+        RI   Routing Info    (Variable length; RS=Len(RI))
+     Message
+        BL   Body length     (4 octets)
+        BODY Email body      (Variable length; BL=Len(BODY))
+
+   The routing fields are as in "minion-spec.txt".  The email body
+   is prefixed with headers as in "E2E-spec.txt", but is otherwise
+   unencoded.  When the server delivers the email, it adds a From
+   line with the correct nym mailbox, and sets the name as given in
+   the headers.
+   
+4.3.6. GET [0x05]
+
+   A GET command requests that the server transfer a set of emails to
+   nymholder.
+
+   The body of a GET command has the following structure:
+        Sequence of:
+            MSGID  (20 octets)
+
+4.3.7. SUMMARIZE [0x06]
+
+   A SUMMARIZE command requests that the server transfer a set of
+   summaries to the client.
+
+   The body of a SUMMARIZE command has the following structure:
+            NUM       (2 octets)
+            AFTER     (20 octets)
+
+   The NUM field specifies a maximum number of summaries to retrieve;
+   the AFTER field requests that only summaries newer than the
+   message ID specified be returned.
+
+4.3.8. DELETE [0x07]
+
+   A DELETE command tells the server to delete a number of specified
+   emails, by ID.
+
+   The body of a DELETE command has the following structure:
+        Sequence of:
+            MSGID  (20 octets)
+
+4.3.9. POLICY [0x08]
+
+   A POLICY command sets a nymholder-specified configuration option
+   on the nymserver.  The body of a POLICY command has the following
+   structure:
+       OPTION_LEN  (1 octet)
+       OPTION_NAME (variable length; len(OPTION_NAME) = OPTION_LEN.)
+       VALUE       (variable length)
+
+   Recognized options include:
+       "SendMsgAfter" -- max time to hold a sendable email without
+           sending, when enough SURBs are held.
+       "SendSummaryAfter" -- max time to hold sendable synopses
+           without sending, when low on SURBs.
+       "EncryptSummaryAfter"  -- max time to hold summary without encrypting
+       "MaxSURBsPerDay" -- maximum number of SURBs to use for
+           automatically generated traffic in a single day
+       "HoldSURBs"   -- minimum # of SURBs to hold for status messages.
+       "HoldUntilAck"  -- 'never', 'quota', 'always'.
+       "ShutdownPhrase"  -- Hash of a passphrase useable to shutdown the
+          nym.
+       "Filtering" -- specify a filtering policy; see section 5 below.
+
+   Times are specified as a decimal number of minutes; they may be
+   rounded up to the nearest half hour by thhe server.  A time of "0"
+   signifies "immediately", a time of "-1" signifies "never".
+
+   All other numbers are encoded in decimal.
+
+4.4. Control message format: messages to the nymholder
+
+   This section describes the control messages sent from the nymserver
+   to the nymholder.
+
+   A control message is a list of commands from the nymserver to the
+   nymholder nymserver.  Commands are identified by command type, and
+   are of variable length.
+
+   All of the control messages described below follow the following
+   format.
+      
+          Sequence of:
+            CT    Command type      (1 octet)
+            CS    Command data size (3 octets)
+            CD    Command data      (variable length)
+
+   The NYM field is equal to the Nym to which these commands apply.
+   The NONCE field holds a random value used by the nymserver later to
+   acknowledge this message.
+
+   The value of each 'CS' field must be the big-endian representation
+   of the size of the immediately following CD field.
+
+   The following values for CT are recognized:
+        0x00 : CREATED  (Acknowledge a new nym) 
+        0x01 : STATUS   (Acknowledge messages and describe status)
+        0x02 : SUMMARY  (Describe pending emails)
+        0x03 : MSGS     (Send emails to the client)
+        0x04 : DROPPED  (Tell the client about dropped emails)
+        0x05 : ERROR    (Tell the client about an error condition)
+
+4.4.1. CREATED [0x00]
+
+   A CREATED command acknowledges a client's CREATE or CREATE2
+   command.  A CREATED command tells the client which Nym was
+   assigned, and (optionally) demands a challenge response from the
+   client before opening the Nym.
+
+   The body of a CREATED command has the following structure:
+        NL          Length of the assigned nym  (1 octet)
+        NYM         Assigned nym                (variable length)
+        CHALLENGE   Optionally, a challenge     (Variable length)
+
+   [XXXX The challenge-response protocol is as yet unspecified.]
+
+4.4.2. STATUS [0x01]
+
+   A STATUS command tells the nymholder about the state of the
+   nymserver _after_ the current control message is processed.  A
+   nymserver SHOULD send a STATUS command in every possible control
+   message.
+
+   A status command has the following structure:
+      N_MSGS   Number of emails waiting                       (4 octets)
+      N_SURBS  Number of SURBs available                      (2 octets)
+      QUOTA    Maximum storage on nymserver, in bytes.        (4 octets)
+      USED     Currently used storage on nymserver, in bytes. (4 octets)
+      Sequence of:
+           SEQNO  Nonce of acknowledged client commands       (20 octets)
+
+   A nymserver MUST acknowledge every client control message at least
+   once, and MAY acknowledge a client control message more than once.
+   When sending a control message to the client, the nymserver SHOULD
+   acknowledge every client control message that it has received but
+   not yet acknowledged.
+
+   If a control message with an important state-changing command (such
+   as NEWPK or POLICY) goes a long time without acknowledgment, the
+   client SHOULD re-send the command in a later control message.
+
+4.4.3. SUMMARY [0x02]
+
+   A SUMMARY command tells the client about a set of one or more
+   waiting emails.  Because the synopsis for a waiting email may be
+   encrypted together with synopses for emails that have already been
+   deleted, each SUMMARY includes a bitfield to identify which
+   synopses correspond to available messages.
+
+   A SUMMARY command has the following body structure:
+     VALID_BF Bitfield: which entries in ES have an email?   (2 octets)
+     ES       Encrypted set of synopses.              (variable length)
+
+   The LSB in Valid_BF corresponds to the first synopsis in ES, and so
+   on.
+
+4.4.4. MSG [0x03]
+ 
+   A MSG command relays an email to the client.
+
+   The body of a SUMMARY command has the following structure.
+     MSGID  Message ID        (20 octets)
+     MSG    Encrypted email  (variable length)
+
+   Section 2.3 describes circumstances under which a nymserver
+   generates MSG commands.
+
+4.4.5. DROPPED [0x04]
+
+   A DROPPED command tells the nymholder that the nymserver has
+   discarded a list of emails, either at the nymholder's request or
+   for another reason.
+
+     Sequence of:
+        MSGID  Message ID       (20 octets)
+
+   Section 2.4 describes circumstances under which a nymserver
+   generates DROPPED commands.
+
+4.4.6. ERROR [0x05]
+
+     NONCE  Nonce from client message; Z(20) if none.  (20 octets)
+     ERROR  English-language error message             (variable width)
+
+5. Filtering and abuse prevention
+
+   [XXXX write more here.  We should provide some built-in means for
+     operators to block incoming spam and floods.  We should also
+     allow users to block messages that they don't want to receive,
+     perhaps by sender or subject line or size or spamassassin status
+     or something.
+
+     Note that blindly allowing regex support is probably a _bad_
+     idea; it's not hard to find pathological input texts that make
+     perl-style backtracking regex engines behave very badly.]
+
+X. Open issues
+
+   - Should there be some versioning here?
+
+   - We need some kind of entry format for nymservers' server
+     descriptors.
+
+   - What is in George's and Peter's nymserver specifications that I
+     missed?
+
+   - 
