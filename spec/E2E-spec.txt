@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.8 2003/08/09 02:56:55 nickm Exp $
+$Id: E2E-spec.txt,v 1.9 2003/08/21 21:08:05 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -216,7 +216,7 @@ Table of Contents
    
        Let M_SIZE = CEIL(LEN(M) / PS)
 
-       Let K = Min(32, 2**CEIL(Log2(M_SIZE)))
+       Let K = Min(16, 2**CEIL(Log2(M_SIZE)))
        Let NUM_CHUNKS = CEIL(M_SIZE / K)
    
        Let M = M | PRNG(Len(M) - NUM_CHUNKS*PS*K)
@@ -654,15 +654,9 @@ Table of Contents
    of "Decoding-handle".  Otherwise, the "Decoding-handle" header
    MUST be omitted.
 
-   [XXXX remove this -- it's no longer accurate.  We require that exit
-   nodes reconstruct fragments now.
-
-   When encountering a plaintext fragment, an exit node that does not
-   support message reconstruction, or that is not willing to
-   reconstruct a message of the given size, SHOULD deliver the
-   fragment as-is, with armor described above, and "Message-type" set
-   to "fragment".
-   XXXX remove]
+   When encountering a plaintext fragment, if the exit type is not
+   "FRAGMENT", the exit node SHOULD deliver the fragment as-is, with
+   armor described above, and "Message-type" set to "fragment".
 
    When encoding a plaintext Type III message, exit nodes MAY apply
    OpenPGP ASCII armor if the message contains characters other than
@@ -802,10 +796,11 @@ Table of Contents
    section, containing the entry "Version: 1.0".  Other servers
    MUST NOT include a [Delivery/MBOX] section.
 
-   If the server supports message reconstruction, the section MAY
-   include a "Maximum-size" line, containing the maximum permitted
-   message size in KB (before compression). [XXXX is "before"
-   reasonable?]
+   This section MUST include a "Maximum-size" line, containing the
+   maximum permitted message size in KB (before compression).  Note
+   that because of base64-encoding, actual delivered messages may be
+   longer than this by a factor of ~1.33.  The value must be at least
+   "32".
    
 3.3. SMTP
 
@@ -855,10 +850,12 @@ Table of Contents
    section, containing the entry "Version: 1.0".  Other servers
    MUST NOT include a [Delivery/SMTP] section.
 
-   If the server supports message reconstruction, the section MAY
-   include a "Maximum-size" line, containing the maximum permitted
-   message size in KB (before compression). [XXXX is "before"
-   reasonable?]
+   This section MUST include a "Maximum-size" line, containing the
+   maximum permitted message size in KB (before compression).  Note
+   that because of base64-encoding, actual delivered messages may be
+   longer than this by a factor of ~1.33. The value must be at least
+   "32".  A server MAY drop any message that uncompresses to be
+   longer than this type.
    
 3.4. Fragments
 
