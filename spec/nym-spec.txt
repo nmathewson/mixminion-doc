@@ -1,4 +1,4 @@
-$Id: nym-spec.txt,v 1.6 2004/02/20 21:58:50 nickm Exp $
+$Id: nym-spec.txt,v 1.7 2004/08/06 09:26:43 nickm Exp $
 
                                Mix3:Nym
     Underhill: A Proposed Type 3 Nymserver Protocol Specification
@@ -339,7 +339,7 @@ Table of Contents
             An encrypted synopsis
             An encrypted emails
         Each message also has:
-            A 32-byte message identifier
+            A 20-byte message identifier
             A 'sent' tristate: "Nothing sent", "Synopsis-sent", "Sent-In-Full".
             A time of receipt.
 
@@ -578,7 +578,7 @@ Table of Contents
             CS    Command data size (3 octets)
             CD    Command data      (variable length; CS octets)
 
-   The 'Signature' field is equal to the RSA-OAEP+ signature of a
+   The 'Signature' field is equal to the RSA-OAEP signature of a
    SHA-1 hash of the remainder of the message.  The NL field is equal
    to the length of NYM.  The NYM field is equal to the Nym to which
    these commands apply.  The SEQNO field holds a random value used
@@ -693,6 +693,9 @@ Table of Contents
    The NUM field specifies a maximum number of summaries to retrieve;
    the AFTER field requests that only summaries newer than the
    message ID specified be returned.
+
+   For purposes of this command, the message identifier Z(20) is older than
+   all other message IDs.
 
 4.3.8. DELETE [0x07]
 
