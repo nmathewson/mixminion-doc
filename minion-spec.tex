@@ -718,6 +718,21 @@ portions are non-normative descriptions of TLS.)
 * A sends "SEND", NL, M, H(M,"SEND") (5 + 32k + 20 bytes)
 * B sends "RECEIVED", NL, H(M,"RECEIVED") (9 + 20 bytes)
 
+[XXXX Roger was wondering: what is the purpose of the RECEIVED ack? If
+   the server goes away without warning, SSL will tell us. -NM]
+
+[XXXX proposal to allow link-level padding:
+
+  If the hash sent from A to B is incorrect, B instead sends
+          "BAD SHA1", NL, H(M,"BAD SHA1"), (9+20 bytes).
+
+  (We provide this option in order to support link-level padding.  If
+  B did not send a hash of the incorrect message, a passive adversary
+  could mount a timing against the protocol.  If the "BAD SHA1"
+  message were not the same length as the RECEIVED message, an
+  adversary might be able to distinguish padding from messages by the
+  differing lengths of the reply messages. -NM]
+
 * A sends an TLS handshake renegotiation message.
   (and MUST not reuse the same key for 
    transfering another message)
@@ -838,7 +853,7 @@ services, keys, and exit policies over a set period of time.
      'Comments': Human-readable information about this server.  Must
          be <1024 bytes long.  It *must not* be necessary to read this
          information to use the server properly.
-     'Packet-key': A BASE64-encoded modulus used to encode subheaders
+     'Packet-Key': A BASE64-encoded modulus used to encode subheaders
          intended for this server.
 
 The digest of a descriptor block is computed by replacing all digest
@@ -864,7 +879,7 @@ If this server supports outgoing MMTP connections, it must have a
 and any number of entries of the form:
 
       'Allow': Address
-      'Deny': IP
+      'Deny': Address
 
 The patterns are of the form:
 
