@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.7 2003/08/09 02:51:53 nickm Exp $
+$Id: E2E-spec.txt,v 1.8 2003/08/09 02:56:55 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -242,13 +242,12 @@ Table of Contents
 
    While some fragments of a message are stored, but before the entire
    message has been received, a window of vulnerability exists on the
-   exit server.  To prevent any portion of a message from being read in
-   the clear before enough packets from the message have arrived,
-   the following whitening formula to messages before
-   fragmentation:
+   exit server.  To prevent any portion of a message from being read
+   in the clear before enough packets from the message have arrived,
+   apply the following whitening formula to messages before fragmentation:
 
    WHITEN(M) = SPRP_Encrypt(K_whiten, "WHITEN", M)
-   UNWHITEN(M) = DPRP_Decrypt(K_whiten, "WHITEN", M)
+   UNWHITEN(M) = SPRP_Decrypt(K_whiten, "WHITEN", M)
 
    where K_whiten is equal to the octet sequence {57 48 49 54 45 4E}.
 
@@ -441,7 +440,7 @@ Table of Contents
            Let P = K | PAYLOAD_i
            Let P0 = PK_Encrypt(PK, P[0:PKLEN-OAEP_OVERHEAD])
       Until the most significant bit of P0[0] is equal to 1.
-      Let P1 = SRPR_Encrypt(K, "END-TO-END ENCRYPT",
+      Let P1 = SPRP_Encrypt(K, "END-TO-END ENCRYPT",
                             P[PKLEN-OAEP_OVERHEAD: Len(P)-PKLEN-OAEP_OVERHEAD])
       Let TAG_i = P0[0:TAG_LEN]
       Let EPAYLOAD_i = P0[TAG_LEN:Len(P0)-TAG_LEN] | P1
