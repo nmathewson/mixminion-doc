@@ -78,6 +78,11 @@ with the smallest building block.
         operations per encryption/decryption. I will think about it a
         bit more -GD]
 
+  [XXXX Don't worry about the H(K|L|K) hash operations; combined, they 
+        represent about one 500th of the time that LIONESS takes.
+        (About 11% of LIONESS goes to H(K|R|K), and about 87% goes to the 
+        stream cipher.) -NM ]
+
 - SPRP_DECRYPT(K1,K2,K3,K4,M) (Len(M) bytes) Inverts SPRP_ENCRYPT.
 
   We also define SPRP_DEC(K,P,M) as the inverse of SPRP_ENC.
@@ -159,13 +164,6 @@ encrypted using the Encrypt function with key=Hash(Shared Secret,
 ``ROUTING EXTENSION SECRET KEY'') and appended to the RSA encrypted
 subheader.
 
-[XXXX-EXT It would seem that no integrity checking is done on the extended
-      headers.  Instead, let me suggest that the extended headers be
-      hashed along with the rest of the header, and encrypted with the 
-      same key.  (See changes below, marked with XXXX-EXT) -NM ]
-[XXXX This is very important, both for correctness and tagging
-      prevention. I checked the code and it also seems fine -GD]
-
 We will formally refer to the subheader structure as:
 SHS(V, SK, D, F, A)
 And to the RSA-OAEP encrypted subheader structure as:
@@ -209,6 +207,25 @@ the next node's tranport public key.
 [XXXX The hashed KEY ID is the verification key that is used to sign
       both the MMTP Ephemeral keys and (if we want) the long term
       decryption keys of the mix. -GD]
+[XXXX Actually, it would be easier, and a little less paranoia-engendering,
+      if the keys were different.  As I see it, a Mix should have 3
+      public keys:
+              1  A medium-term connection key that it uses for MMTP.
+              2  A medium-term mix key that it uses to decrypt 
+                 its subheaders.
+              3  A long-term ``identity'' key that signs descriptor
+                 blocks containing the first 2.
+         Having '3' be different from '1' or '2' is a clear choice; 
+         IMO '2' should be different from '1' because:
+                a) I may be paranoid, but I don't like the idea of 
+                   using the same key for signing stuff and decrypting
+                   stuff.  It makes me think of adaptive attacks.
+                b) It's easier to implement that way: Keeping non-SSL 
+                   RSA keys separaterly from SSL RSA keys makes things
+                   more modular.
+                c) It costs us nothing in performance, except when
+                   we generate new keys.
+             -NM]
 
 A SWAP routing type tells the node to exchange headers as described below.
 
@@ -243,8 +260,32 @@ separate type in the standard.
 such a way that they cannot interoperate. So I would rather have some 
 standard fields containing the HOPS and KEY information along with any
 other variable information. -GD]
+[XXXX Ok, I agree with your goal of standardizing stateless replies,
+      but I think they should go into a section on 'How to do
+      stateless replies', so they can be orthogonal to SMTP/LOCAL/Foo  
 
- 
+      Proposed text:
+         If a client does not wish to remember all of her outstanding
+         reply blocks, she may generate them a 'stateless' mode.  She  
+         does so by using an SMTP or LOCAL delivery type, and setting
+         the TAG field to 
+              (nHops | E(seed, sha1(password) | pad up to 32b.
+
+         She uses PRNG(seed, nHops*16) to form the SK_i's in the reply
+         block, and to reconstruct them later when she receives the 
+         message.
+       
+         If the client has complete trust in the final hop, she may
+         use a null password.  Beware, however: an attacker who recovers 
+         the seed can use it to link any of the hops along the reply 
+         chain.
+
+	 To keep replies indistinguishable from encrypted/tagged
+         forwards, we set the TAG field of SMTP/Local to =exactly=
+         32K.
+
+         Sound ok?                                 -NM ]
+
 \subsection{The header structure}
 
 Each type III message has two identical headers that are swapped at
@@ -282,39 +323,20 @@ Process:
   for i = 1 .. N
 	J_i = ( J_(i-1) | PRNG(HASH(SK_i, ``RANDOM JUNK'')[0:16], SIZE_i)
 	J_i = J_i XOR PRNG(HASH(SK_i, ``HEADER SECRET KEY''),
-  		Len(128*16))[128*16 - Len(J_i):Len(J-i)];
+  		Len(128*16))[128*15 -Len(J_i) +Len(header_i):Len(J-i)];
   end
 
   // Create the Header
   H_(N+1) = J[0: 128*16 - sum(SIZE_1 .. SIZE_N)];
   for i = N .. 1
 	K = HASH(SK_i, ``HEADER SECRET KEY'')[0:16];
-  	DIGEST = HASH( PRNG(K,Len(H_(N+1)) XOR H_(N+1) | J_i)
-	if i = N then (set appropriate routing type)
-	H_i = ESHS(PK_i, V, SK_i, DIGEST, F, A_i) | PRNG(K,Len(H_(N+1))) XOR H_(N+1)
-  end
-
-return H_1;
-
-  [XXXX-EXT I suggest that the lines from "DIGEST = HASH(..." onward
-   be replaced with something like:
-
 	IF i = N (set appropriate routing type and A_i)
 	EH = ( extended_headers for routing info, if len(A_i) won't fit.
   	DIGEST = HASH( Encrypt(K, EH | H_(N+1)) | J_i ) )
 	H_i = ESHS(PK_i, V, SK_i, DIGEST, F, A_i) | Encrypt(K, EH | H_(N+1))
+  end
 
-   Also, you need to generate J_i differently.  The second step
-   is now
-
-	J_i = J_i XOR PRNG(HASH(SK_i, ``HEADER SECRET KEY''),
-  		Len(128*16))[128*15 -Len(J_i) +Len(header_i):Len(J-i)];
-
-   This approach is now working in code.  If somebody could confirm it
-   to be sound, or simplify it, that would be keen.
-
-      -NM]
-  [XXXX Looks good -GD]
+return H_1;
 
 \subsection{The Payload of messages}
 
@@ -337,6 +359,28 @@ The payload of a Mixminion message has a fixed length of 32 kb
      nonce and a digest in the body of the payload as well). BUT we
      have the problem that the key can be changed by the adversary in
      the reply block ... -GD Any comments?]
+  [No, I'm afraid I don't know what to do here, or who, exactly is
+     transmitting or encrypting what in your proposal.  Keep in mind 
+     that generating RSA keys is the single most expensive operation
+     in our system.
+ 
+     Wait a minute... are we sure there's a problem at all?  Consider
+     what an attacker would see at the last hop =without size info=:
+                            REPLY          FORWARD 
+          TAGGED MSG     Payload=opaque  Payload=opaque 
+          UNTAGGED MSG   Payload=opaque  Payload= Plaintext 
+
+     And =with= size info, so long as it gets LIONESSED with the
+     rest of the message...
+                            REPLY          FORWARD 
+          TAGGED MSG     Payload=opaque  Payload=opaque 
+          UNTAGGED MSG   Payload=opaque  Payload=Plaintext with size
+
+     So the problem only seems to arise when you strip the payload
+     padding at the server.  But how does the server know not do
+     do this with reply payloads anyway?
+
+     I'm just confused here. -NM]
 
 Size:   2 bytes
 Data:   (Variable)
@@ -387,8 +431,8 @@ Messages are transfered from node to node using the custom Type III
 transport protocol or email.  A node with private key PK receiving
 message M = (H1, H2, P) performs the following operations:
 
-[XXXX-EXT The lines beginning with "If there is any problem" should
-     be:
+PROCEDURE: Process a message M
+	SHS(V, SK, D, F, A) = PK_Decrypt(PK,H1[0:128]);
         If there is any problem with the OAEP padding discard the message.
         Check that D = H(H1[128:15*128])
         Let n_extra = number of extended headers
@@ -397,20 +441,6 @@ message M = (H1, H2, P) performs the following operations:
 	H1 = H1 XOR PRNG(HASH(SK, "HEADER SECRET KEY"), Len(H1))
         Reconstruct A_i from H1[0:128*n_extra]
         H1 = H1[0:n_extra]
-	H2 = SPRP_DEC(SK, ``HEADER ENCRYPT'',H2);
-        ....
-        Will this work? -NM]
-[XXXX I think it should work. -GD]
-
-PROCEDURE: Process a message M
-	SHS(V, SK, D, F, A) = PK_Decrypt(PK,H1[0:128]);
-	If there is any problem with the OAEP padding discard the message.
-	If the routing info spans across many blocks extract them and
-		decrypt them. 
-	Check that D = H(H1[128:15*128]);
-	H1 = H1[128:15*128] | PRNG(HASH(SK, ``RANDOM
-						JUNK'')[0:16])[0:128];
-	H1 = H1 XOR PRNG(HASH(SK, ``HEADER SECRET KEY''), Len(H1));
 	H2 = SPRP_DEC(SK, ``HEADER ENCRYPT'',H2);
 	P = SPRP_DEC(SK, ``PAYLOAD ENCRYPT'',P);
 
@@ -422,13 +452,8 @@ PROCEDURE: Process a message M
         if routing type is SWAP-FWD or FWD:
 	   	Put (H1, H2, P) in queue to be sent to A.
         Otherwise:
-		Give (A, H(SK,``APPLICATION KEY''), (H1, H2, P)) to
+		Give (A, H(SK,``APPLICATION KEY''), P) to
 		Module manager. 
-                  [XXXX Why does the application need H1 and H2? - NM]
-		[XXXX In the previous designs the application needed
-                H1 to find out if it was a reply or a forward
-                message. With the new design A, and P should be
-                enough. -GD]
 
 \section{Single Use Reply Block exchange formats}
 
