@@ -16,7 +16,85 @@ A -> (B): M   - A named party A sends a message M to an anonymous
 
 Implementing the anonymous primitives using Mixminion
 
-[...]
+We assume the existence of the following procedures from the mixminion
+specifications: 
+
+PROCEDURE: Create a single header.
+Inputs: A_1 .. A_N (addresses of intermediate nodes), 
+	PK_1 .. PK_N (Public keys of intermediate nodes),
+	SK_1 .. SK_N (Secret keys to be shared with intermediate nodes),
+        R Routing type and information of last header (FWD, DROP, SWAP, etc.)
+Output: H (The header)
+
+PROCEDURE: Construct a message.
+Input: H1 (header containing keys SK1_1... SK1_N)
+       and H2 (either a header containing keys SK2_1... SK2_N if
+         we constructed it, or a header with unknown keys if we're
+         using a reply block and a SURB secret key.)
+       P (Payload)
+Output: M (the message)
+
+PROCEDURE: Decode a message.
+Input:  TAG field of sub-header or header where 
+        TAG = ( Encrypt(KEY, nHops | seed) | padding up to 44b).
+        M the body of the message.
+Output: P, the plaintext of the message.
+
+
+We will define the following operations:
+(An API for mixminion clients)
+
+PROCEDURE: Create SURB
+Input: -
+Output: ID of the generated SURB. 
+	SURB data.
+
+The above procedure generates a SURB that is addressed to the local
+machine given the local configuration.
+
+PROCEDURE: Send Anonymous
+Input: Address as specified in the ``Routing information'' section of
+	the mixminion spec.
+       OR 
+       SURB provided by another user.
+       Message to be encoded and sent.
+Output: -
+
+The above procedure sends a sender anonymous (and recipient anonymous
+if a SURB is provided) message.
+
+PROCEDURE: Send
+Input: SURB provided by another user.
+       Message to be encoded and sent.
+Output: -
+
+The ``Send'' procedure sends a normal (non-anonymous) message to an
+anonymous address.
+
+PROCEDURE: Receive Anonymous 
+Input: -
+Output: ID, the id of the SURB used to encode this message.
+	Message, the message received (decoded)
+
+The ID can be zero (0) if the message received did not use a SURB, and
+therefore is not anonymous. It is important to make sure that
+information that is to remain anonymous is not sent back as a reply.
+
+It is important to note that in order to create the new procedures
+from the ones provided in the mixminion specification a lot of
+internal state is required in the client. Hopefully this state should
+be preconfigured in the ``anonymous communication stack'' and then
+hidden from the layer above that should only need the operations above
+to use the anonymity layer. In particular additional information
+required includes:
+- Lists of mixes, with reliability statistics or another strategy to
+choose routes with.
+- Secret keys under which the TAG field is encrypted or public/private
+key pairs to decode normal mixminion headers.
+- A strategy to compute the route lengths.
+- A knowledge of the local host parameters, and preferred modes of
+delivery (IP or SMTP).
+
 
 The requirements of the Nym Server are:
 

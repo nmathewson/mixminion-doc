@@ -413,6 +413,18 @@ Output: P, the plaintext of the message.
 		
 		P = M; exit;
 
+[XXXX We do not actually specify how the TAG field and the BODY are
+found, prior to be given to this function. So the above works for
+delivery via SMTP but not if the final hop is reached via FWD/IP4. The
+options are the following: 
+	- We require the final recipient to have a public/private key
+	  and decode the header to extract the TAG/BODY messages.
+	- We use symmetric encryption for the final header and extract
+	  the TAG field using a secret key.
+Any of the two can be used, and it does not have to be standardized
+since this operation only affects the final client, but we can give
+some advice. -GD]
+
 [I am a bit uneasy that we have not defined any redundancy, or marker,
 that would allow the final recipient to decide if this is a forward
 path message or a SURBed message. Also the size of valid bytes has
