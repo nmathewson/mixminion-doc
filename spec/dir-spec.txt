@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.22 2004/07/27 04:47:06 nickm Exp $
+$Id: dir-spec.txt,v 1.23 2004/08/09 21:23:33 nickm Exp $
 
 				MIX3:3
            Type III (Mixminion) Mix Directory Specification
@@ -38,7 +38,10 @@ Table of Contents
    3.       Server descriptor format
    3.1.     Server identity
    3.2.     Descriptor liveness
-   4.       Directory format
+   4.       Directory formats
+   4.1.     Multiply-signed format (0.0.8 and later.)
+   4.1.1.   Migration note
+   4.2.     Singly-signed format (pre-0.0.8)
    5.       Directory protocols
    5.1.     Retrieving a directory
    5.2.     Publishing a server descriptor
@@ -241,6 +244,9 @@ Table of Contents
        for 0.0.0.0/0.0.0.0.  An omitted PortSpec defaults to 48099 for
        'allow' entries and 0-65535 on 'deny' entries.
 
+     - Unless specified otherwise, all 'sorted' lists are sorted lexically by
+       their ASCII encodings, in ascending order.
+
 2.5. Calculating digests and signatures
 
    Several places in this specification require Messages to be
@@ -251,10 +257,12 @@ Table of Contents
         EOL is converted to a single NL character.
 
       - Second, the message is converted to a "stub" format: the values of
-        any _unsigned_ entries in the message are replaced with the empty
+        any _unsigned entries_ in the message are replaced with the empty
         string, and trailing space is removed from their lines.  (Their
         entry lines now contain an identifier, a colon, and a single NL
         character.)
+
+        Any _unsigned sections_ in the message are removed entirely.
 
       - Third, a SHA-1 digest is computed over the resulting stub
         message.
@@ -453,6 +461,96 @@ Table of Contents
 
 4. Directory Format
 
+4.1. Muliply-signed format (used in Mixminion 0.0.8)
+
+   A directory contains a list of Mixminion servers, a statement of which
+   servers are believed to be operational at a given time, and other
+   information about the network.  Each directory is signed by one or more
+   directory servers.  A directory MUST contain all of the following, in
+   order:
+     - Zero or more 'Signed-Directory' sections.
+     - A 'Directory-Info' section.
+     - A 'Recommended-Software' section.
+     - Zero or more other unrecognized sections.
+     - Zero or more server descriptors (see section 3 above).
+
+   Each 'Signed-Directory' section MUST contain the following entries:
+
+     - 'DirectoryURL' : The URL base for this directory server. (See 5.1)
+
+     - 'DirectoryIdentity' : The Identity key of the directory server
+       that generated this directory.  The modulus of this key must be
+       between 2048 and 4096 bits long, and the exponent must be 65537.
+
+     - 'DirectoryDigest' : The digest of the entire directory, starting
+       with the Directory-Info section.
+
+     - 'DirectorySignature' : The signature of the directory digest
+       with the directory server's identity key.
+
+     - 'Signed': The time when this directory was signed.
+
+   (A Signed-Directory section is unsigned; see 2.5)
+
+   The 'Directory-Info' section MUST contain the following entries, in order:
+
+     - 'Version': The string '1.0'
+
+     - 'Status': The string "consensus" or the string "vote".  Clients MUST
+       refuse to use directories whose Status is "vote".
+
+     - 'Valid-After' : A date.  This directory SHOULD NOT be used before
+       midnight GMT on this date.
+
+     - 'Valid-Until' : A date.  This directory SHOULD NOT be used after
+       midnight GMT on this date.  This date SHOULD be exactly one day
+       after the date in 'Valid-After'.
+
+     - 'Recommended-Servers' : A sorted, comma-separated list of server
+       nicknames.  Clients SHOULD NOT depend on servers whose nicknames are
+       not on this list to be reliable or trustworthy.
+
+     - 'Voting-Servers' : A comma-separated list of information for the of
+       the directory servers who voted on this directory.  Each item contains
+       a fingerprint, a single space, and a URL base.  Each fingerprints is a
+       base-64 encoded SHA1 hash of the ASN.1 encoding of the directory
+       server's identity key; each URL base MUST be escaped.  (See 5.1 below
+       for more information on URL bases.)  The items are sorted by
+       fingerprint.
+
+   The 'Recommended-Software' section MUST contain the following
+   entries, in order:
+
+     - 'MixminionClient' : A comma-separated list of up-to-date versions of
+       Mixminion, in ascending order by version.  If a client is running a
+       version more recent than any on the list, it SHOULD issue a warning.
+       If a client is running a version not on the list, and some version on
+       the list is more recent than the client's version, the client SHOULD
+       issue a warning, and MAY refuse to run.
+
+     - 'MixminionServer' : A comma-separated list of up-to-date versions of
+        Mixminion, in ascending order by version.  Servers should interpret
+        this list as clients interpret 'MixminionClient'.
+
+   Entries in 'MixminionClient' and 'MixminionServer' are in decreasing order
+   of preference. Because the version numbering scheme will be different for
+   each implementation, lines within 'Recommended-Software' are version
+   specific.  Other implementations of Type-III should generate similar
+   entries in 'Recommended-Software'.
+
+   The server descriptors in the directory MUST be sorted by nickname, then
+   by Valid-After date, then by digest.  Each directory MUST include only a
+   single nickname per identity key, and only a single identity key per
+   nickname.
+
+4.1.1. Migration note
+
+   The format above ("0.3") is not compatible with the older "0.2") format.
+   Therefore, directories for Mixminion 0.0.8 will need to be published to a
+   different URL than for older versions.
+
+4.2. Obsolete format (used before Mixminion 0.0.8.)
+
    A directory contains a list of Mixminion servers which are believed
    to be operational at a given time.  A directory MUST contain all of
    the following, in order:
@@ -520,21 +618,48 @@ Table of Contents
 
 5.1. Retrieving a directory
 
-   A directory server SHOULD provide one or more well-known HTTP URLs at
-   which its directory can be downloaded.  Retrieving such a URL MUST
-   yield a currently valid directory, or one which will be valid 'very
-   soon' [XXXX how soon?].
+   A directory server MUST provide a canonical 'URL base' where material for
+   that directory can be downloaded.  Individual documents are published
+   in documents under that directory base.
 
-   The contents of such a URL MAY be compressed with GZIP to save
-   bandwidth and speed downloads.
+   URL bases must end with "/".
 
-   Directory servers SHOULD also make their identities well-known out of
-   band.
+   If a directory server's URL base is "B/", then the following documents
+   are defined:
+
+       B/
+
+          SHOULD contain a human-readble HTML document describing the
+          directory server's
+
+       B/current.gz
+
+          MUST contain a currently valid directory, or one which will be
+          valid 'very soon' [XXXX how soon?], signed by the directory server
+          and as many other directory servers as possible.
+
+       B/YYYY-MM-DD.gz
+
+          MUST contain a "consensus" or "opinion"-status directory, for
+          all appropriate dates.  (see XXXX NMNM below for more information
+          about voting.)
+
+       B/YYYY-MM-DD-vote.gz
+
+          MUST contain a signed "vote"-status directory, for all appropriate
+          dates (see XXXX NMNM below for more information about voting.)
+
+   All the above documents are compressed with GZIP if their names end with
+   ".gz".
+
+   Directory servers MAY have other, non-canonical URL bases.
+
+   Directory servers SHOULD make their identities well-known out of band.
 
 5.2. Publishing a server descriptor
 
-   A directory server SHOULD provide one or more well-known HTTP URLs
-   to publish server descriptors to the directory.
+   A directory server MUST provide an upload URL at "B/upload", where
+   "B/" is its URL base.
 
    To upload a descriptor block, a client performs an HTTP POST request
    to the upload URL, with the server block as the contents of a single
@@ -563,6 +688,9 @@ Table of Contents
    description of the status of the descriptor, and MUST NOT be
    'Accepted.'.
 
+   When a client has a server descriptor to upload, it SHOULD upload it to
+   all the directories it knows about.
+
 6. Generating server descriptors
 
    Servers SHOULD generate at least a [[two weeks]] of keys in advance,
@@ -588,34 +716,144 @@ Table of Contents
 
 7. Generating directories
 
+   Directory servers follow a five-phase process to generate multiply-signed
+   consensus directories.  Each phase occurs on a schedule relative to GMT,
+   on a 24-hour cycle.  These phases, described in subsequent sections, are:
+
+        1. Research and configuration (continual)
+        2. Voting (must be complete by 23:00)
+        3. Tabulation (must be complete by 23:30)
+        4. Signature collection (23:30 through 00:00)
+        5. Publication (00:00)
+
+7.1. Research and configuration
+
+   On an ongoing basis, directory servers gather information about server
+   descriptors on the network, and try to learn about their reliability by
+   pinging them or referring to other trusted pingers.  Directory servers
+   SHOULD retain, for each mix, all published descriptors it knows that are
+   not expired or superseded.
+
+   Additionally, directory server administrators SHOULD decide whether given
+   mixes are "trustworthy".  Software SHOULD treat all mixes as untrustworthy
+   by default unless approved by administrators.
+
+   Measuring "reliability" and defining "trustworthiness" are beyond the
+   scope of this document.
+
+   Administrators must also configure their directory servers to know base
+   URLs and public key fingerprints for all of the directory servers in
+   their "voting clique".  All servers in the clique must agree about the
+   members of the voting clique.
+
+7.2. Voting
+
+   Once per cycle, each directory server decides which mixes it believes
+   should be listed in the directory, and which should be described as
+   "recommended".  (A server is "recommended" if it is both "reliable" and
+   "trustworthy".)
+
+   The directory server then builds and signs a preliminary directory
+   containing all the servers it believes should be listed, all the servers
+   it believes should be recommended, all the software versions it
+   believes should be recommended, and the members of its voting clique.
+   This preliminary directory has status "vote".
+
+   The "vote" directory is published at a url of the form
+   B/YYYY-MM-DD-vote.gz, where "B/" is the directory server's base URL,
+   and YYYY-MM-DD is the day for which the voted-upon directory _will_ apply
+   (i.e., the day after the vote takes place).
+
+   The "vote" directory must be available _before_ 23:00 GMT.
+
+7.3. Tabulation
+
+   Once per cycle, after votes should be available, each directory server
+   downloads the vote from each other directory server in its voting group.
+   If initial attempts fail, the directory server reattempts to download
+   periodically during the tabulation period.
+
+   Once a directory server has results from all other directory servers in
+   its voting group, or once the tabulation period has elapsed, each directory
+   server computes a consensus directory as follows:
+
+      1. Validate each "vote" directory.  Verify that all formats are
+         correct, and all signatures are valid.  Check that the Valid-After
+         and Valid-Until times correspond to the following day; that the
+         Voting-Servers list is identical to our own; that the Status is
+         "vote"; and that the Version number matches ours.
+
+      2. Determine the contents of the consensus directory:
+          - For each distinct mix identity in any vote directory:
+            - If there are multiple nicknames for a given identity, do not
+              include any descriptors for that identity.
+            - If half or fewer of the votes include the identity, do not
+              include any descriptors for the identity.  [This also
+              guarantees that there will be only one identity per nickname.]
+            - If we are including the identity, then for each distinct
+              descriptor that appears in any vote directory:
+                - Do not include the descriptor if it will have expired
+                  on the date the directory will be published.
+                - Do not include the descriptor if it is superseded by
+                  other descriptors for this identity.
+                - Do not include the descriptor if it becomes valid more
+                  than 30 days in the future.
+                - Otherwise, include the descriptor.
+
+          - Include entries in Recommended-Software and Recommended-Servers
+            if and only if they appear in more than half of the vote
+            directories.
+
+          - Sort all items and descriptors as specified in section 4.1.
+
+          - Set the Status of the directory to "consensus".
+
+     3. Generate and sign the directory, and publish it at "B/YYYY-MM-DD.gz".
+
+   The signed directory MUST be available by 23:30 GMT.
+
+7.4. Signature collection
+
+   Once per cycle, after publishing a singly signed directory, each directory
+   server downloads signed directories from all the other directory servers
+   in its voting groups.  For each signed directory, the directory server
+   checks whether the signed portion is the same as the one it signed for
+   the given day.  If so, it affixes all previously unseen
+   Directory-Signature sections from that signed directory to its own signed
+   directory, and publishes the result at "B/YYYY-MM-DD.gz"
+
+   If it discovers that another directory server in its voting group has
+   signed a different directory, a directory server SHOULD warn its
+   administrator that fragmentation has occurred.
+
+7.5. Publication
+
+   At the end of each cycle, at 00:00 GMT, each directory server replaces
+   "B/current.gz" with the multiply-signed directory it collected in
+   "B/YYY-MM-DD.gz".
+
    Directory servers SHOULD change their directories only at midnight
    GMT.
 
-   For every mix, the directory SHOULD either include no descriptors
-   from that mix; or include all of that mix's published descriptors
-   that are not expired or superseded, and that do not become valid
-   before a given cutoff time. [[2 weeks]].
-
-   A directory server decides, for every mix whose descriptors
-   descriptors it has received, whether that mix is 'Trustworthy' and
-   'Reliable'.  A 'trustworthy' mix is one that is believed to protect
-   its users anonymity.  A 'reliable' mix is one that delivers packets
-   with high probability and reasonable latency.  Directories SHOULD
-   include only trustworthy and reliable mixes on their
-   'Recommended-Servers' entry.
 
 8. Downloading directories
 
    Any client which has not downloaded a directory since before midnight
    GMT, SHOULD download a fresh directory before generating any packets.
 
+   Upon downloading a directory, a client SHOULD check the signatures for all
+   of the Signed-Directory sections for which it recognizes the identity key.
+   If there are valid signatures from less than a majority of the client's
+   known servers on the directory, then the client SHOULD at least warn the
+   user.
+
 A.1. Versioning and Alphas
 
-   Today's alpha code does not publish its version as '1.0'; it uses
-   '0.x' instead (currently '0.2' for Descriptor-Version, '0.2' for
-   directory Version, and '0.1' for everything else.)  Production
-   versions MUST NOT retain backward compatibility with pre-production
-   releases.
+   Today's alpha code does not publish its version as '1.0'; it uses '0.x'
+   instead (currently '0.2' for Descriptor-Version, '0.2' for pre-0.0.8
+   Directory Version, '0.3' for post-0.0.8 directory version, and '0.1' for
+   everything else.)  Production versions MUST NOT retain backward
+   compatibility with pre-production releases.
 
    When generating Recommended-Software entries for Mixminion, we follow
    the following policies: A development version of Mixminion (pre 1.0)
