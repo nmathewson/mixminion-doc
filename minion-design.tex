@@ -66,7 +66,7 @@ integrates link encryption between remailers to provide
 forward anonymity. Mixminion works in a real-world Internet environment,
 and requires little synchronization or coordination between nodes.  
 %, and protects against almost all known attacks.
-% ???? Can we say something stronger than 'against almost all known
+% ????! Can we say something stronger than 'against almost all known
 %      attacks?'  Maybe we can note that we protect against all known
 %      attacks at least as well as any other known system with our
 %      design parameters. -NM
@@ -165,6 +165,7 @@ to provide uniform information about the network.
 \cite{mixmaster-attacks}, but they are not part of the specification
 \cite{mixmaster-spec}. Mixminion uses a simple dummy policy which provably
 improves anonymity.
+%XXXX! Really provably?
 
 \end{itemize}
 
@@ -287,8 +288,6 @@ or ``Type II'' remailers, which added message padding, message pools,
 and other mix features lacking in the Cypherpunk remailers.
 
 \subsection{Known attacks against mix-nets}
-% ???? Move this subsection to the end of section 3?
-% what, the whole subsection? -RD. what would it be doing in sec 3?
 
 Attacks against mix-nets aim to reduce the anonymity of users by
 linking anonymous senders with the messages they send, by linking
@@ -482,8 +481,7 @@ distinguishing between them.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{The Mixminion Mix-net Design}
-% ???? Rename to 'The Mixminion Design'? -NM
-% no, because the mixminion design is more than just this section. -RD
+
 \label{sec:design}
 
 Mixminion uses a free-route mix-net just like Mixminion \cite{mixmaster-spec}
@@ -563,6 +561,7 @@ indistinguishable, we cannot include hashes for forward messages either.
 Tagging attacks, and our approach to preventing them, are discussed in more
 detail in Section \ref{subsec:tagging-defenses}.
 
+% XXXX! Move and clarify this paragraph. -NM
 We require parties that benefit from anonymity properties to run dedicated
 software.  Specifically, senders generating forward messages must be able
 to create onions, and anonymous receivers must be able to create reply blocks
@@ -620,11 +619,13 @@ properties:
 %      whereas an all-or-nothing transform is normally unkeyed, and
 %      not length-preserving.}
 %% I think that if we have the next item, we don't need this. -DH
+%XXXX! CLARIFY THIS. -NM
 \item it should be impossible to recognize the decryption of a modified
       block, without knowledge of the key;
 % XXXX what the heck does this mean? i don't know what 'the key' is. this is
 %probably too imprecise for us.
 % nonetheless, i think we're going to stick with it -RD
+%XXXX! CLARIFY THIS. -NM
 \item it should be equally secure to use the decryption operation
       for encryption.
 \end{itemize}
@@ -689,6 +690,7 @@ been altered.  Thus, an attacker can use tagging to trace a message from the
 point at which it is tagged to the point at which the corrupted output
 appears. 
 
+%XXXX! Is this really true about Mixmaster? Check the source. -NM
 Checking the integrity of hop headers individually is not
 sufficient to prevent tagging attacks.  For example, in Mixmaster
 each hop header contains a hash of the other fields in that header
@@ -738,6 +740,8 @@ If he tags a message
 leaving Alice, the payload will be entirely random when it reaches
 Bob.  Thus, an adversary who tags a message can at worst turn the
 corresponding payload into trash.  
+%????! Mention that replies look just like junk? -NM
+
 %%Thus if he tags more than one message in the entire mix-net, he
 %%learns only one bit from each tagged message, so he cannot distinguish
 %%the tagged messages. 
@@ -940,6 +944,7 @@ indication to the mixes about the identity of their successors it is
 hard for an 
 adversary to modify messages, inject messages to a node as if they
 were part of the normal communications, or delete messages.
+%????! Really? How? -NM
 An additional \emph{heartbeat} signal in the SSL tunnel complicates
 message delaying attacks.
 %This forces a
@@ -990,7 +995,7 @@ a mailbox.\footnote{A {\it mailbox} is the canonical form of the
 mailboxes in the protocol because the display name and comment parts
 of an e-mail address could potentially be different for senders who
 have obtained an address from different sources, leading to smaller
-anonymity sets.}
+anonymity sets.} %XXXX! Wording is awkward.-NM
 This information is placed
 in a variable-length annex to the final subheader.
 
@@ -1063,6 +1068,7 @@ nodes that only deliver locally. More generally, nodes can set
 individual exit policies to declare which traffic they will deliver,
 such as traffic for local users or other authenticated
 traffic \cite{onion-discex00}.
+%XXXX! Reword the last sentence
 
 Preventing abuse of open exit nodes is an unsolved problem. If
 receiving mail is opt-in, an abuser can forge an opt-in request from
@@ -1103,6 +1109,8 @@ all.  Thus, the
 number of available open exit nodes remains a limiting security parameter
 for the remailer network.
 
+%XXXX! Mention the advantages of local delivery. -NM
+
 \subsection{Replay prevention, message expiration, and key rotation}
 \label{subsec:replay}
 
@@ -1113,6 +1121,7 @@ the input and output batches of a mix and then replays a message after
 the mix has forgotten about it, the message's decryption will be exactly
 the same. Thus, Mixmaster does not provide the forward anonymity that we want.
 
+%XXXX! Paragraph feels awkward. Reword, especially the 2nd sentence. -NM
 Chaum first observed this attack in \cite{chaum-mix},
 but his solution (which is proposed again in Babel\footnote{
   Actually, Babel is vulnerable to a much more direct timestamp attack:
@@ -1153,6 +1162,7 @@ statistical attacks.
 % approach. It's definitely a good thing to mention. I've uncommented the
 % below for now so readers can have a complete paper. -RRD
 
+%XXXX! Paragraph feels awkward. Reword? -NM
 We use a compromise solution that still provides forward
 anonymity. Messages don't
 contain any timestamp or expiration information. Each mix must keep
@@ -1181,7 +1191,7 @@ of opportunity for this attack.
 
 \section{Directory Servers}
 \label{sec:dir-servers}
-%XXXX Motivate this a bit earlier; be explicit about why ad hoc
+%XXXX! Motivate this a bit earlier; be explicit about why ad hoc
 %      schemes are unacceptable. (Not just because of partitioning,
 %      but also because of support for rotation.) I can write this. -NM
 % ok -RD
@@ -1189,10 +1199,11 @@ of opportunity for this attack.
 The Mixmaster protocol does not specify a means for clients to learn the
 locations, keys, capabilities, or performance statistics of mixes. Several
 \emph{ad hoc} schemes have grown to fill that void \cite{levien}; here
-% would be nice to cite some more. eg, are there key lists, etc? -RRD
+% XXXX! would be nice to cite some more. eg, are there key lists, etc? -RRD
 we describe Mixminion directory servers and examine the anonymity risks
 of such information services.
 
+%XXXX! Paragraph feels awkward. Reword. -NM
 In Mixminion, a group of redundant directory servers serve current
 node state.  It is important that these servers be synchronized and
 redundant:  we lose security if each client has different information
@@ -1274,7 +1285,8 @@ exploiting the directory servers to manipulate client behavior.
 \label{sec:nymservers}
 
 Current nymservers, such as {\tt nym.alias.net} \cite{nym-alias-net},
-maintain a set of (mailbox, reply block) pairs to allow users to
+maintain a set of $\left<\mbox{mailbox}, \mbox{reply block}\right>$ 
+pairs to allow users to
 receive mail without revealing their identities. When mail arrives to
 \emailaddr{bob@nym.alias.net}, the nymserver attaches the payload to
 the associated
@@ -1413,6 +1425,7 @@ at each mix, the set of possible senders when Bob receives the target
 message is large.
 
 \subsection{Dummy policy}
+%XXXX! Clarify link messages.  Clarify dummy references above! -NM
 
 Dummy traffic (sending extra messages that are not actually meant to
 be read or used, to confuse the adversary) is an old approach to
@@ -1427,6 +1440,7 @@ some initial research on the subject \cite{langos02}, we currently know no
 practical way to use dummies to provably help against the intersection
 attack. Thus Mixminion does not use dummies to or from users.
 
+%XXXX! Reference blending attack def'n above. -NM
 Another use for dummies is to weaken the blending attack. Our timed
 dynamic-pool batching strategy increases the cost of the blending attack
 because the adversary needs to keep flushing the mix until all honest
@@ -1451,8 +1465,9 @@ created by the adversary.
 
 \subsection{Choosing paths when transmitting many messages}
 \label{subsec:many-messages}
-%XXXX Mention large messages too. -NM
+%XXXX! Mention large messages too. -NM
 % we do, right? -RD
+% apparently not. -NM
 
 When Alice (the owner of a pseudonym) downloads her mail from a
 nymserver, she will likely receive many separate messages. Similarly, if
@@ -1559,12 +1574,12 @@ to use one of only a few delivery methods, so we can maintain sufficient
 anonymity sets for each.
 \item \emph{Partition traffic by exit capabilities.}
 Delivery methods should be standardized; users should be suspicious of
-exit nodes offering an unusual delivery method.
+delivery methods only offered by a few exit nodes.
 \item \emph{Use the mix network to send hate mail, etc.} We allow
 recipients to opt out of receiving further mail. Overall, we must assume
 we will have enough nodes that can withstand this abuse that simple
 adversaries cannot monitor all exit nodes in the network.
-% XXXX help, please untangle my words
+% XXXX! help, please untangle my words -RRD
 \end{itemize}
 
 \item \textbf{Directory attacks}
@@ -1636,7 +1651,8 @@ actual multi-hop Mixminion messages. We must develop a more analytically
 justified approach to determine which parties send dummy messages, how many
 they send, and when they send them.
 
-While many people have speculated about the benefits of dummy traffic,
+% How to really indent this paragraph?
+\quad While many people have speculated about the benefits of dummy traffic,
 we have not yet seen any convincing analysis. For this reason, while
 Mixminion is flexible enough to support them, we plan to leave dummies
 out of the current design (other than their minimal use in Section
@@ -1648,6 +1664,8 @@ We have working code which implements most of the designs described
 in this paper. We invite interested developers to join the {\tt
 mixminion-dev} mailing list and examine the more detailed Mixminion
 specification \cite{mixminion-spec}.
+%XXXX! Mention performance:  About 2.5MB of messages per second on an
+%      dedicated Athlon XP 1700+. -NM
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
