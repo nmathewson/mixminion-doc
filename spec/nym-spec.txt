@@ -1,4 +1,4 @@
-$Id: nym-spec.txt,v 1.2 2003/07/28 00:48:08 nickm Exp $
+$Id: nym-spec.txt,v 1.3 2003/07/28 01:03:55 nickm Exp $
 
                                Mix3:Nym
     Underhill: A Proposed Type 3 Nymserver Protocol Specification
@@ -38,7 +38,7 @@ Acknowledgments
    designs.
 
    The following people have contributed suggestions and comments for
-   this documents: Eric Arneson.
+   this documents: Erik Arneson.
 
 Table of Contents
 
@@ -358,7 +358,7 @@ Table of Contents
          D. The email is rejected by the nym's filtering policies.
 
 	 In cases A and C, the nymserver sends a bounce message.
-	 [XXXX Does it send bounces in other cases?  Eric writes:
+	 [XXXX Does it send bounces in other cases?  Erik writes:
 
               Bounces should be sent when incoming mail is being sent
               to an invalid nym (i.e. "No such user" errors).  Perhaps
@@ -860,8 +860,13 @@ Table of Contents
      idea; it's not hard to find pathological input texts that make
      perl-style backtracking regex engines behave very badly.]
 
-   [XXXX Eric suggests "Sieve" (RFC3028) as implemented by
-     Cyrus-IMAP.  Could be keen.  See http://www.cyrusoft.com/sieve/ .]
+   [XXXX Erik suggests "Sieve" (RFC3028) as implemented by
+     Cyrus-IMAP.  Could be keen.  See http://www.cyrusoft.com/sieve/
+     .]
+
+   [XXXX Erik also suggests that users be able to filter messages into
+    different priority classes, and preferentially deliver
+    high-priority messages. -NM]
 
 X. Open issues
 
@@ -872,5 +877,3 @@ X. Open issues
 
    - What is in George's and Peter's nymserver specifications that I
      missed?
-
-
