@@ -760,7 +760,7 @@ While direct reply messages do not need a crossover point in the path
 (the adversary can never observe his tag), forward messages still need a
 crossover point to prevent end-to-end tagging. But since the first leg
 either provides sufficient anonymity or destroys the information about
-the second leg, the second leg in a forward message can be very short.
+the second leg, the second leg in a forward message can be short.
 At the extreme, the first hop in the second header could directly
 specify the message recipient. However, the choice of crossover point
 can still reveal information about the intended recipient (imagine that
@@ -1111,7 +1111,7 @@ of partitioning attacks, where the adversary can distinguish and
 track messages based on timestamps.  If messages have short lifetimes,
 then some legitimate messages will expire before they can be
 delivered. But if messages have long lifetimes, then messages near
-their expiration date will be very rare, and an adversary can exploit
+their expiration date will be rare, and an adversary can exploit
 this fact by intentionally delaying a message until near its expiration
 date. If he owns a mix later in the path he can
 recognize the message by its unusually late expiration date.
@@ -1660,7 +1660,7 @@ Lance Cottrell, and Bram Cohen, to improve the Type II remailer protocol;
 their effort was abandoned in favor of Mixminion.
 
 Susan Born, Lucky Green, David Hopwood, David Mazieres, Peter Palfrader,
-Len Sassaman, Andrei Serjantov, Robyn Wagner, and Bryce Wilcox-O'Hearn
+Len Sassaman, Andrei Serjantov, Robyn Wagner, and Bryce ``Zooko'' Wilcox-O'Hearn
 provided helpful design discussions, editing, and suggestions. We further
 thank all the unnamed cypherpunks out there who have worked on remailer
 issues for the past decades.
