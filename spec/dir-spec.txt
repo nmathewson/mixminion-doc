@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.7 2003/07/07 16:50:11 nickm Exp $
+$Id: dir-spec.txt,v 1.8 2003/07/14 22:15:59 nickm Exp $
 
 				Mix3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -52,8 +52,6 @@ Table of Contents
 
    A.1.     Appendix: Versioning and alphas
    A.2.     Appendix: Suggested path selection algorithm
-
-   X.       Open questions
 
 1. Introduction
  
@@ -647,104 +645,3 @@ A.2. Generating paths
    random, with replacement, avoiding any sequence of two consecutive
    server descriptors with the same nickname.
    
-X. Open problems
-   
-   Because of possible partitioning attacks related to accidentally or
-   maliciously unsynchronized servers, the presence of multiple directory
-   servers presents sever security issues.  Since solving these issues is
-   an active research project, we leave them for a later draft.
-   
-   Issues include:  How do directory servers synchronize?
-   What happens when they disagree?  How many servers must a client
-   contact before he/she has enough information?  How do we catch
-   dishonest directory servers?
-   
-                                 * * *
-  
-   Also: statistics information. Also: we should think about avoiding
-            catastrophic failure modes if directories _do_ fail or
-            change. -NM
-
-                                 * * *
-   
-   2. Description of mixing algorithm should go in descriptor blocks. -NM
-      [XXXX Unless the mixing method requires special packaging of the
-            message we could require the servers to specify the amount
-            of anonymity that they expect to give to each message. The
-            information theoretic one presented by myself and Andrei
-            could do the job quite well. -GD]
-   
-                                 * * *
-
-   1. Statistics Information Exchange format
-      [Not for first cut]
-   
-   2. Specify: verification for directories.
-      [not for first cut]
-      [Actually, we may need these first two pieces for Mixminion 1.0;
-       else we won't be deployable. -NM]
-   
-   3. Automatic retrieval of Server Information
-   [XXXX I think it is important to have a standard way to query a
-         server given an IP and a port. -GD]
-
-   [Why? What's wrong with having the server upload its information to a
-    directory server? (Not that I disagree, but I want to know the
-    application for this.  Clients can't use it without leaking which
-    servers they're interested in, and giving servers the opportunity to
-    lie to clients.  What's the upside?) -NM]
-
-   [I believe that this will make it more easy to construct Directory
-    servers.  For some reason I have the feeling that it will scale
-    better if directory servers know about mixes (and can query them
-    automatically) rather than the other way around (mixes knowing
-    about directory servers). This way one can run independently a
-    directory server, without any collaboration from the mix network
-    (other than the ability to request info).
-   
-    Let's not forget that the mixes *sign* their information with a
-    long term key, therefore after you establish that you trust a
-    signing key to belong to an honest server, the operation of
-    querying a directory server for updates is simply a question of
-    transport and not of trust. Of course you still trust them to give
-    you a information on a complete set of servers, but this can also
-    be checked.  It is also true that the a client requesting only the
-    information on the servers it is about the use will ruin its
-    anonymity. On the other hand if key updates are not frequent, then
-    the client can slowly update its database in the background.
-   
-    Even more possibilities open up if each mix server give on request
-    not only their information but also what they think the state of
-    other servers, they have contacted in the past, is. This way each
-    server you might contact will give you a set of other servers,
-    that can be used by clients to construct a complete picture. Which
-    ones are to be trusted is of course an orthogonal issue, but once
-    it is decided the updated information could flow very
-    quickly. (this is in fact a gossip protocol)
-   
-    These are the reasons why I think it might be a good idea to have
-    automatic on request information from servers. -GD]
-
-   [Hm.  You may have a point.  I'm still going to suggest that we do
-    not do this yet, for a few reasons.
-   
-    First, we need a way for servers to publish their descriptors to
-    directory servers.  (Otherwise, a directory server couldn't learn
-    about new servers for the first time.)  In other words, a push
-    mechanism is needed no matter what.  On the other hand, directory
-    servers may or may not need a pull mechanism: we do not yet have a
-    design that requires this.  Let's not build it till we have a use
-    for it.
-   
-    Second, it's a bit tricky to specify *which* descriptor a server
-    should return.  Today's?  Tomorrow's?  All the ones it knows about?
-   
-    Third, (this is a variant of 'First') because client use of this
-    feature is prone to misuse, we should only provide it to clients
-    wrapped in some safe mechanism.  That safe mechanism has yet to be
-    specified.
-   
-    Therefore, I'm going to suggest that we call this feature possibly
-    desirable... but that we should first design directories or whatever
-    other node discovery mechanisms *may* want this feature before we
-    decide that to implement the feature itself. -NM]

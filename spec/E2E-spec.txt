@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.4 2003/06/30 17:35:32 nickm Exp $
+$Id: E2E-spec.txt,v 1.5 2003/07/14 22:15:59 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -67,8 +67,6 @@ Table of Contents
    3.3.4.   Server descriptor section
 
    A.1.     Appendix: Versioning and alphas
-
-   X.       Open questions
 
 1. Introduction
 
@@ -790,8 +788,3 @@ A.1. Apendix: versioning and alphas
    '0.x' instead (currently '0.1' for all versions in this document).
    Production versions MUST NOT retain backward compatibility
    with pre-production releases.
-
-X. Open issues
-   
-   1. Mail gateways. We should specify these.
-   

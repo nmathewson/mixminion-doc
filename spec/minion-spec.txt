@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.7 2003/06/26 03:04:03 nickm Exp $
+$Id: minion-spec.txt,v 1.8 2003/07/14 22:15:59 nickm Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -80,16 +80,13 @@ Table of Contents
    3.2.4.3. Constructing the packet
    3.2.5.   Processing a Type III packet
    3.2.5.1. Replay avoidance
-   3.2.5.2. Message delivery.
+   3.2.5.2. Message pooling and delivery.
    3.3.     SURB exchange formats
    4.       Transport protocol
 
    A.1.     Appendix: A suggested pooling rule
    A.2.     Appendix: Compatibility with Type II mixes
    A.3.     Appendix: Versioning and alphas
-
-   X.       Open questions
-   
 
 1. Introduction
 
@@ -841,13 +838,27 @@ Table of Contents
    upon.  The integrity of the list should be secured and the X values
    lists may be made public.
 
-3.2.5.2. Message delivery
+3.2.5.2. Message pooling and delivery
 
-   [XXXX writeme]
+   Instead of processing and delivering packets immediately upon
+   receipt, a node SHOULD packets as soon as possible (in order to
+   prevent linking in the case of compromise), but MUST accumulate a
+   batch of deliverable packets before delivering any of them (in
+   order to frustrate traffic analysis).
+
+   Nodes SHOULD choose a batching strategy that blends messages with
+   one another even in the event of a flooding or n-1 attack; such an
+   algorithm is given in Appendix A.3 below.
+
+   If a packet or message cannot be delivered immediately due to a
+   (possibly) transient error, the node SHOULD retry the message
+   periodically until either it can be delivered, or a until a given
+   interval has passed.  After the interval, the packet or message
+   is discarded.
 
 3.3. SURB exchange formats.
 
-   This section describes how to encode messages with 
+   This section describes how to encode messages with XXXX.
 
    A SURB can be encoded in a standard binary or ASCII format.
  
@@ -1123,42 +1134,3 @@ A.3. Appendix: Versioning and alphas
    '0.x' instead (currently '0.3' for packets, '0.2' for MMTP, and
    '0.1' for everything else).  Production versions MUST NOT retain
    backward compatibility with pre-production releases.
-
-X. Open questions
-
-3. We should specify: are 'DROP'-type messages dropped before they go
-    into the mix pool, or after they're pulled from the pool?
-
-  [Before. -NM]
-  [My feeling is After, but I should think about it... -GD]
-  [Roger seemed pretty sure that it should be 'before', but I don't
-   remember why.  Roger? -NM
-
-4. We should specify: what happens when a message is undeliverable?
-
-  [We retry for a while, then drop it. -NM]
-  [Specifically: we retry the message with subsequent message pools
-   until it is delivered, or until a certain amount of time has
-   passed. -NM]
-
-3. When do dummy messages get generated?
-   [Current hypothesis: As a first cut, we're going to have nodes add
-    dummies to the outgoing batch every mix interval, with a geometric
-    distribution, with 5 hops, with the sender as the last hop. -NM]
-
-4. When does link padding get generated?
-   [Both active research areas; not for first cut]
-
-[XXXX 
-   WRT The pooling rule
-
-   Paul and/or Andrei describe a variant that checks N>=POOL_SIZE+THRESHOLD, 
-   with THRESHOLD>= 1.  Roger claims (verbally) that he isn't sure whether
-   this would buy us anything, since (he says) adding 1 to POOL_SIZE would
-   always increase anonymity more than adding 1 to THRESHOLD.  Once they've
-   come to some agreement, maybe we should do that instead.
-
-   Then there are binomial mixes, where instead of sending b messages,
-   you send each message with probability=b/POOLSIZE.  Roger/Paul/Andrei
-   seem to like those, but I don't have a clear sense of how sure they are,
-   and how much everyone agrees with them. -NM]

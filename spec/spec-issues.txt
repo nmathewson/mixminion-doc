@@ -1,0 +1,455 @@
+$Id: spec-issues.txt,v 1.1 2003/07/14 22:15:59 nickm Exp $
+
+				MIX3:X
+    Open Issues in Type III (Mixminion) Mix Protocol Specifications
+
+			    Nick Mathewson
+
+Status of this Document
+
+   This document is *not* a Type III remailer specification document.
+   Instead, it lists currently open issues in the other documents.
+
+   This document is intended for:
+
+      - Anybody contributing to the Type III remailer design process
+        who wants to know some areas to work on.
+
+      - Implementors of Type III remailers and clients who want to be
+        aware of areas that may change between now and the final Type
+        III specification.
+
+Table of Contents
+
+            Status of this Document                                    X
+   1.       Issues in MIX3:1: 'minion-spec.txt'
+   1.1.     Disposition of 'DROP' messages
+   1.2.     Generation of dummy messages and link padding
+   1.3.     Recommended pooling rule
+   1.4.     Hostnames versus IPs
+   1.5.     IPv6
+   1.6.     Denial-of-service prevention   
+   1.7.     Bursty MMTP
+   2.       Issues in MIX3:2: 'E2E-spec.txt'
+   2.1.     Mail Gateways
+   2.2.     MIME
+   2.3.     Improved K-of-N algorithm
+   2.4.     Abuse prevention
+   2.5.     Path selection in non-freeroute networks 
+   2.6.     News
+   2.7.     PKI bootstrapping
+   2.8.     Multiple recipients
+   3.       Issues in MIX3:3: 'dir-spec.txt'
+   3.1.     Directory agreement
+   3.2.     Integrated pinging
+   3.3.     Reliability versus trust
+   3.4.     Unadvertised broken links
+   3.5.     Anonymity information in descriptor blocks
+   3.6.     Automatic retrieval of server information
+   3.7.     Jurisdictions and twins
+   4.       Unspecified components
+   4.1.     Nymserver
+   4.2.     Standard API
+
+1. Issues in Mix3:1: 'minion-spec.txt'
+
+1.1. Disposition of 'DROP' messages
+
+   We need to specify: are 'DROP' messages dropped before they go
+   into the mix pool, or after they're pulled from the pool?
+
+   [Before. -NM]
+ 
+   [My feeling is After, but I should think about it... -GD]
+ 
+   [Roger seemed pretty sure that it should be 'before', but I don't
+      remember why.  Roger? -NM]
+
+1.2. Generation of dummy messages and link padding
+
+   We need to specify under what circumstances nodes should add dummy
+   messages, and under what circumstances they should send link
+   padding.  (Also, should nodes add dummy messages to their outgoing
+   batches, or to their pools?)
+
+   Roger originally suggested that nodes add link padding to each
+   outgoing batch according to a geometric distribution.  But this
+   seems to be superseded by hopes that we can use dummy messages and
+   link padding for each node to ping the network.
+
+   See Danezis and Sassaman's forthcoming paper on Red-Green-Black mixes for
+   some other uses of having every mix be a pinger.
+
+   See Diaz and Preneel's forthcoming paper on dummy traffic for some
+   other good ideas.
+
+1.3. Recommended pooling rule
+
+   Currently, we recommend Mixmaster's pooling rule as a baseline in
+   appendix A.3.  There is some possibility that a better rule might be
+   turned up.  In Diaz and Serjantov's paper "Generalising Mixes",
+   there's (if I recall correctly) some suggestion that a modified
+   pooling rule might provide better anonymity.  Somebody should look
+   into this.
+
+1.4. Hostnames versus IPs
+
+   In the current specification, we address servers only by IP.  While
+   this approach prevents DNS-related attacks against the mixnet, it
+   wreaks havoc with any attempt to run a server with a dynamic IP.
+
+   Although it is possible to incorporate dynamic-IP servers in the
+   current scheme (for example, nodes could re-address messages to a
+   server's new IP upon learning of the new IP via a fresh directory
+   publication), such approaches basically amount to reinventing a
+   broken, high-latency DNS clone.
+
+   Thus, I think that instead of using an IP address in FWD and
+   SWAP-FWD subheaders, we should use a hostname instead.  Nodes should
+   cache the result of the lookup until a connection fails, in order to
+   prevent spoofing attacks.
+
+   Pro:
+      - Servers with dynamically assigned IP become viable.
+      - Changing a server's IP no longer delays traffic until the
+        change propagates to the directory.
+
+   Con:
+      - The server codebase must become more complicated in order to 
+        efficiently perform and cache DNS lookups while resisting
+        DNS-related lockups.  (But note that any other solution to
+        the dynamic-IP problems would also require a significant amount
+        of server code.)
+      - An attacker who can compromise a node's DNS could block some of
+        the traffic intended for that node until the DNS was restored.
+
+   Nonissues:
+      - We don't need to worry about attackers stealing or destroying
+        traffic by compromising DNS, since MMTP is authenticated.
+  
+                                      -- Nick
+
+1.5. IPv6
+
+   (Adding IPv6 support to the network would create a situation in
+   which only hosts with IPv6 support could deliver packets to nodes
+   without IPv4 addresses.  This would create a non-freeroute network.
+   See 2.5 below.)
+
+1.6. Denial-of-service prevention
+
+   Right now, the network may be too easy to DOS.  In particular, there
+   are unpleasantly high work multipliers for attacks that send junk
+   packets to nodes, forcing the nodes to RSA-decrypt the packets them
+   before they can find out that they are invalid.
+
+   Another attack arises because RSA encryption is far cheaper than
+   decryption. An attacker can, by sending a packet through the length
+   of the first leg of the path, force all N nodes in the first leg to
+   perform a (HEADER-decrypt/LIONESS-decrypt/Transmit) operation at the
+   cost of N (HEADER-encrypt) operations and a single (Transmit).  (The
+   attacker doesn't need to LIONESS-encrypt the payload, since a junk
+   payload won't be detected until the swap point.)
+
+   This isn't a theoretical issue: the current type-I and type-II
+   networks are under periodic DOS attack, and it seems unwarranted to
+   assume that a type-III network would be exempt.
+
+   Although preventing all DoS attacks in the general case is probably
+   impossible, it would be nice to lower the attack multiplier in these
+   cases.  [The attack multiplier is amount of work an attacker can
+   force the network to do, divided by the amount of work the attacker
+   must expend to do so.]
+
+   (Please *don't* wave your hands here and say "proof of work" unless
+   you can come up with a scheme that:
+        - Allows users to send messages from 386s or palmtop computers
+          in a reasonable timeframe.
+        - Impedes users with high-end machines from DOSing the
+          network.
+        - Does not prevent nymservers from working.
+        - You are prepared to specify :) .)
+
+1.7. Bursty MMTP
+
+   Right now, an MMTP sender waits for the MMTP recipient to
+   acknowledge each packet before transmitting the next.  Bram claims
+   that TCP will be happier if senders burst as many packets as
+   possible without interruption, allowing the recipient to ACK each
+   one asynchonously.
+
+   Someone should confirm that this matters with the message sizes that
+   we're dealing with.  (32KB messages, <80B acks, over TLS).  If it
+   does matter, we should change MMTP to use bursty transmission.
+
+2. Issues in MIX3:2: 'E2E-spec.txt'
+
+2.1. Mail gateways
+
+   The design paper calls for gateways that can allow users to reply to
+   Type-III messages without reply blocks.  This needs to be designed
+   and specified.
+
+2.2. MIME
+
+   Users will want to be able to send binary messages; if our standard
+   email delivery methods don't support this, users will improvise
+   something and become distinguishable thereby.
+
+   But if we allowed arbitrary values for Content-Type, Content-
+   Encoding, and so on, we'd expose ourselves to partitioning attacks
+   based on the distinguishability among MIME implementations.  
+
+   Thus, we need to specify _at least_ a clean way to access type and
+   encoding functionality.  Possibly, we should also specify a standard
+   way to send multi-part messages.
+
+   This functionality *may* take the format of a canonical subset of
+   MIME, but Lucky thinks that such a thing would drive us into
+   Lovecraftian state of madness.
+
+2.3. Improved K-of-N algorithm
+
+   Our current K-of-N approach doesn't do very well when N>40 or so.
+   (Its performance is O( (N-K)*N )).   Right now, we work around this
+   problem by segmenting a message before fragmenting it; though this
+   is probably fine, it is _still_ an ugly hack, and it _does_ have
+   ugly worst-case behavior.
+
+   There are better (O(N)) algorithms out there, but they all seem to
+   be patented by the Digital Fountain people.
+
+   It would be nice to have an unencumbered efficient approach to
+   K-of-N fragmentation.  Somebody should do one.
+
+2.4. Abuse prevention
+
+   Right now, we have some vague ideas about users emailing admins to
+   get themselves blacklisted.  This should be specified and
+   automated.  
+
+   Additionally, there are probably some other means of preventing
+   abusive behavior.  If these don't make it into the specification,
+   they should at least appear in a best-practices document.
+
+2.5. Path selection in non-freeroute networks 
+
+   Our current path selection algorithm assumes that the network is a
+   clique, and that every node can route to every other node.  If this
+   is not so (for example, because one node blocks another, or because
+   one node only has an IPv6 address), the routing algorithm should
+   deal.
+
+   George believes that a random-walk algorithm is sufficient, if we
+   first exclude any node that isn't connected to at least a certain
+   fraction of the network.  See his paper, "Mix-networks with
+   restricted routes".
+
+2.6. News
+
+   There's no way to post to USENET specified.  There should be.
+
+2.7. PKI bootstrapping
+
+   The current end-to-end spec allow clients to send encrypted messages to
+   recipients with known RSA public keys, and to keep those messages
+   indistinguishable from junk and reply messages to anybody but the
+   intended recipient.
+
+   Unfortunately, the current spec lacks a PKI, and also lacks any way
+   to bootstrap from an existing PKI.  We should probably specify some
+   way to bootstrap from PGP keys (or something).
+
+2.8. Multiple recipients
+
+   Right now, you can only specify a single recipient mailbox for each
+   outgoing mail message.  There should be some way to allow for
+   multiple recipients, but to deal with the attendant abuse issues.
+
+3. Issues in MIX3:3: 'dir-spec.txt'
+
+3.1. Directory agreement
+
+   There should be a way for multiple directory servers to synchronize,
+   and agree on a single consensus directory.  (We can't simply let
+   each server do its own thing because of possible partitioning
+   attacks related to accidentally or maliciously unsynchronized
+   servers.)
+
+   Issues include: How do directory servers synchronize?  What happens
+   when they disagree?  How many servers must a client contact before
+   he/she has enough information?  How do we catch dishonest directory
+   servers?  How do we avoid catastrophic failure modes if directories
+   fail?
+
+   These issues get even harder when the directory servers who are
+   trying to synchronize don't agree on which directory servers are
+   trustworthy.
+
+3.2. Integrated pinging
+
+   We should specify a best-practices pinging algorithm for directories
+   (and others) to use to determine mix reliability.
+
+   Possibly, every server should run this algorithm (but possibly with
+   a reduced message volume) -- see 1.2 above.
+
+3.3. Reliability versus trust
+
+   The current 'recommended-servers' entry lacks any way to distinguish
+   nodes that the directory admin considers unreliable from nodes that
+   the directory admin considers untrustworthy.  This may or may not be
+   a good thing.
+
+3.4. Unadvertised broken links
+
+   We may or may not want a way for a directory to advertise that,
+   although N1 and N2 both work, and N1 and N2 both claim allow
+   messages from one other, the N1-N2 link is broken nonetheless.
+
+3.5. Anonymity information in descriptor blocks
+
+   We may want some way for servers to advertise how much anonymity
+   they claim to provide.  This may consist of a description of their
+   pooling algorithm and parameters, or of their entropic anonymity set
+   size (see e.g.  George and Andrei's information-theoretic measure).
+
+   There is some possibility that doing so would leak information about
+   how many messages a node is processing, and thereby (somehow) help
+   an attacker.
+
+   It is also unclear whether anybody could ever use this information
+   safely.
+
+3.6. Automatic retrieval of server information
+
+   Right now, server descriptors are published in a push-only model:
+   nodes advertise themselves to as many directory servers as they can.
+   There may be some value in allowing others to get this information
+   by querying the nodes themselves.
+
+   Here's an exchange between George an Nick on the subject.
+
+        [XXXX I think it is important to have a standard way to query a
+              server given an IP and a port. -GD]
+
+        [Why? What's wrong with having the server upload its
+         information to a directory server? (Not that I disagree, but I
+         want to know the application for this.  Clients can't use it
+         without leaking which servers they're interested in, and
+         giving servers the opportunity to lie to clients.  What's the
+         upside?) -NM]
+
+        [I believe that this will make it more easy to construct
+         Directory servers.  For some reason I have the feeling that it
+         will scale better if directory servers know about mixes (and
+         can query them automatically) rather than the other way around
+         (mixes knowing about directory servers). This way one can run
+         independently a directory server, without any collaboration
+         from the mix network (other than the ability to request info).
+   
+         Let's not forget that the mixes *sign* their information with
+         a long term key, therefore after you establish that you trust
+         a signing key to belong to an honest server, the operation of
+         querying a directory server for updates is simply a question
+         of transport and not of trust. Of course you still trust them
+         to give you a information on a complete set of servers, but
+         this can also be checked.  It is also true that the a client
+         requesting only the information on the servers it is about the
+         use will ruin its anonymity. On the other hand if key updates
+         are not frequent, then the client can slowly update its
+         database in the background.
+   
+         Even more possibilities open up if each mix server give on
+         request not only their information but also what they think
+         the state of other servers, they have contacted in the past,
+         is. This way each server you might contact will give you a set
+         of other servers, that can be used by clients to construct a
+         complete picture. Which ones are to be trusted is of course an
+         orthogonal issue, but once it is decided the updated
+         information could flow very quickly. (this is in fact a gossip
+         protocol)
+   
+         These are the reasons why I think it might be a good idea to
+         have automatic on request information from servers. -GD]
+
+        [Hm.  You may have a point.  I'm still going to suggest that we
+         do not do this yet, for a few reasons.
+   
+         First, we need a way for servers to publish their descriptors
+         to directory servers.  (Otherwise, a directory server couldn't
+         learn about new servers for the first time.)  In other words,
+         a push mechanism is needed no matter what.  On the other hand,
+         directory servers may or may not need a pull mechanism: we do
+         not yet have a design that requires this.  Let's not build it
+         till we have a use for it.
+   
+         Second, it's a bit tricky to specify *which* descriptor a
+         server should return.  Today's?  Tomorrow's?  All the ones it
+         knows about?
+   
+         Third, (this is a variant of 'First') because client use of
+         this feature is prone to misuse, we should only provide it to
+         clients wrapped in some safe mechanism.  That safe mechanism
+         has yet to be specified.
+   
+         Therefore, I'm going to suggest that we call this feature
+         possibly desirable... but that we should first design
+         directories or whatever other node discovery mechanisms *may*
+         want this feature before we decide that to implement the
+         feature itself. -NM]
+
+   If you can resolve this definitively, please do.
+
+3.7. Jurisdictions and twins
+
+   It might be good to have some way for serves to advertise their
+   jurisdiction, so that clients can choose paths that cross different
+   jurisdictions.  But doing so badly might enable dishonest servers to
+   grab a disproportional share of the traffic.
+
+   It could also be useful to have some way to note that server S1 and
+   server S2 have the same administrator.
+
+   Finally, there may be some value in allowing server S1 and server S2
+   with the same administrator to also share the same set of keys, thus
+   forming a single 'virtual server'.
+   
+4. Unspecified components
+
+   There are some other projects that need to be specified and
+   standardized, though they would not form a part of any of the
+   current specification documents.
+
+4.1. Nymserver
+
+   We need a standard nymserver protocol.
+
+   The consensus seems to be toward a POP-like implementation that
+   would allow clients to request lists of message headers, and delete
+   or retrieve each message at their discretion.  
+
+   (If nymservers relay every message to the client automatically, an
+   attacker could DOS a client by exhausting their store of SURBs, or
+   mount a traffic analysis attack by flooding the nym with spam.)
+
+   There is probably some value to allowing clients to pre-load a
+   nymserver with a set of SURBs, in order to allow reduced message
+   latency.
+
+   In recent discussion, on a.p.a.s, some users have suggested that nym
+   users ought to have a way to tell their nymservers to drop traffic
+   according to certain rules.  This may be useful, but may allow
+   partitioning.
+
+   There is also some tension between the requirement that nymsevers
+   should encrypt information as soon as it arrives, and the
+   requirement that nymservers should look for duplicate information to
+   discourage floods and DOS attacks.
+
+4.2. Standard API
+
+   Somebody should write a standard API for invoking type III clients.
+
+   There may be value in specifying both an in-process and an
+   out-of-process (CLI) interface.
