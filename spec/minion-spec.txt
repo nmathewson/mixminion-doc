@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.2 2003/05/06 00:34:01 arma Exp $
+$Id: minion-spec.txt,v 1.3 2003/05/06 05:35:41 arma Exp $
 
            Type III (Mixminion) Mix Protocol Specifications
 
@@ -174,20 +174,21 @@ Table of Contents
          or deliver it to a final recipient. [Described in section
          3.2.5 below.]
 
-      8. The server waits until enough time has passed, and enough
+      8. The server waits until enough time has passed, and/or enough
          packets have been received.  [A suggested rule is described
          in appendix A.1 below.]
  
-      9. If the server is not the final mix on the path, it delivers
-         it to the next mix [as described in section 4] or delivers
-         it to the recipient [as described in section 3.2.5.2.].
+      9. If the server is the final mix on the path, it delivers the
+         message to the recipient [as described in section
+         3.2.5.2.], else it delivers it to the next mix [as described
+         in section 4].
 
 2.2. Anonymous reply messages
 
    When a recipient wishes to receive messages from one or more
    senders without revealing his identity, the following steps occur:
 
-      1. As in steps 2 and 3 from section 2.2 above, the recipient
+      1. As in steps 3 and 4 from section 2.1 above, the recipient
          learns about the available Type III mixes, and chooses one
          or more paths through the network.
 
@@ -206,11 +207,11 @@ Table of Contents
 
       4. The sender constructs one or more packets for the recipient
          and inserts them into the network to be delivered, as in
-         steps 4-9 in section 2.2 above.  The sender uses a different
+         steps 4-9 in section 2.1 above.  The sender uses a different
          SURB for each packet.  (The only difference in the sender's
          behavior is that the second half of the path is already
          encoded in the SURB.  To the mixes, the delivery process
-         procedes identically: rather than decrypting the packet
+         proceeds identically: rather than decrypting the packet
          contents, the nodes in the second half of the path
          effectively encrypt it.)
 
@@ -254,7 +255,7 @@ Table of Contents
          [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02]
          [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 03]
                  ....
-   We then return the first N bytes of the concatenated result.
+   We then return the first N octets of the concatenated result.
 
 3.1.1.3. Super-pseudorandom permutation
 
@@ -454,16 +455,16 @@ Table of Contents
 
    0x0000-0x00FF: PROTOCOL SUPPORT: NON-EXIT TYPES
 
-   0x0000 DROP    (0 bytes of routing information)
-   0x0001 FWD/IP4 (IP: 4 bytes, PORT: 2 bytes, KEYID: 20 bytes): 26 bytes
+   0x0000 DROP    (0 octets of routing information)
+   0x0001 FWD/IP4 (IP: 4 octets, PORT: 2 octets, KEYID: 20 octets): 26 octets
    0x0002 SWAP-FWD/IPV4 (same info as FWD/IP4)
-   0x0003 FWD/IP6 (IP: 16 bytes, PORT: 2 bytes, KEYID: 20 bytes): 38 bytes
+   0x0003 FWD/IP6 (IP: 16 octets, PORT: 2 octets, KEYID: 20 octets): 38 octets
    0x0004 SWAP-FWD/IPV6 (same info as FWD/IP6)
 
    0x0100-0x0FFF: PREDEFINED DELIVERY TYPES.
 
-   0x0100 SMTP   (TAG: 20 bytes, EMAIL ADDRESS: variable) Variable bytes
-   0x0101 MBOX   (TAG: 20 bytes, USER: variable) Variable bytes
+   0x0100 SMTP   (TAG: 20 octets, EMAIL ADDRESS: variable) Variable octets
+   0x0101 MBOX   (TAG: 20 octets, USER: variable) Variable octets
    0x0102 MIX2   (EMAIL ADDRESS: variable).  Type II remailer support.
 
    0x1000-0xEFFF: UNALLOCATED
@@ -507,7 +508,7 @@ Table of Contents
    
    These diagrams should help explain:
 
-     1. If the subheader is less than PK_MAX_DATA_LEN bytes long, it
+     1. If the subheader is less than PK_MAX_DATA_LEN octets long, it
         fits into a single RSA encryption along with some of the data
         from the rest of the header.
    
@@ -540,12 +541,12 @@ Table of Contents
    Each type III message has two headers with identical structure. These
    headers are swapped at the crossover point. [XXXX describe crossover]
 
-   A header is HEADER_LEN=2048 bytes long and contains up to
+   A header is HEADER_LEN=2048 octets long and contains up to
    2048/(OAEP_OVERHEAD+MIN_SH)=24. subheaders. Starting with N
    subheaders SH_0..SH_N containing secrets SK_0..SK_N (and placing
    routing extension blocks directly after their respective
    subheaders), the header is constructed by appending random padding
-   to achieve a total size of 2048 bytes. Then, each subheader key is
+   to achieve a total size of 2048 octets. Then, each subheader key is
    used to create a key Hash(SharedSecret | "HEADER SECRET KEY") with
    which the part of the header after the subheader (but including its
    routing extension) is encrypted using counter-mode AES.
@@ -628,7 +629,7 @@ Table of Contents
    [XXXX rewrite to use new terms, move]
 
    The payload of a Mixminion message has a fixed length of 32 kb
-   - 2*16*128 bytes = 28kb.   Payloads indicate their size.
+   - 2*16*128 octets = 28kb.   Payloads indicate their size.
 
    (When sending a reply message with a SURB, we use payload encryption
    to prevent the crossover point from seeing an unencrypted payload. See
@@ -748,7 +749,7 @@ Table of Contents
 
    [XXXX writeme]
 
-3.3. SURB exchange format.
+3.3. SURB exchange formats.
 
    [XXXX rewrite to new language]
 
@@ -756,18 +757,18 @@ Table of Contents
  
    Binary Format:
 
-      Begin Marker: 4 bytes
-      Version:      2 bytes
-      Use-by-Date:  4 bytes
-      SURB header:  2048 bytes
-      Routing Size: 2 bytes
-      Routing Type: 2 bytes
-      Encryption key: 16 bytes
-      Routing Info: (Routing Size) bytes
+      Begin Marker: 4 octets
+      Version:      2 octets
+      Use-by-Date:  4 octets
+      SURB header:  2048 octets
+      Routing Size: 2 octets
+      Routing Type: 2 octets
+      Encryption key: 16 octets
+      Routing Info: (Routing Size) octets
 
-      Total: 30 bytes + Header size + Routing info size.
+      Total: 30 octets + Header size + Routing info size.
 
-   * The begin marker is the ASCII 4-byte string 'SURB'. [53 55 52 42]
+   * The begin marker is the ASCII 4-octet string 'SURB'. [53 55 52 42]
 
    * The version number contains the format version of the SURB.
      (should be hex 01 and 00 for this standard).
@@ -870,8 +871,8 @@ Table of Contents
 
   * Message case:
 
-     * A sends "SEND", CRLF, M, HASH(M|"SEND") (6 + 32k + 20 bytes)
-     * B sends "RECEIVED", CRLF, HASH(M|"RECEIVED") (10 + 20 bytes)
+     * A sends "SEND", CRLF, M, HASH(M|"SEND") (6 + 32k + 20 octets)
+     * B sends "RECEIVED", CRLF, HASH(M|"RECEIVED") (10 + 20 octets)
 
     [Note that A does not wait for B's reply before sending further
      messages; rather, A begins sending its next message immediately.
@@ -881,11 +882,11 @@ Table of Contents
 
   * Padding case:
 
-     * A sends "JUNK", CRLF, Junk, HASH(Junk|"JUNK") (6 + 32k + 20 bytes)
+     * A sends "JUNK", CRLF, Junk, HASH(Junk|"JUNK") (6 + 32k + 20 octets)
        (where Junk is an arbitrary 32k sequence.)
-     * B sends "RECEIVED", CRLF, HASH(Junk|"RECEIVED JUNK") (10 + 20 bytes)
+     * B sends "RECEIVED", CRLF, HASH(Junk|"RECEIVED JUNK") (10 + 20 octets)
 
-       [Note that both cases require the same number of bytes and
+       [Note that both cases require the same number of octets and
         processing time. Implementations must make sure the real
         message and the padding cases are indistinguishable to a third
         party, or even to the parties involved after the keys have
@@ -893,8 +894,8 @@ Table of Contents
 
   * Error case:
 
-     * A sends "SEND", CRLF, M, HASH(M|"SEND") (6 + 32k + 20 bytes)
-     * B sends "REJECTED", CRLF, HASH(M|"REJECTED") (10 + 20 bytes)
+     * A sends "SEND", CRLF, M, HASH(M|"SEND") (6 + 32k + 20 octets)
+     * B sends "REJECTED", CRLF, HASH(M|"REJECTED") (10 + 20 octets)
     
        [B must reject a message if their hash is incorrect; if the
         disk is full, or if for some other reason B cannot accept the
@@ -1008,10 +1009,10 @@ A.2. Appendix: Backward compatibility with Type II remailers
    Packet NL
    "-----END REMAILER MESSAGE-----" NL
 
-   PacketLength is the length of the packet in bytes, encoded as a
+   PacketLength is the length of the packet in octets, encoded as a
    decimal integer."Checksum" is equal to the MD5 hash of the packet,
    encoded in Base 64.  The packet is also encoded in base 64; The
-   first 16 bytes of the packet are the KeyID of the recipient.
+   first 16 octets of the packet are the KeyID of the recipient.
 
    The KeyID of a type II node is calculated by taking the public key
    <n,e>, expressing n and e as zero-padded, big-endian integers,
@@ -1020,10 +1021,10 @@ A.2. Appendix: Backward compatibility with Type II remailers
    When encoding a type II message for transmission in a type III
    payload, a type III node should include:
 
-   S   [2 bytes] (Size, big-endian)
-   CHK [16 bytes] (MD5 checksum as given in type II packet, base-64 decoded)
-   PKT [S bytes] (Packet as given in in type II packet, base-64 decoded)
-   PAD [28KB-16-2-S bytes] (Random padding)
+   S   [2 octets] (Size, big-endian)
+   CHK [16 octets] (MD5 checksum as given in type II packet, base-64 decoded)
+   PKT [S octets] (Packet as given in in type II packet, base-64 decoded)
+   PAD [28KB-16-2-S octets] (Random padding)
 
 A.3. Appendix: Versioning and alphas
 
