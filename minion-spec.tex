@@ -4,239 +4,26 @@
 
 [All of these are mentioned in more detail below.]
 
+1. Statistics Information Exchange format
 
-1. Is there any reason for the RECEIVED ack in MMTP?
-1.5. Is the 'BAD SHA1' nak in MMTP acceptable?
-
-   Proposal: keep them both. -NM
-   Sounds good, until we hear from GD that they're unnecessary. :) -RD
-
-   I do not think that cryptographically they are necessary, but they
-   give the node a warm feeling that the other node is processing the
-   message. Originally I thought we could provide a signature on a
-   batch of them, so that the nodes can prove they have sent the
-   messages. I do not think that anything breaks if we get rid of
-   them. -GD]
-
-   Hm.  Well, since I already implemented them, and I do agree with
-   the 'warm feeling' observation, I'll leave them unless anyone
-   objects. -NM
+   [Not for first cut]
  
-2. Email encryption: what do we do?
+2. Mail gateways. We should specify these.
 
-   Proposal: SURBs include an encryption key; anonymous SURB-using
-   senders LIONESS_ENCRYPT the payload with this key before all other
-   processing.  This way, nobody but the recipient will see the
-   plaintext of the message. [For stateless SURBs, the encryption key
-   is derived from the seed like the rest of the secrets.] -NM
+   [Should go into appendix]
+     
+3. When do dummy messages get generated?
+4. When does link padding get generated?
 
-   And for non-anonymous SURB-using senders, the mail gateway they
-   use does it for them when it takes the reply block and attaches their
-   payload. -RD
-   For non-anonymous SURBs the problem does not arise since the
-   message never appears in clear exept at the begining of the trip
-   -GD.
+   [Both active research areas; not for first cut]
 
-   Now the following problem occurs: when you receive a SURB, how do
-   you know that the associated key is indeed the key that the creator
-   of the SURB intended for you to use in order to encrypt the
-   message. This is the reason why I thought that instead of using
-   pure junk to pad SURBs to 16*128 bytes on can use the HASH of the
-   public key. Therefore if you trust that the SURB you have goes to
-   the right recipient (because of the hashes in the sub headers), 
-   then you automatically trust the key that
-   comes with it. (how to trust that you have the right SURB is
-   another problem). -GD
-   PLEASE see the ``The payload of a message'' section for a
-   discussion of this as well as the archived messages:
-   ``Payload encryption''
-   http://archives.seul.org/mixminion/dev/May-2002/msg00060.html
-
-   The public key idea as specified in your email has its own
-   problems.  If a SURB generator creates a new public key for each
-   message, generating SURBs becomes a far more expensive operation.
-   (Roughly 30-70 times worse.)  Right now, a good processor can
-   generate 170 8-hop SURBs per second.  If you need to generate a
-   1024 RSA key for each SURB, it can only generate 4.5 SURBs per
-   second.  IMO, this is a big loss.
-
-   On the other hand, if you don't generate a new public key for each
-   SURB, your SURBs are now linkable.
-
-   I think that the threat model (an adversary makes you get the 
-   correct SURB but the wrong encryption key) is a bit bogus.  An
-   adversary who can replace the encryption key can replace the entire
-   SURB and achieve similar results. 
-
-   The padding idea is neat, but I think you could use a hash of a
-   symmetric key instead with no ill effects.  -NM
-
-2b. Mail gateways. We should specify these.
+5. Need to write: algorithm for processing a reply.
 
    XXXX
 
-   I feel it should be part of a different standard. Since it is a
-   service (like others) that runs on top of Mixminion. -GD
-
-   Agreed, but it should be a standard.  Perhaps a set of addenda is
-   in order. -NM
-
-3. Email transport exchange format.
-
-   Proposal: At the final hop, when the delivery mechanism is SMTP, we
-   proceed as follows.  If the message is a series of printable
-   characters followed by some number of NULs, assume we're
-   delivering in ASCII or ISO-foo or whatever, and send the text
-   portion of the message as an email.   (Where printable==
-   {all characters but hexadecimal 00-06,0E-1F}).  Otherwise,
-   ASCII-armor the message as in 'email transport exchange format'
-   below.
-
-   This way, plaintext forward messages are delivered as plaintext,
-   and tagged messages, reply messages, and non-plaintext messages are
-   all delivered as junk. -NM
-
-   Sounds good for now. If our assumption that "a random 28kb payload
-   will always contain at least one of these non-printable characters"
-   turns out to not work so well, we can always back off to the "imbed
-   the length with some redundancy" option from earlier. -RD
-
-   We have to always include a header or footer explaining how to not
-   receive anonymous messages in the future. To avoid being
-   spammers. Generally (except in the case of the final hop of a SURB)
-   I think that delivering SMTP should be an application level issue
-   that is dealt in a different document along with how to send
-   email. -GD
-
-   Hm.  I agree with what you say, but keep in mind that the set of
-   deployed exit applications needs to be pretty uniform in its
-   behavior and support, or else we'll endanger anonymity.  How about
-   we move the above to an additional document, and not implement it
-   until we have all of the spam issues straightened?  -NM
-   
-
-4. Stateless replies and SMTP (depends on 2 and 3, if I understand correctly)
-
-   Proposal: stateless replies put E_recipient_key(nHops | seed) as
-   the value of the LOCAL or SMTP Tag field, as suggested in my
-   comments below.  (See comments for why.) -NM
-
-   See http://archives.seul.org/mixminion/dev/Jul-2002/msg00003.html
-   for more discussion. Should we pick one, or both? -RD
-
-   For now, I'll implement the one where you store E_password(key) on
-   disk. -NM
-  
-5. Do we support other SSL modes for MMTP?
-
-   Proposal: server-to-server connections must use DHE/RSA/AES128/SHA1, 
-   but we allow clients to connect with RSA/AES128/SHA1 and
-   RSA/3DES/SHA1.  -NM
-
-   I think this is ok. -RD
-   Seems fine -GD
-   
-6. How often do/must we rehandshake?
-
-   Proposal: see note in text. -NM
-             Agree in the text -GD
-
-7. Local delivery
-
-   Proposal: Servers that want to support LOCAL delivery have an
-   internal list of users they accept messages to, and an internal
-   mapping from those users to some delivery mechanism for each one.
-   Typically, this is a mapping from 'username' to
-   'username@localhost', and delivery defaults to local delivery via
-   sendmail.
-       Servers are free to provide other implementations for local 
-   delivery. -NM
-
-
-8a. Server descriptor rules for Local mode
-
-   Proposal: If a server supports LOCAL delivery, it MAY have a
-   'Modules/Local' section, which contains only a version string,
-   which must be "1.0". -NM
-
-   I think it should be the other way around: 
-	we have Incomming/MMTP so maybe rename to Outgoing/MMTP
-        and create an Outgoing/SMTP descriptor.
-        Then naturally you can have local services such as 
-		Local/Mailbox
-		Local/FreeHaven
-		Local/NymServer
-		Local/ListServ
-	Acting as different service ports. -GD
-
-   I think we're saying the same thing.  What you mean by
-   'Local/Mailbox', I mean by 'Modules/Local'.  I like your names
-   better, though, and I think we should rename the 'LOCAL' routing
-   type to 'MBOX' below to correspond. -NM
- 
-8b. Server descriptor rules for SMTP mode.
-
-   XXXX
-
-9. When do dummy messages get generated?
-
-   XXXX
-
-10. When does link padding get generated?
-
-   XXXX
-
-   Question 9 + 10 are an active research area, and given that we
-   provide meachanisms fo doing dummy messages and link padding we
-   should not specify anything in the spec. -GD
-
-   This is probably ok _for now_.  I'll add a note. -NM
-
-11. Need to write: algorithm for processing a reply.
-
-   XXXX
-
-12. Support Diffs for directories?
-
-    Proposal: not until later. -NM
-    Agreed. They won't be "too big" anytime soon. -RD
-    Agreed. -GD
-
-13. Do we change directories to XML?  What about descriptor blocks?
-
-    Proposal: Use XML for both. That's what it's there for. More
-    specifically, we should make descriptors take EITHER the form:
-
-    <mixminion-server>            <mixminion-server>
-      <section>                      <section>
-      key=val                           <key>val</key>
-      key=val                           <key>val</key>
-      </section>         OR          </section>        
-      <section>                      <section>
-      key=val                           <key>val</key>
-      key=val                           <key>val</key>
-      </section>                     </section>        
-    </miximinion-server>         </mixminion-server>
-
-    Which one is more sensible?  Beats me.  If we go for the latter,
-    we probably don't want to have the configuration files correspond
-    to the server info any more.  This may be a good thing.
-
-    Also, will XML signatures serve our purposes? -NM
-
-    I have no experiance with XML so as long as we can sign and trust
-    the thing I have no problem with it. -GD
-  
-    Okay; I'll pick one. -NM
-
-14. Sensible support for multiple directory servers.
-
-    Proposal: save for for later. -NM
-    Agreed. -RD
-    Yes -GD
-
-15. We should write the nymserver spec too. We can keep it pretty much
+6. We should write the nymserver spec too. We can keep it pretty much
     separate from this Mixminion spec.
+
     I will start working on this as soon as I am back from Belgium (5
     Aug 02). I will try to put on paper the scribbles of the CFP
     napkins and additional issues. May be this is a better place to
@@ -244,7 +31,7 @@
     instead of the general mixminion spec document. -GD
     Cool. -NM    
 
-16. We'll also want somebody from the Mixmaster crowd to go through and
+7. We'll also want somebody from the Mixmaster crowd to go through and
     write a "backward compatibility with Mixmaster" addendum, to specify
     what dual Mixmaster/Mixminion servers should do when they receive a
     given packet. (Len?)
@@ -254,8 +41,16 @@
 
     Fear not.  Modularity is what I live for. ;) -NM
 
-\section{Message Format}
+8. We never actually specify a batching algorithm.  
 
+   [XXXX Andrei has suggested that we don't require a mixing
+   algorithm, in order to allow improvements.  I think this is
+   reasonable, but we should probably specify that (1) whatever we do
+   should be at least as good as Cottrell (2) MIXes should include
+   their mixing algorithm in their descriptor blocks. -NM]
+
+
+\section{Message Format}
 
 \subsection{Overview}
 
@@ -412,7 +207,7 @@ There are 5 predefined routing types:
 0x0100-0x0FFF: PREDEFINED DELIVERY TYPES.
 
 0x0100 SMTP   (EMAIL ADDRESS: variable, TAG: variable) Variable bytes
-0x0101 LOCAL  (USER: variable, TAG: variable) Variable bytes
+0x0101 MBOX   (USER: variable, TAG: variable) Variable bytes
 
 0x1000-0xEFFF: UNALLOCATED
 
@@ -429,130 +224,7 @@ key it uses to decrypt subheaders.)
 
 A SWAP routing type tells the node to exchange headers as described below.
 
-The EMAIL field in the SMTP routing type should be a valid mailbox
-[RFC2821]. A mailbox is the canonical form of the ``user@domain''
-part of an e-mail address. Mixminion uses only mailboxes, because the
-display name and comment parts of an e-mail address could potentially be
-different for senders who have obtained an address from different
-sources (leading to smaller anonymity sets). The EMAIL field must be
-NUL-terminated.
-
-The TAG field is appended to the message in an X-Remailer-Tag header.
-
-The LOCAL routing type is used for messages to be delivered to a local
-user.  The USER field must be NUL-terminated; the TAG field is
-free-form.
-
-(Tag fields can be used to implement stateless reply blocks by
-reminding recipients of the master secrets they used to generate the
-reply block.)
-
-[XXXX Ok, here is my real concern: I do not want every different client
-      to implement their own version of the stateless reply block, in
-such a way that they cannot interoperate. So I would rather have some 
-standard fields containing the HOPS and KEY information along with any
-other variable information. -GD]
-[XXXX Ok, I agree with your goal of standardizing stateless replies,
-      but I think they should go into a section on 'How to do
-      stateless replies', so they can be orthogonal to SMTP/LOCAL/Foo  
-
-      Proposed text:
-         If a client does not wish to remember all of her outstanding
-         reply blocks, she may generate them in 'stateless' mode.  She  
-         does so by using an SMTP or LOCAL delivery type, and setting
-         the TAG field to 
-           (nHops | Encrypt(sha1(password)[0:16]), seed) | padding up to 32b.)
-
-         She uses PRNG(seed, nHops*16) to form the SK's in the reply
-[XXXX why *16? What are you trying to do here. -RD]
-[XXXX 16 bytes = size of a single secret. -NM]
-         block, and to reconstruct them later when she receives the 
-         message.
-       
-         If the client has complete trust in the final hop, she may
-         use a null password.  Beware, however: an attacker who recovers 
-         the seed can use it to link any of the hops along the reply 
-         chain.
-
-	 To keep replies indistinguishable from encrypted/tagged
-         forwards, we set the TAG field of SMTP/Local to =exactly=
-         32 bytes.
-
-         Sound ok?                                 -NM ]
-
-[XXXX I would add a type field for identification, and I think it is
-ok -GD]
-
-[XXXX That's interesting. My first thought would have been to PK-encrypt
-      the hop secrets to the recipient. So not even a (separate) password
-      needs to be remembered. But I guess that takes up a lot of
-      space. -RD]
-
-[XXXX I don't think we need to worry about tampering with the tag:
-      it's always in the header, so nobody (IIUC) can tag it fruitfully.
-
-      But if you like what if we had it be:
-        TAG= E(sha1(password)[0:16],  (nHops | seed | padding)) ? -NM]
-
-[XXXX I agree with RD comment above.  I thought that the last hop, meant
- to be delivered to the final receipient would be encrypted under his public 
- key. -GD]
-
-[XXXX All right.  What if we have 
-         TAG = PK_ENCRYPT(recipient_pk, nHops|seed) ?  
-      This requires
-      that the recipient have a private key, and thus breaks
-      deniability and is not as 'stateless' as the password-only
-      approach, but it still works if that's what you want.  -NM]
-[XXXX Wait a second: the TAG field is in the, Routing field that is in the 
-      subheader. This subheader is already encrypted under the receipients
-      public keys, and therefore we do not need to reencrypt it.
-      Am I missing something? -GD]
-[XXXX For SMTP delivery, the tag is included in an 'X-Remailer-Tag'
-      header; see above. -NM]
-[XXXX As I had it in my mind there would be two subheaders at the end
-         of the message: one with SMTP and one with LOCAL. The SMTP
-         tag would make the last machine (other than recipient's) send
-         the mail, while the LOCAL (encrypted under the final
-         recipient) will still do the decryption and
-         decoding. Therefore the X-Remailer-Tag does not contain any
-         secrets. The packet encoded to be sent by SMTP is still a
-         valid mixminion packet (see email encoding) -GD]
-[XXXX What is the advantage of this?  It completely kills deniability
-      by requiring recipients to have RSA keys to decrypt the LOCAL
-      subheader.  It eats a subheader needlessly.  It adds
-      complexity to our system by changing SMTP from a delivery
-      mechanism that sends only a (possibly decrypted) payload to a
-      full-blown routing message that sends entire packets.  It
-      expands the software you need in order to receive replies from
-      'decrypt a payload' to full-blown 'decrypt and process a packet'. 
-
-      So what does it get us?  -NM]  
-[XXXX I always considered the above described mechanism to be used
-only in the case of the last hop (the header before the last valid
-one) for SURBs. I did not forsee it as a general SMTP delivery
-mechanism. Therefore conceptually the packet transmitted is still the
-full mixminion packet, so that the last hop can make sure of its
-integrity (using the headers) and can recover secrets in it. I would
-argue that only using SMTP in that mode makes it simple (and easier to
-include in that document, than having to specify the generic SMTP
-delivery mechanism (which must have standard abuse/spam resistance,
-volume control, awareness of nyms etc.) -GD]
-
-[XXXX I was under the impression that we earlier agreed =not= to go
- down this route when we said that applications must give only [RT,
- RI, Hash(SK),P] to the 'module manager', rather than giving H1 and H2
- as well as we used to do.  The reason I want SMTP to go in is that
- otherwise we can't send anonymous mail to people without software,
- which was part of our software.  I agree that we need to figure out
- abuse/spam resistance, but that doesn't mean we shouldn't figure out
- the other issues as well.
- 
- (Even in the case of SURB-only, abuse still shows up, since people
- can still anonymously mailbomb you with mixminion packets.)
-
- So, without the abuse/spam issues, is what I propose above basically
- okay? -NM]
+See appendices for more information about SMTP and MBOX delivery.
 
 \subsection{The header structure}
 
@@ -614,48 +286,9 @@ return H_1;
 The payload of a Mixminion message has a fixed length of 32 kb
 - 2*16*128 bytes = 28kb.   Payloads indicate their size.
 
-  [XXXX Shouldn't size info go into the header, or no place?  Size
-     info makes tagged payloads distinguishable from garbage. -NM]
-  [XXXX Size info is quite important as well as some type information.
-     Maybe in order to minimise the potential for tagging we should
-     encrypt the payload using an encryption key specified in the
-     reply block. So the reply block would be (SURB, encryption key,
-     first hop, deadline). That would make us waste another 128 bytes
-     of payload. -GD]
-  [Example body encryption: Apply LIONESS on the whole body of the
-     message using a predefined key (K = 0x00...00). Encrypt the first
-     128 bytes of the payload using an RSA encryption key contained in
-     the reply block information. That way the payload looks random
-     and only the final receipient can decrypt it (need to include a
-     nonce and a digest in the body of the payload as well). BUT we
-     have the problem that the key can be changed by the adversary in
-     the reply block ... -GD Any comments?]
-  [No, I'm afraid I don't know what to do here, or who, exactly is
-     transmitting or encrypting what in your proposal.  Keep in mind 
-     that generating RSA keys is the single most expensive operation
-     in our system.
- 
-     Wait a minute... are we sure there's a problem at all?  Consider
-     what an attacker would see at the last hop =without size info=:
-                            REPLY          FORWARD 
-          TAGGED MSG     Payload=opaque  Payload=opaque 
-          UNTAGGED MSG   Payload=opaque  Payload= Plaintext 
-
-     And =with= size info, so long as it gets LIONESSED with the
-     rest of the message...
-                            REPLY          FORWARD 
-          TAGGED MSG     Payload=opaque  Payload=opaque 
-          UNTAGGED MSG   Payload=opaque  Payload=Plaintext with size
-
-     So the problem only seems to arise when you strip the payload
-     padding at the server.  But how does the server know not do
-     do this with reply payloads anyway?
-
-     I'm just confused here. -NM]
-[XXXX See discussion on the mailing list about payload encryption -GD]
-
-Size:   2 bytes
-Data:   (Variable)
+(When sending a reply message with a SURB, we use payload encryption
+to prevent the crossover point from seeing an unencrypted payload. See
+'SURB binary format' for more information.)
 
 We denote a payload as P.
 
@@ -675,8 +308,10 @@ Input: H1 (header containing keys SK1_1... SK1_N)
 Output: M (the message)
 
 Process:
-	// Phase 1
-	if (H2 is *not* a reply block)
+        // Phase 1
+        if (H2 is a reply block)
+                P = SPRP_ENC(SURB secret key, P)
+	else // (H2 is *not* a reply block)
 		for i = N .. 1
 	            P = SPRP_ENC(SK2_i, "PAYLOAD ENCRYPT", P)
 		end
@@ -722,15 +357,6 @@ Module manager.
 
 \section{Single Use Reply Block exchange formats}
 
-[It should contain, use-by date, first hop address, 
- SURB block, public key, etc.
- We can also have a short hand notation for SURBS that only
- use part of the header. One only needs to specify the 
- blocks containing the SURB and a key to pad the junk -GD]
- [But SURBs should use the whole header, otherwise they're
-  leaking length info? -RD]
-
-
 A SURB can be encoded in a standard binary or ASCII format.
 
 Binary Format:
@@ -741,6 +367,7 @@ Binary Format:
    SURB header:  2048 bytes
    Routing Size: 2 bytes
    Routing Type: 2 bytes
+   Encryption key: 16 bytes
    Routing Info: (Routing Size) bytes
 
    Total: 14 bytes + Header size + Routing info size.
@@ -763,6 +390,15 @@ Binary Format:
 
 * SURB data: Containst the SURB that is created as described
   above. 
+* Encryption key: used to LIONESS-encrypt the payload before sending it
+  into the network.  
+
+  [XXXX This prevents the crossover point from seeing an
+    unencrypted payload.  However, using symmetric crypto requires the
+    SURB generator to keep SURBs confidential from everyone but their
+    users.  George has suggested that we use PK instead, but generating
+    a fresh RSA key for each SURB slows SURB generation down by a factor
+    of 30-70.   Perhaps a two-mode system is in order.  Hmm. -NM]
 
 The ASCII Encoding of SURBs.
 
@@ -775,42 +411,35 @@ Base64 encoded binary SURB
 The version number should be in decimal ASCII and is the same as the
 binary version.
 
-\section{Email Transport exchange format}
+\subsection{'Stateless' reply blocks}
 
-This format should be used when the SMTP address type is used for a
-message. The SMTP address is specified in the ``EMAIL ADDRESS'' field,
-and the ``TAG'' FIELD should be included in the SMTP header after as
-``X-Remailer-Tag'' filed.
 
-The Reply-to field should contain the email address which can be used
-to block service to the receipient. The body should also clearly
-indicate how the procedure of blocking oneself works.
+4. Stateless replies and SMTP (depends on 2 and 3, if I understand correctly)
 
------BEGIN ANONYMOUS MESSAGE-----
-VERSION: x.x
-ID: 48 first bits of the hash of the whole binary message.
-Base64 encoded mixminion packet (32kb long -> 44 kb long)
------END ANONYMOUS MESSAGE-----
+If a client does not wish to remember all of her outstanding
+reply blocks, she may generate them in 'stateless' mode.  She  
+does so by using an SMTP or MBOX delivery type, and setting
+the TAG field to 
 
-The subject line should read: ``Anon. Message: '' + ID
+           ( Encrypt(KEY, nHops | seed) | padding up to 44b)
+           [nHops: 1 byte; seed: 16 bytes.]
 
-[Need to specify how we are going to wrap the message
- as an email. This is only intended for SURB use and
- we should think more carefully about providing a 
- general SMTP/IMAP service.
- There is a need to provide enough information to be 
- able to block the service, for the recipient to
- filter out messages arriving from the mix network.]
+She uses PRNG(seed, nHops*16) to form the up-to-16 SK's for the reply.
 
-[XXXX This needs more thought.  First, it violates our earlier
-      assumptions that routing modules never need to look at the
-      headers, but only at their routing info.  Second, it doesn't
-      allow people without special software to receive
-      sender-anonymous messages.  Third, it requires every message
-      recipient to have a full-blown packet processing system when
-      they really only need to decrypt the payload.  -NM]
+To understand a message later, the client need only remember (or be
+able to reconstruct) KEY.  
 
-\subsection{Replay Avoidance}
+[Note 1: It would be best for deniability if KEY were the SHA1 hash of
+some secure password.  On the other hand, since an adversary could
+then mount an off-line passing attack on KEY, and since most people
+can't construct or remember a good password, it would probably be
+safest to store KEY on disk, password-encrypted.  All implementations
+of stateless replies must support at least this latter mode.]
+
+[Note 2: 'Encrypt' here is not AES in counter mode; that would be
+madness.  Instead, we use AES in CBC mode.]
+
+\section{Replay Avoidance}
 
 The nodes MUST implement a mechanism to make sure that messages cannot
 be replayed. To do this a hash of the secret contained in the
@@ -837,58 +466,23 @@ The Mixminion protocol uses TLS (the IETF standardization of SSL) with
 the ciphersuite "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" (defined in
 tls-ciphersuite-03.txt).  No other ciphersuite is permitted for
 MIX-to-MIX communications.
-[XXXX Do we want to allow other suites for client-to-server
-      communication in order to accommodate clients with older SSL
-      implementations? -NM]
-[XXXX Since we define mixminion now I do not think that we will find
-      ``older'' clients out there ;) -GD]
-[XXXX OK; my concern was that the most recent released version of
-      openssl doesn't support the mentioned ciphersuite.  Nonetheless,
-      it seems that NSS and GnuTLS both support it (NSS on the client
-      side only), so we needn't worry. -NM]  
-[XXXX I think we should choose a suite that is widely supported and
-      strong at the same time. -GD]
-[XXXX Does that mean we should support something other than
-      dhe/rsa/aes128, or not?  Keep in mind that without DHE, you
-      don't get forward security. -NM]
+
+[Servers must allow incoming connections via RSA/3DES/SHA1 for clients
+written with older SSL libraries.  However, servers must never initiate
+connections with this suite.]
 
 X.509 certificates need not be signed; instead, they must contain
 a key matching that used in the KEYIDportion of the header's routing
 data.  
 
-Messages are sent from client to server; the client must send a
-ClientHello packet to renegotiate session key between all
-messages. [XXXX why so often? -NM] If the client does not do so, the
-server must close the connection.  [XXXX Is this so? -NM]
-
-[XXXX If there is a key updating operation between every message it means
-that every message is encrypted under a different key. It also
-provides a very small time window for someone breaking down your door
-in order to decrypt what you have just transmitted. Is there a problem
-with having it so often? -GD]
-[XXXX There's no problem, but it seems a little paranoid to me: It's
-extra computation, but doesn't really buy us much.  We can get a very
-small time window by requiring a new key every 5 minutes, and AES_CBC
-can certainly stand up to a lot of packets sent with the same
-key. -NM]
-[XXXX BTW, DHE handshake is far more expensive than a regular SSL
-handshake -- thus, we'd better have SSL sessions to avoid redoing DHE
-a lot.  We can maintain forward security by -at a minimum- rekeying
-before we suspend a session. -NM]
-[XXXX Indeed I was thinking of maintaining sessions, even when the TCP
-connection is dropped. Notice that re-keying does not involve any
-Public key operations. Doing it every 5 minutes is good enough, or
-even doing it when there is not much other traffic. -GD]
-[XXXX
- Proposal: When A is done sending a batch of messages, _A_ initiates a
-   re-keying operation and then suspends the session.  B allows
-   session resumption later on only if 1) less than 120 seconds have
-   passed, or 2) A re-keyed immediately before suspending.
-
-   This way, no key that has been used to send messages can be used
-   after 120 seconds to send messages again. -NM]
-[XXXX
-   This is good! -GD]
+Messages are sent from client to server.  Session suspension is
+permitted; however, the client must send a ClientHello packet to
+renegotiate session key whenever it is done sending a batch of
+messages.  The server should allow session resumption later only if 1)
+less than 120 seconds have passed, or 2) the client re-keyed
+immediately before suspending.  [This way, no key that has been used
+to send messages can be used after 120 seconds to send messages
+again. -NM]
 
 Protocol outline: (Portions marked with '*' are normative; other
 portions are non-normative descriptions of TLS.)
@@ -921,40 +515,24 @@ portions are non-normative descriptions of TLS.)
 
   If A is not willing to support B's choice, A closes the connection.
 
-* A sends "SEND", CRLF, M, HASH(M|"SEND") (6 + 32k + 20 bytes)
-* B sends "RECEIVED", CRLF, HASH(M|"RECEIVED") (10 + 20 bytes)
+* Message case:
 
-[XXXX Roger was wondering: what is the purpose of the RECEIVED ack? If
-   the server goes away without warning, SSL will tell us. -NM]
-[XXXX Having a positive reply gives me a warm feeling. me experiance
-   with protocol failures tell me that once you have put you message
-   in, and the link fails, there is usually difficult to know if the
-   last message made it or not. -GD]
+     * A sends "SEND", CRLF, M, HASH(M|"SEND") (6 + 32k + 20 bytes)
+     * B sends "RECEIVED", CRLF, HASH(M|"RECEIVED") (10 + 20 bytes)
 
-[XXXX proposal to allow link-level padding:
+* Padding case:
 
-  If the hash sent from A to B is incorrect, B instead sends
-          "BAD SHA1", CRLF, HASH(M|"BAD SHA1"), (10+20 bytes).
+     * A sends "JUNK", CRLF, Junk, HASH(M|"SEND") (6 + 32k + 20 bytes)
+       (where Junk is an arbitrary 32k sequence."
+     * B sends "RECEIVED", CRLF, HASH(M|"RECEIVED JUNK") (10 +20 bytes)
 
-  (We provide this option in order to support link-level padding.  If
-  B did not send a hash of the incorrect message, a passive adversary
-  could mount a timing against the protocol.  If the "BAD SHA1"
-  message were not the same length as the RECEIVED message, an
-  adversary might be able to distinguish padding from messages by the
-  differing lengths of the reply messages. -NM]
-[ I think that we should not allow malformed messages. If you want the
-  above then the initial message should be:
-	"JUNK", CRLF, M, HASH(M|"JUNK") (6 + 32k + 20 bytes)
-  with reply:
-	"RECEIVED", CRLF, HASH(M|"RECEIVED JUNK"), (10+20 bytes).
-  It looks the same from outside but it does not make the client
-  wonder, if the corruption was a bug or not. -GD]
-[ Good idea. -NM]
+       [Note that both cases require the same number of bytes and 
+        processing time.]
 
-* A sends an TLS handshake renegotiation message.
-  (and MUST not reuse the same key for 
-   transfering another message)
-  This updates the session key and overrides the old ones.
+* After sending a batch of messages, A sends an TLS handshake
+  renegotiation message. This updates the session key and
+  overrides the old ones.
+
 \end{verbatim}
 
 \emph{Note:}
@@ -981,7 +559,6 @@ a standardized extensible server descriptor format.
 All server descriptors and statistics blocks follow a simple
 section-based key/value format, with items loosely based on RFC822.
 
------BEGIN DOCTYPE-----
 [Section1]
 Key: Value
 Key: Value
@@ -992,11 +569,6 @@ Key: Value
 
 [Section2]
 Key: Value
------END DOCTYPE-----
-
-[XXXX For configuration files, we should allow a broader format.  It
-  should allow '=' and ' ' as synonyms for ':'.  It should also allow
-  comments preceded with '#', and line continuations as in RFC 822. -NM]
 
 \subsection{Syntax}
 
@@ -1008,11 +580,7 @@ Key: Value
                   of Y.
             X|Y: Either an occurrence of X, or an occurence of Y.)
 
-Descriptor = CRLF* Beginline Section* Endline CRLF*
-
-Beginline = '-----BEGIN ' Doctype '------' CRLF+
-
-Endline = '-----END ' Doctype '------' CRLF+
+Descriptor = CRLF* Section+ 
 
 Doctype = (<any printable character but '-'>)+
 
@@ -1020,7 +588,7 @@ Section = SectionLine EntryLine*
 
 SectionLine = '[' Word ']' CRLF+
 
-.EntryLine = Word ':' ' ' Data CRLF+
+EntryLine = Word ':' ' ' Data CRLF+
 
 Word = (<Any printable, non-space character but ':'>)+
 
@@ -1035,8 +603,8 @@ to and downloaded from directory servers.  A server descriptor is a
 promise, by a MIX's administrators, to provide a given set of
 services, keys, and exit policies over a set period of time.
 
-'Doctype' above must be 'Mixminion Server'.  It must begin with a
-'Server' section.  This section includes the entries:
+The first section must be a 'Server' section.  This section includes
+the entries:
 
      'Descriptor-Version':  the string "1.0"
      'IP': An IPv4 address, in dotted-quad format.
@@ -1052,8 +620,11 @@ services, keys, and exit policies over a set period of time.
 
 	 Clients should at least give a warning if the identity key of
          any server should ever change. [XXXX Write more in section
-         about directory servers. -NM]
+         about directory servers. -NM] 
+     'Digest': The digest of this block. See below.
      'Signature': The signed digest of this block.  See below.
+     'Published': A date/time, in the form 'DD/MM/YYYY HH:MM:SS',
+         for when this block was generated.
      'Valid-After': A date, in the form 'DD/MM/YYYY'.  After midnight GMT
          on this date, this server must support the operations listed
          in this descriptor.
@@ -1068,16 +639,10 @@ services, keys, and exit policies over a set period of time.
      'Packet-Key': The public key used to encode encode subheaders for
          this server, encoded in ASN.1, represented in BASE64. 
 
-[I think we should include a serial number, a unique identifying
-number (20 bytes that could be its SHA) the time and date the above
-was published. -GD]
-[Okay. -NM]
-
-The digest of a descriptor block is computed by removing the contents
-of the signature field, and computing the SHA-1 digest of
-the result.  The signed digest is the OAEP/PCKS1 signature of the
-digest with the server's identity key.  This values is
-represented in BASE64.
+The digest of a descriptor block is computed by removing the digest
+and signature fields, and computing the SHA-1 digest of the result.
+The signed digest is the OAEP/PCKS1 signature of the digest with the
+server's identity key.  This value is represented in BASE64.
 
 If this server accepts incoming MMTP connections, it MAY have an
 'Incoming/MMTP' section, with the following entries:
@@ -1111,9 +676,9 @@ The entries are order-significant; the first one to match wins.
 
 The default policy is 'Deny: 0.0.0.0/0.0.0.0'
 
-If this server supports outgoing SMTP connections, XXXX
-
-If this server supports LOCAL delivery, XXXX
+If this server supports outgoing delivery for a module ABCD, it will
+have a [Modules/ABCD] section.  See appendices for more detail on
+specific modules, including SMTP and MBOX.
 
 Other services provided by this server should each have their own section.
 
@@ -1140,27 +705,21 @@ to the upload URL, with the server block as enclosed entity.
 To retrieve the directory, a client performs an HTTP GET request on
 the directory URL.
 
-[XXXX There should be a way to request a diff of entries since a given
-time, rather than the entire directory. -NM]
-
 A directory takes the following form:
 
------BEGIN Mixminion Directory-----
-Version: 1.0
-Identity: <Base64-encoded public key, in ASN.1>
-Signature: <Base64-encoded OAEP/PCKS1 signature of this document, with
-     the contents of this field removed.>
------BEGIN Mixminion Server-----
- ....
------END Mixminion Server-----
------BEGIN Mixminion Server-----
- ....
------END Mixminion Server-----
------END Mixminion Directory-----
-
-[XXXX The nesting is getting a little nasty here.  This may be our
-   last chance to use XML.  I'm leaning this way now, but I'd
-   really like any ideas pro or con. -NM]
+<mixminion-directory>
+  <version>1.0</version>
+  <identity>Base64-encoded public key, in ASN.1</identity>
+  <signature>Base64-encoded OAEP/PCKS1 signature of this document, with
+     the contents of this field removed.</signature>
+  <server>
+     (Server descriptor block)
+  </server>
+  <server>
+     (Server descriptor block)
+  </server>
+   .....
+</mixminion-directory>
 
 Directory servers change their directories only at midnight GMT.  Any
 client which has not downloaded a directory since before midnight GMT,
@@ -1189,33 +748,66 @@ upon some random number of tests and probings to have a real Mixminion
 server running on them.  A directory server periodically re-tests
 the servers in its directory to make sure they have not gone down.
 
-Because of possible attacks related to accidentally or maliciously
-unsynchronized servers, we leave the presence of multiple directory
-servers for a later draft.
+Because of possible partitioning attacks related to accidentally or
+maliciously unsynchronized servers, the presence of multiple directory
+servers presents sever security issues.  Since solving these issues is
+an active research project, we leave them for a later draft.
 
-[XXXX We need to support multiple directory servers. I propose we
-   leave this for later. -NM]
-[XXXX I think we should by default support multiple servers, otherwise
-   we have a weak link in the chain. The operator of the Directory can
-   screw everybody. -GD]
-[XXXX I agree that this is the weak link... but solving this is an
-   area of active research.  How do directory servers synchronize?
+[XXXX Issues include:  How do directory servers synchronize?
    What happens when they disagree?  How many servers must a client
    contact before he/she has enough information?  How do we catch
-   dishonest directory servers?
+   dishonest directory servers? -NM]
 
-   For now, the current spec implies that there can be multiple
-   directory servers, but that they can get out of synchronization,
-   and thereby endanger people's anonymity.  That's about the best we
-   can do for now, until we come up with a more clever idea. :) -NM]
+\section{Appendix: MBOX delivery}
 
-\section{Statistics Information Exchange formats}
+Servers that want to support MBOX delivery have an internal list of
+users they accept messages to, and an internal mapping from those
+users to some delivery mechanism for each one.  Typically, this is a
+mapping from 'username' to 'username@localhost', and delivery defaults
+to local delivery via sendmail.  Servers are free to provide other
+implementations for MBOX delivery.
 
-[Stats, reputation, ... Roger?]
+MBOX delivery differs from SMTP delivery in that it is not intended
+for addressing messages to arbitrary SMTP addresses.
 
-Receiving a reply?
+Servers that support MBOX delivery MAY include a [Modules/MBOX]
+section, containing only the entry "Version: 1.0".
 
-Sending SMTP
+The MBOX routing type is used for messages to be delivered to a local
+user.  The USER field must be NUL-terminated; the TAG field is
+free-form. 
 
-Local delivery
+\section{Appendix: SMTP delivery}
+
+At the final hop, when the delivery mechanism is SMTP, we proceed as
+follows.  If the message is a series of printable characters followed
+by some number of NULs, assume we're delivering in ASCII an ISO-XXXX
+character set, and send the text portion of the message as an email.
+(Where printable == {all characters but hexadecimal 00-06,0E-1F}).
+Otherwise, ASCII-armor the message as in 'email transport exchange
+format' below.
+
+[This way, plaintext forward messages are delivered as plaintext,
+and tagged messages, reply messages, and non-plaintext messages are
+all delivered as junk.]
+
+Servers supporting SMTP MAY include a [Modules/SMTP] section,
+containing only the entry "Version: 1.0".
+
+Servers SHOULD include a note with every SMTP, explaining that the
+message is delivered anonymously, and providing an opt-out address and
+an abuse contact.
+
+The EMAIL field in the SMTP routing type should be a valid mailbox
+[RFC2821]. A mailbox is the canonical form of the ``user@domain''
+part of an e-mail address. Mixminion uses only mailboxes, because the
+display name and comment parts of an e-mail address could potentially be
+different for senders who have obtained an address from different
+sources (leading to smaller anonymity sets). The EMAIL field must be
+NUL-terminated.
+
+The TAG field is appended to the message in an X-Remailer-Tag header.
+
+[XXXX Until we have better answers about abuse prevention, nobody should
+  actually implement an SMTP module. :) -NM]
 
