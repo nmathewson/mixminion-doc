@@ -19,7 +19,10 @@
 
 5. Need to write: algorithm for processing a reply.
 
-   XXXX
+   XXXX The thing is done, Nick please check it for bugs, and to find
+   out if it is realistic. I still find it difficult to define the
+   difference between forward path and SURBed messages since we do not
+   have any special markers in the payload. -GD
 
 6. We should write the nymserver spec too. We can keep it pretty much
     separate from this Mixminion spec.
@@ -296,7 +299,7 @@ PROCEDURE: Construct a message.
 Input: H1 (header containing keys SK1_1... SK1_N)
        and H2 (either a header containing keys SK2_1... SK2_N if
          we constructed it, or a header with unknown keys if we're
-         using a reply block.)
+         using a reply block and a SURB secret key.)
        P (Payload)
 Output: M (the message)
 
@@ -316,6 +319,7 @@ Process:
 		H2 = SPRP_ENC(SK1_i, "HEADER ENCRYPT",H2)
 		P = SPRP_ENC(SK1_i, "PAYLOAD ENCRYPT",P)
 	end
+	M = (H1, H2, P)
 
 \section{Processing of Messages}
 
@@ -347,6 +351,45 @@ PROCEDURE: Process a message M
         Otherwise:
 		Give (RT, RI, HASH(SK,``APPLICATION KEY''), P) to
 Module manager. 
+
+\section{Decoding of messages}
+
+Messages that are received by a client can either be sent using the
+forward path, or a SURB. They might either arrive in a mixminion
+format, that includes all the headers, or stripped of the two headers
+with only the a TAG field attached to them.
+
+A client that receives a message that is ultimately destined to them
+should perform the following operations to decode it:
+
+PROCEDURE: Decode a message.
+
+Input:  TAG field of sub-header or header where 
+        TAG = ( Encrypt(KEY, nHops | seed) | padding up to 44b).
+        M the body of the message.
+Output: P, the plaintext of the message.
+
+	If the message was sent using the forward-path then 
+		P = M; exit;
+	Otherwise, we regenerate all keys used to encrypt the payload:
+		(seed, nHops) = Decrypt(KEY,TAG)[0:17]
+		SK_1..SK_16 = PRNG(seed, nHops*16)[0:16*nhops]
+		For i = nHops to 0
+			M = SPRP_DEC(SK_i, ``PAYLOAD ENCRYPT'',M);
+		end
+
+		// We need here a convention for creating the
+		//   Encryption key in the SURB.
+		KEYX = HASH(seed| ``PRIVATE SURB KEY'')[0:16];
+		M = SPRP_DEC(KEYX,M);
+		
+		P = M; exit;
+
+[I am a bit uneasy that we have not defined any redundancy, or marker,
+that would allow the final recipient to decide if this is a forward
+path message or a SURBed message. Also the size of valid bytes has
+been scrapped, which does not help in extracting the valid bits from
+the junk. -GD]
 
 \section{Single Use Reply Block exchange formats}
 
@@ -392,6 +435,30 @@ Binary Format:
     users.  George has suggested that we use PK instead, but generating
     a fresh RSA key for each SURB slows SURB generation down by a factor
     of 30-70.   Perhaps a two-mode system is in order.  Hmm. -NM]
+  [XXXX A bit more discussion on this topic: In fact there is, from an
+    anonymity point of view, very little to gain from using asymetric
+    crypto. The original point I had in mind had to do with
+    observability. If the key is symetric then crooked nodes can do
+    the following:
+	- observe all users noting which SURB's they are receiving.
+	  They can then note down the keys used.
+	- When a message is seen at a cross over point, all keys are
+    	  tried on it, making the forward path useless, since it can
+          be linked to a SURB received by someone specific.
+
+    My original idea was to use a key-private cryptosystem, to hide
+    which key was used to encrypt the payload.
+    I just realised that the above is rubish. If the SURB is not
+    delivered to receipient anonymously and privately, then it cannot
+    be used by the recipient anonymously, since it appears as it is in
+    the header of the packet at the crossover point. Therefore
+    symetric cryptography is as good as asymetric, key-privat in that
+    scenario. But this is a point we need to emphasise, that is
+    obvious when mentioned:
+
+	``Do not use SURB's that have been delivered non anonymously
+	for establishing sender-anonymous communications with others.''
+								-GD]
 
 The ASCII Encoding of SURBs.
 
@@ -418,6 +485,8 @@ the TAG field to
            [nHops: 1 byte; seed: 16 bytes.]
 
 She uses PRNG(seed, nHops*16) to form the up-to-16 SK's for the reply.
+She also uses the seed to create the symetric key present in the SURB
+as KEYX = HASH(seed| ``PRIVATE SURB KEY'')[0:16];
 
 To understand a message later, the client need only remember (or be
 able to reconstruct) KEY.  
@@ -431,6 +500,7 @@ of stateless replies must support at least this latter mode.]
 
 [Note 2: 'Encrypt' here is not AES in counter mode; that would be
 madness.  Instead, we use AES in CBC mode.]
+[ XXXX if we use CBC mode we will need to use a different IV everytime -GD]
 
 \section{Replay Avoidance}
 
