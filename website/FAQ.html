@@ -1,0 +1,465 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+          "http://www.w3.org/TR/html4/strict.dtd">
+<!-- *******************************************************************
+     $Id: FAQ.html,v 1.1 2003/08/29 05:58:24 nickm Exp $
+     This file is maintained in CVS; edit the version in the repository.
+     *******************************************************************
+  -->
+<html>
+<head>
+<title>Mixminion/Type III Remailer FAQ</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+<link rel="stylesheet" type="text/css" href="./minion.css" />
+</head>
+<body>
+
+<h1> 
+Mixminion/Type III Remailer FAQ
+</h1>
+
+<h1>Incomplete, possibly inaccurate: -- do not circulate</h1>
+
+<p>
+This document contains frequently asked questions about the Type III
+remailer protocol, and about Mixminion, the reference implementation
+of that protocol.  This is <em>not</em> a FAQ about remailers or
+anonymity in general.
+</p>
+
+<p>
+Nick Mathewson maintains this document; email
+nick&#109;&#64;freehaven&#46;net with comments or suggestions.  All
+entries are by me unless otherwise noted.
+</p>
+
+<!-- 
+<h4>Contents</h4>
+<ul>
+<li>1. General
+ <ul>
+ <li><a href="#whats-mixminion">
+     Mixminion? Type III? What are you talking about?</a></li>
+ <li><a href="#
+ <li><a href="#whats-a-remailer">
+     Back up&mdash;what's a remailer?  A mix-net?</a><li>
+ <li><a href="#1-3">1.3.</a>
+     So how does Type III improve
+ 
+ </ul></li>
+<li>2. Design</li>
+<li>3. Implementation</li>
+<li>4. Frequently Rejected Suggestions</li>
+</ul>
+-->
+
+<h2>
+1. General
+</h2>
+
+<h3>
+<a name="whats-mixminion">Mixminion?</a>  
+Type III?  What are you talking about?
+</h3>
+<div class="answer">
+<p>
+"<strong>Type III</strong>" is the name for an improved anonymous
+remailer design.  It was designed to address known flaws in earlier
+deployed remailers, and to resist all known anonymity-breaking attacks
+as well as possible.
+</p>
+<p>
+"<strong>Mixminion</strong>" is the name for the project that designed
+the type III protocol, and is also the name for the reference
+implementation of the protocol. (The protocol used to be named
+"Mixminion" too, but when the Mixmaster team
+<a href="http://archives.seul.org/mixminion/dev/Apr-2002/msg00045.html">
+decided</a> to use support "Mixminion" protocol as the basis for
+Mixmaster version 4, we changed the name of the protocol to be more
+project neutral.)
+</p>
+</div>
+
+<h3>
+What exactly do you mean by 
+<a name="whats-anonymous">"anonymous"</a>?
+</h3>
+<div class="answer">
+<p>
+When you communicate on the Internet, even when you use encryption,
+anybody receiving or intercepting your communication can tell which
+addresses are talking to which addresses.  By "anonymous communication
+system", we mean a system in which it is very difficult for
+anybody&mdash;even the people communicating with each other&mdash;to
+tell who is talking to whom.
+</p>
+<p>
+How difficult?  Mix-net designs attempt to prevent an adversary from
+learning who is talking to whom, even if the adversary:
+</p>
+<ul>
+<li>Can observe all traffic on the entire network at all times.
+<li>Controls some fraction of the servers on the network.
+<li>Can alter traffic on the network.
+<li>Can insert traffic into the network.
+</ul>
+<p>
+Mix-nets also try to provide <strong>unlinkability</strong>: that
+is, to prevent an adversary from learning that two messages were sent
+by the same person.
+</p>
+<p>
+(This usage isn't universal. Some projects use "anonymous" to describe
+any system that doesn't record your name.  This kind of "anonymity" is
+easy to achieve, and we won't mention it any further.)
+</p>
+</div>
+
+<h3>
+Back up&mdash;what's a remailer? 
+<a name="whats-a-mix-net">A mix-net</a>?
+</h3>
+
+<div class="answer">
+<p>Back in 1981, David Chaum wrote a 
+<a href="http://freehaven.net/anonbib/#chaum-mix">paper</a>
+describing an anonymity server called a "mix".  In Chaum's design,
+users encrypt messages to a mix's public key, and send those messages
+to the mix.  The mix delays and re-orders the messages in order to
+prevent an eavesdropper from correlating messages entering and
+exiting.  When it's time to deliver a message, the mix decrypts it,
+removes any information identifying its sender, and relays it to its
+recipient.
+</p>
+<p>
+In order to prevent a single malicious mix from revealing the sender's
+identity, senders route each of their messages through a sequence (or
+"chain") of mixes.  This way, if even a single mix in the sender's
+chain is honest, that mix prevents an attacker from linking the sender
+to the recipient.  The complete set of intercommunicating mixes is
+called a "mix-net".
+</p>
+<p>
+The term 'remailer' comes with a more application-oriented pedigree.
+It originally referred to anonymity servers that accepted messages
+via email and delivered them via email, without necessarily
+supporting decryption, batching, or chaining.  Later generations of
+remailer added these features, and thus have become true mixes.
+</p>
+<p>
+(You might argue that since Type III doesn't use email for its
+underlying mix-to-mix communications, it shouldn't really be called a
+'remailer' protocol.  On the other hand, since 'mail' is an abstract
+concept, you might argue that Type III's store-and-forward design is
+close enough to email as to make it a 'remailer'.  Finally, you might
+decide that 'remailer' has become the generic term for 'high-latency
+anonymity server,' thus making Type III a remailer regardless.)
+</p>
+</div>
+
+<h3>
+In theory, <a name="how-anonymous">how much anonymity</a> 
+does Type III give me?
+</h3>
+<div class="answer">
+<p>
+That depends on how paranoid you are.  The Type III mix design is
+almost certainly secure for most kinds of users, against most
+adversaries.  It is in many respects more secure than currently
+deployed mix-nets.
+</p>
+<p>
+In <em>my opinion</em>, which could well be wrong, users of Type III
+mixes will probably be secure against anybody without the resources of
+a major telecom or government.  People who only use the system
+occasionally are (I think) probably secure against telecoms and
+governments too, but that's harder to quantify.
+</p>
+<p>
+On the other hand, you should be aware of a certain class
+of <em>long-term intersection attacks</em> that are effective against
+all currently known practical mix-net designs: if you send enough
+traffic to the same people over a long enough time, and if an
+adversary with a little mathematical ability is eavesdropping on you
+and your recipients, that adversary can statistically deduce whom
+you're communicating with.  (These attacks require a lot of
+traffic&mdash;on the order of hundreds of messages.)
+Quantifying the severity of these attacks is an area of active
+research.
+</p>
+</div>
+
+<h3>
+So how does Type III improve on other 
+<a name="how-improve-deployed-mix">deployed</a>
+remailer designs?
+</h3>
+<div class="answer">
+<p>
+There are currently two widely deployed mix protocols:
+the <em>Type I</em> or "Cypherpunks" protocol, and
+the <em>Type II</em> or "Mixmaster" protocol.
+</p>
+<p>Starting in 1992, Eric Hughes, Hal Finney, and others wrote the
+ first Type I remailers.  Type I uses email for a transport, and PGP
+ for its encryption.  Later implementations of the Type I protocol
+ added new features in an attempt to mitigate some of the protocol's
+ weaknesses, with limited success.  Lance Cottrell's Type II (1995)
+ software fixed most of Type I's insecurities, but dropped
+ support for reply blocks. 
+</p>
+<p>The following table outlines the feature-differences and security
+  differences between the three protocols.  Parenthesis indicate
+  partial support for a feature; or partial resistance to an
+  attack.  (Note: Type I is not formally specified, and exists in
+  several versions.  Claims for Type I below refer to the state of the
+  art in Type I, such as it is.)
+</p>
+<table width="100%" columns="4" border="1" frame="box" rules="1">
+<tr>
+<th align="left" width="85%">Feature</th>
+<th colspan="3" align="center">Supported&nbsp;by</th>
+</tr>
+<tr>
+<td>Forward delivery</td>
+<td>1</td><td>2</td><td>3</td></tr>
+<tr><td>Reply blocks</td>
+<td>1</td><td></td><td>3</td></tr>
+<tr><td>&nbsp;&nbsp;(Multiple-use reply blocks)</td>
+<td>1</td><td></td><td></td></tr>
+<tr><td>&nbsp;&nbsp;(Single-use reply blocks)</td>
+<td></td><td></td><td>3</td></tr>
+<tr><td>Nymservers</td>
+<td>1</td><td></td><td>3</td></tr>
+<tr><td>Automatic directory retrieval</td>
+<td></td><td></td><td>3</td></tr>
+<tr><td>Distributed, coordinated directories</td>
+<td></td><td></td><td>3</td></tr>
+<tr><td>Automatic server key rotation</td>
+<td></td><td></td><td>3</td></tr>
+<tr><td>Loss-tolerant message fragmentation</td>
+<td></td><td></td><td>3</td></tr>
+<tr><td>Forward-secure encrypted transfer protocol</td>
+<td></td><td></td><td>3</td></tr>
+
+<!-- ********
+     * ATTACKS
+     ******** -->
+<tr>
+<th align="left">Attack</th>
+<th align="center" colspan="3">Resisted&nbsp;by</th>
+</tr>
+<tr><td>Forward message replay</td>
+<td>(1)<sup>a</sup></td><td>2</td><td>3</td></tr>
+<tr><td>Trace messages by size</td>
+<td>&nbsp;&nbsp;<sup>b</sup></td><td>2</td><td>3</td></tr>
+<tr><td>Distinguish among message formats sent by different clients</td>
+<td></td><td>2</td><td>3</td></tr>
+<tr><td>Distinguish forward packets from reply packets before delivery</td>
+<td></td><td>n/a</td><td>3</td></tr>
+<tr><td>Distinguish encrypted forward packets from reply packets</td>
+<td></td><td>n/a</td><td>3</td></tr>
+<tr><td>Reply block flooding</td>
+<td></td><td>n/a</td><td>3</td></tr>
+<tr><td>Path distinguishability based on client knowledge</td>
+<td></td><td></td><td>3</td></tr>
+<tr><td>Compromise keys later to read traffic recorded today</td>
+<td></td><td></td><td>3</td></tr>
+<tr><td>Run a directory server and mislead specific users</td>
+<td></td><td></td><td>3</td></tr>
+</table>
+
+<p>XXX What else?</p>
+<h6>Notes</h6>
+<dl>
+<dt>a.</dt><dd>Some type I implementations support a XXX directive to
+    limit the number of times a given message can be replayed.  Using
+    this directive is optional, however, and users of this directive
+    are distinguishable from non-users.</dd>
+<dt>b.</dt><dd>Some type I implementations support message padding in
+    an attempt to prevent an attacker from correlating messages based
+    on their size.  This feature is of little or no security benefit,
+    however, because: [1] The use of message padding and choice of
+    padding regime are up to the end user, thus making senders
+    distinguishable.  (In fact, multiple padding strategies may make
+    padded messages even more linkable than unpadded ones.)  [2] Mixes
+    can trivially distinguish added padding from message material
+    (!!!).
+    </dd>
+</dl>
+</div>
+
+<h3>
+And how is Type III different from other 
+<a name="how-improve-deployed-other">deployed</a> anonymity systems?
+</h3>
+<div class="answer">
+<p>Unlike 'low-latency' anonymity systems such as Freedom, Onion
+  Routing, Anonymizer, Crowds, Web Mixes, and the Java Anon Proxy (???),
+  Type III mixes sacrifice latency for higher anonymity.  Low-latency
+  systems aim to provide fast enough end-to-end connectivity to
+  support interactive web browsing (and sometimes other protocols such
+  as SSH).  This property, however, makes it fairly easy for an
+  attacker observing or controlling both ends of the communication to
+  correlate the timing of data sent along the channel.
+</p>
+<p>Unlike 'single-hop' anonymity systems like Anonymizer, various
+  anonymous web-email forms, and the now-defunct penet.fi, mix-nets
+  route messages through a chain of relays.  Using a single-hop system
+  depends on a single trusted anonymity provider to keep you
+  anonymous.  With a chain of mixes, if any mix in the chain is
+  honest, the connection between sender and recipient remains hidden.
+</p>
+<p>XXX what else?</p>
+</div>
+
+<h3>
+And how is Type III different from research/theoretical anonymity systems?
+</h3>
+<div class="answer">
+<p>(The systems in this section are listed as "research" or
+  "theoretical" because they are better known through the research
+  literature than via any widely deployed implementation.)
+</p>
+<p>G&uuml;lc&uuml; and Tsudik's 
+   <a href="http://freehaven.net/anonbib/#babel">Babel</a> mix design
+   (1996) addresses Type I's size-correlation and PGP issues, while
+   adding multiple-use reply blocks.  Unlike Babel, Type III's reply
+   blocks are single-use, and are not vulnerable to end-to-end replay
+   attacks.  Also, in Babel, non-exit mixes can distinguish forward
+   messages from reply messages, whereas in Type III they cannot.
+   Babel has a neat feature in which mixes can insert inter-mix
+   detours into the reply path.  A limited version of this technique
+   is possible in Type III, but cannot extend beyond adding
+   single-mix detours.
+</p>
+<p>[XXX Mention stop-and-go mixes, flash mixes, DC nets, and so on.]
+</p>
+</div>
+
+<h3>
+How can I learn more?
+</h3>
+<div class="answer">
+<ul>
+<li>We've got a design paper
+[<a href="http://mixminion.net/minion-design.pdf">PDF</a>|<a
+ href="http://mixminion.net/minion-design.ps">PS</a>]
+ explaining the overall Type III design.  ("Mixminion: Design of a
+ Type III Anonymous Remailer Protocol" by Danezis, Dingledine, and
+ Mathewson.)</li>
+<li>We have byte-level specifications for the protocol.  See:
+ <a href="http://mixminion.net/minion-spec.txt">minion-spec.txt</a>
+ for information about the packet format and mix-to-mix transfer
+ protocol,
+ <a href="http://mixminion.net/E2E-spec.txt">E2E-spec.txt</a>
+ for information about end-to-end message encoding and delivery,
+ and <a href="http://mixminion.net/dir-spec.txt">dir-spec.txt</a>
+ for information about server descriptors and directory
+ capabilities.</li>
+<li>The specifications are not yet finalized.  See 
+ <a href="http://mixminion.net/spec-issues.txt">spec-issues.txt</a>
+ for a list of open issues.  There's also a 
+ <a href="http://mixminion.net/spec-issues.txt">draft design for
+ directory agreement</a>, and a
+ <a href="http://mixminion.net/nym-spec.txt">draft nymserver
+ specification.</a></li>
+<li>If you want to learn more about anonymity, see 
+ the <a href="http://freehaven.net/anonbib">Freehaven.net anonymity
+ bibliography</a>.</li>
+</ul>
+</div>
+
+<h3>
+How can I get involved?
+</h3>
+<div class="answer">
+<p>Check out the <a href="http://mixminion.net">Mixminion website</a>
+  for information on joining the mixminion-dev mailing list.
+</p>
+</div>
+
+<h2>
+2. Design
+</h2>
+<div class="answer">
+<p>
+This section answers questions related to the design of the type III
+protocol.
+</p>
+</div>
+
+<h3>What's a SURB?  Why doesn't Type III have multiple-use reply
+blocks?</h3>
+<div class="answer">
+</div>
+
+<h3>Why doesn't Type III have (insert feature here)?</h3>
+<div class="answer">
+</div>
+
+<h3>Why don't you just use SMTP with TLS for mix-to-mix transfer?</h3>
+<div class="answer">
+</div>
+
+<h3>Is the design paper still accurate?  What's changed since
+  then?</h3>
+<div class="answer">
+</div>
+
+<h2>
+3. Implementation
+</h2>
+
+<h3>Where's the code?  Does it work?</h3>
+<div class="answer">
+</div>
+
+<h3>What do I need in order to run a client?</h3>
+<div class="answer">
+</div>
+
+<h3>What do I need in order to run a server?</h3>
+<div class="answer">
+</div>
+
+<h3>How can I use the code?</h3>
+<div class="answer">
+</div>
+
+<h3>Do any clients support it yet?</h3>
+<div class="answer">
+</div>
+
+<h3>How can I add Type III support to my client?</h3>
+<div class="answer">
+</div>
+
+<h3>Why is it written in Python?  Isn't that slow?</h3>
+<div class="answer">
+</div>
+
+<h3>When will it run on Windows?</h3>
+<div class="answer">
+</div>
+
+<h3>When will it have (insert feature here)?</h3>
+<div class="answer">
+</div>
+
+<h3>How do I report a bug in the code?</h3>
+<div class="answer">
+</div>
+
+<h3>Who else is working on Type III implementations?</h3>
+<div class="answer">
+</div>
+
+<h3>
+Is there a backdoor in the Mixminion code? Could there be?
+</h3>
+<div class="answer">
+</div>
+
+</body>
+</html>

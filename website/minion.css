@@ -1,5 +1,5 @@
 /* *******************************************************
-   $Id: minion.css,v 1.2 2003/07/14 19:27:45 nickm Exp $
+   $Id: minion.css,v 1.3 2003/08/29 05:58:24 nickm Exp $
 
    This file is maintained in CVS; edit the version in the
    repository.
@@ -11,8 +11,12 @@ BODY {
    color: #000;
 }
 
-P, TD {
+P, TD, TH, DD, DT, LI {
    font-family: lucida, "Lucida Sans", "Geneva", sans-serif;
+}
+
+TH, DT {
+   font-weight: bold;
 }
 
 H1, H2, H3, H4, H5, H6 {
@@ -46,6 +50,10 @@ H3 {
    border-style: solid;
 }
 
+DIV.answer {
+   margin: 0 0 0 2em;
+}
+
 SPAN.heading {
    background-color: #ABF;
    color: #000;
@@ -71,4 +79,11 @@ P.date {
 P.news {
    margin-top: 0;
    margin-left: 3em;
+}
+
+P.credit {
+   font-size: smaller;
+   font-style: italic;
+   padding-left: 3px;
+   border-left: 3px solid;
 }
