@@ -297,6 +297,10 @@ ok -GD]
       But if you like what if we had it be:
         TAG= E(sha1(password)[0:16],  (nHops | seed | padding)) ? -NM]
 
+[XXXX I agree with RD comment above.  I thought that the last hop, meant
+ to be delivered to the final receipient would be encrypted under his public 
+ key. -GD]
+
 \subsection{The header structure}
 
 Each type III message has two headers with identical structure. These
@@ -318,6 +322,11 @@ encrypted using the stream cipher.
 [XXXX in parallel? i don't get it. -RD]
 [XXXX Indeed; my implementation constructs the subheaders serially, in
       reverse order, as described below -NM]
+[XXXX Bad english, sorry. I meant that we build the subheaders while 
+      constructing the header, since the hash in them depends on 
+      the others. You cannot just construct all the subheaders 
+      separetly and plug them together. -GD]
+
 the Digest contained in the subheader is a hash of all the other
 encrypted subheaders and the random data they generate as the message
 travels through the network.)
@@ -500,7 +509,15 @@ PROCEDURE: Process a message M
 		Give (RT, RI, HASH(SK,``APPLICATION KEY''), P) to
 [XXXX what use could hashing it first be? too dangerous to give SK
   directly? -RD]
-		Module manager. 
+[XXXX I feel that the application ca if it is dumb screw the
+                anonymity, but is we do not give it the ``raw''
+                secrets, then we could avoid the most obvious
+                abuses. Therefore we provide HASH(SK,``APPLICATION
+                KEY'') as a shared key, which is not used anywhere
+                else, and that cannot derive any other keys used in
+                the anonymization layer. -GD] 
+		
+Module manager. 
 
 \section{Single Use Reply Block exchange formats}
 
@@ -542,6 +559,9 @@ Total: 54 bytes + Address Size + SURB size + Linked Data Size
    Routing Info: (Routing Size) bytes
 
    Total: 14 bytes + Header size + Routing info size. -NM]
+[XXXX I do not have very strong feelings either way, and since the
+format you propose fulfills its functions, I am quite happy to adopt
+it. -GD]
 
 * The magic marker contains the ASCII 4-byte string 'SURB'. 
 * The version number contains the format version of the SURB.
@@ -589,6 +609,8 @@ Total: 54 bytes + Address Size + SURB size + Linked Data Size
        I really don't think this is worth it.  Anybody who needs to
        send more than 27 SURBs per message should lobby for a bigger
        packet size. ;) -NM]
+    [ XXXX Happy to drop it, if an application is so desparate for
+       space, it can define a non standard encoding as well -GD]
 
 * Linked Data: Additional data that might have to be linked with the 
   SURB.
@@ -605,6 +627,7 @@ Total: 54 bytes + Address Size + SURB size + Linked Data Size
     [ XXXX I disagree with the hash, so I disagree with the extra data. 
        If we can foresee likely need here, let's design for it now.
        Else, I apply the end-to-end argument: see below. -NM]
+    [ XXXX Let's drop the additional data. -GD]
 
 * The Digest is a Hash of all the other fields.
     [ XXXX Why have a digest here?  What is the risk?  Anybody who can
@@ -636,16 +659,16 @@ Total: 54 bytes + Address Size + SURB size + Linked Data Size
        is it to have a generic place to put metadata if that means
        that SURBs for application 1 can't be used with 
        application 2? -NM]
+    [XXXX I agree with all the above, so ye can drop it. -GD]
 
 The ASCII Encoding of SURBs.
 
 The  ASCII compatible format of SURB's is:
 
---- BEGIN SURB ---
+-----BEGIN SURB-----
 Version: x.x
-ID: Base64 Encoding of the first 48 bits of the Digest (8 characters).
 Base64 encoded binary SURB 
---- END SURB ---
+-----END SURB-----
 
 The version number should be in decimal ASCII and is the same as the
 binary version.
@@ -663,6 +686,7 @@ binary version.
   far better than random 8-char strings. -NM]
 [ XXXX BTW, PEM-encoded stuff seems to use '-----BEGIN FOO-----' (5
   dashes, no space).  Any reasons for this convention? -NM
+[ XXXX Changed the encoding and droped the ID -GD]
 
 \section{Email Transport exchange format}
 
@@ -675,11 +699,11 @@ The Reply-to field should contain the email address which can be used
 to block service to the receipient. The body should also clearly
 indicate how the procedure of blocking oneself works.
 
---- BEGIN ANONYMOUS MESSAGE ---
+-----BEGIN ANONYMOUS MESSAGE-----
 VERSION: x.x
 ID: 48 first bits of the hash of the whole binary message.
 Base64 encoded mixminion packet (32kb long -> 44 kb long)
---- END ANONYMOUS MESSAGE ---
+-----END ANONYMOUS MESSAGE-----
 
 The subject line should read: ``Anon. Message: '' + ID
 
@@ -745,6 +769,10 @@ key. -NM]
 handshake -- thus, we'd better have SSL sessions to avoid redoing DHE
 a lot.  We can maintain forward security by -at a minimum- rekeying
 before we suspend a session. -NM]
+[XXXX Indeed I was thinking of maintaining sessions, even when the TCP
+connection is dropped. Notice that re-keying does not involve any
+Public key operations. Doing it every 5 minutes is good enough, or
+even doing it when tere is not much other traffic. -GD]
 
 Protocol outline: (Portions marked with '*' are normative; other
 portions are non-normative descriptions of TLS.)
@@ -859,4 +887,8 @@ Receiving a reply?
 Sending SMTP
 
 Local delivery
+
+
+
+
 
