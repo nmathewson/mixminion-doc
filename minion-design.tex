@@ -59,7 +59,7 @@
 
 We present Mixminion, a message-based anonymous remailer protocol that
 supports secure single-use reply blocks. MIX nodes cannot distinguish
-Mixminion reply messages from forward messages, so forward and reply
+Mixminion forward messages from reply messages, so forward and reply
 messages share
 the same anonymity set. We add directory servers that allow users to
 learn public keys and performance statistics of participating remailers,
@@ -69,9 +69,6 @@ integrates link encryption between remailers to provide
 forward anonymity. Mixminion brings together the best solutions from
 previous work to create a conservative design that protects against most
 known attacks.
-
-%Because many of our design choices impact anonymity in surprising ways,
-%we include careful discussion of the anonymity implications of each step.
 
 \end{abstract}
 
@@ -325,19 +322,19 @@ not conform to the expected format when decrypted.  Also, the final
 recipient can recognize a tagged message for which the payload has
 been altered.
 
-Note that checking the integrity of hop headers individually is not
+Checking the integrity of hop headers individually is not
 sufficient to prevent tagging attacks.  For example, in Mixmaster
 each hop header contains a hash of the other fields in that header
 \cite{mixmaster-spec}.
 Each MIX in the path checks the integrity of the header, and drops
-the message immediately if it has been altered.  However, it is still
-possible for an attacking MIX to alter a header that will be decrypted
+the message immediately if it has been altered.  However, 
+an attacking MIX can still alter a header that will be decrypted
 only after several more hops, and so tagging attacks are still possible.
 
 The most straightforward way to prevent tagging attacks is to
 authenticate the whole message at every hop.  For forward messages,
-this requires that when padding is added to a message, the padding is
-derived deterministically, so that it is possible to calculate
+then, the padding added to a message must be derived deterministically,
+so that it is possible to calculate
 authentication tags for the whole message at each hop.  But
 the situation becomes more complicated when reply messages are
 introduced --- the message and the reply block are
@@ -372,7 +369,7 @@ one writing the payload, a hash of the entire message cannot be used.
 Therefore, since we choose to make forward messages and replies
 indistinguishable, we cannot include hashes for forward messages either.
 Our approach to defending against these attacks is discussed in more
-detail in Section \ref{subsec:tagging}.
+detail in Section \ref{subsec:tagging-defenses}.
 
 Mixminion allows Alice to send messages to Bob in one of three ways:
 
@@ -394,17 +391,18 @@ block in a direct reply; this is sent to a node at the Reply-To:
 address, which extracts the reply block and constructs a properly
 formatted onion.)
 
-We divide a message's path into two \emph{legs}, and split the header
-into two equal-size subheaders, each corresponding to a single leg.
-Each hop contains a hash of the subheader it is a part of, so we can do
+Messages are composed of a header section and a payload. We divide
+a message's path into two \emph{legs}, and split the header section
+correspondingly into a main header and a secondary header. Each header
+is composed of up to 16 subheaders, one for each hop along the path.
+Each subheader contains a hash of the remainder of its header, so we can do
 integrity-checking of the path (but not the payload) within each leg.
-Each hop also contains a symmetric key, which is used to derive a
+Each subheader also contains a symmetric key, which is used to derive a
 decryption key for decrypting the rest of the message. The MIX also
 derives a padding seed from this master key. It uses this padding seed
-to place
-predictable padding at the end of the subheader, so the hash will
-match even though each hop must regrow the subheader to maintain
-constant length.
+to place predictable padding at the end of the header, so the hash will
+match even though each hop must regrow the header to maintain constant
+length.
 
 For forward messages, Alice provides both legs; for anonymous replies, Alice
 uses Bob's reply block as the second leg, and generates her own path
@@ -412,19 +410,19 @@ for the first leg.  To send a direct reply, Alice can use an empty
 first leg, or send the reply block and message to a MIX that can wrap
 them for her.
 
-When Alice creates her message, she encrypts the second subheader
+When Alice creates her message, she encrypts the secondary header
 with a hash of her payload (in addition to the usual layered onion
 encryptions). Alice's message then traverses the MIX-net as normal (every
-hop pulls off a layer, verifies the hash of the current subheader,
-and puts some junk at the end of the subheader), until it gets to a
+hop pulls off a layer, verifies the hash of the current header,
+and puts some junk at the end of the header), until it gets to a
 hop that is marked as a \emph{crossover point}. This crossover point
-performs a ``swap'' operation: it decrypts the second subheader with
-the hash of the current payload, and then swaps the two subheaders. The
+performs a ``swap'' operation: it decrypts the secondary header with
+the hash of the current payload, and then swaps the two headers. The
 swap operation is detailed in Figure 1 --- specifically, the normal
 operations done at every hop are those above the dotted line, and the
 operations performed only by the crossover point are those below
 the dotted line. The encryption primitive, labelled ``LBC'', that is
-used to blind the second  header and the payload needs to have certain
+used to blind the second header and the payload needs to have certain
 properties:
 
 \begin{itemize}
@@ -445,7 +443,7 @@ properties:
 
 To fulfill the above requirements we use a large-block cipher; that
 is, a cipher that acts as a permutation on a block the size of its
-input (a subheader or the payload).  Possible candidates
+input (a header or the payload).  Possible candidates
 include LIONESS \cite{BEAR-LIONESS} and SPC \cite{SPC}.
 The cryptographic property required is that of a super-pseudo-random
 permutation (a.k.a. strong pseudo-random permutation) or SPRP \cite{sprp}.\footnote{
@@ -456,7 +454,7 @@ further analysis.  In that case the simpler BEAR construction
 Thus if any bit of
 the encrypted material is changed, the decryption will look like random
 bits.  An SPRP is also equally secure in the encryption and decryption
-directions.  See Section \ref{subsec:tagging} for a
+directions.  See Section \ref{subsec:tagging-defenses} for a
 discussion of how this approach helps protect against tagging.
 
 % BEAR isn't an SPRP; LIONESS is. I'm not sure that an SPRP is necessary,
@@ -484,7 +482,7 @@ discussion of how this approach helps protect against tagging.
 
 
 \subsection{Defenses against tagging attacks}
-\label{subsec:tagging}
+\label{subsec:tagging-defenses}
 
 Without the crossover point, an adversary could mount a tagging
 attack by modifying the payload of a forward message as
@@ -501,7 +499,7 @@ corresponding anomaly at that byte.
 % CBC or anything else that isn't symmetrically good for encryption
 % and decryption.  -Nick
 
-We use a large-block cipher as described in the previous section, to
+We use a large-block cipher as described in the previous section to
 minimize the amount of information an adversary can learn from tagging.
 If he tags a message
 leaving Alice, the payload will be entirely random when it reaches
@@ -525,7 +523,7 @@ tagging attacks.  Specifically, our solution falls into several cases:
 
 \begin{itemize}
 \item Forward messages: if the message is tagged during the first leg,
-the second subheader is unrecoverable, and so the adversary cannot
+the second header is unrecoverable, and so the adversary cannot
 learn the intended destination of the message. If the message is tagged
 during the second leg, then the first leg has already provided anonymity,
 and so the adversary cannot learn the sender.
@@ -535,7 +533,7 @@ the payload at each step along a reply block. Only the recipient can learn,
 after peeling off all layers, whether the message has been tagged. Thus
 tagging attacks are useless against reply messages.
 \item Anonymized reply messages: as with forward messages, if the first leg
-is tagged the second subheader is unrecoverable --- so an adversary will
+is tagged the second header is unrecoverable --- so an adversary will
 never learn that the message was addressed to a reply block. And as with
 direct reply messages, only the recipient can learn if the second leg is
 tagged.
@@ -546,7 +544,7 @@ While direct reply messages do not need a crossover point in the path
 crossover point to prevent end-to-end tagging. But since the first leg
 either provides sufficient anonymity or destroys the information about
 the second leg, the second leg in a forward message can be very short.
-At the extreme, the first hop in the second subheader could directly
+At the extreme, the first hop in the second header could directly
 specify the message recipient. However, the choice of crossover point
 can still reveal information about the intended recipient,\footnote{For instance,
 some MIXes may only allow outgoing mail to local addresses; if such a
@@ -716,7 +714,7 @@ of an e-mail address could potentially be different for senders who
 have obtained an address from different sources, leading to smaller
 anonymity sets.}
 This information is placed
-in a variable-length annex to the final header.
+in a variable-length annex to the final subheader.
 
 %\footnote{It must be
 %in the header, since putting delivery information in the payload would
@@ -896,9 +894,6 @@ locations, keys, capabilities, or performance statistics of MIXes. Several
 % would be nice to cite some more. eg, are there key lists, etc? -RRD
 we describe Mixminion directory servers and examine the anonymity risks
 of such information services.
-
-% ZZZZZZZZZZZZZ NM NM NM
-%  what the heck is that, nick? :) -RRD
 
 In Mixminion, a group of redundant directory servers serve current
 node state.  It is important that these servers be synchronized and
@@ -1113,7 +1108,7 @@ synchronously, at a rate of one hop per {\em hop period}. All paths are
 a fixed length $\ell$ hops, so that if no messages are dropped, the messages
 introduced in a given batch will progress through their routes in
 lock-step, and will all be transmitted to their final destinations $\ell$
-hop periods later. Each hop header of a message specifies the hop
+hop periods later. Each subheader of a message specifies the hop
 period in which it must be received, so that it cannot be delayed by an
 attacker (which would be fatal for this design).
 
@@ -1247,8 +1242,6 @@ Type III remailer protocol. Many of the ideas, ranging from the core
 design to peripheral design choices, need more attention:
 
 \begin{itemize}
-%\item We need to analyze the proposed defense against the multiple-message
-%tagging attack.
 \item We need more research on batching strategies that resist trickle
 and flooding attacks \cite{batching-taxonomy} as well as intersection
 attacks on asynchronous free routes \cite{disad-free-routes}.
