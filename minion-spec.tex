@@ -683,7 +683,7 @@ the entries:
          which resolves to the provided IP for the entire lifetime of
          this Descriptor block.  It must be no more than 128
          characters.  It may contain only the characters 
-         [A-Za-z0-9_.!@#] and '-'.  It should be treated as
+         [A-Za-z0-9_@] and '-'.  It should be treated as
          case-insensitive.
 
      'Identity': The modulus of this Mix node's long-term signing key,
@@ -809,10 +809,26 @@ A directory takes the following form:
  DirectoryDigest: Digest of this document.
  DirectorySignature: Base64-encoded OAEP/PKCS1 signature of this document, with
      the contents of this field removed.
+ [Recommended-Software]
+ ... (see below)
  [Server]
      (Server descriptor block)
  [Server]
      (Server descriptor block)
+
+The 'Recommended-Software' section lists versions of Type-III clients
+and servers that are currently recommended.  Because the version
+numbering scheme will be different for each implementation, lines
+within 'Recommended-Software' are version specific.  The "Mixminion"
+program uses the entries 'MixminionClient' and 'MixminionServer'; each
+contains a space-separated list of acceptable version numbers, in
+order of decreasing preference.  If a client is running an
+unrecommended version, it must warn the user.  [Policy: A development
+version of Mixminion (pre 1.0) will only be declared obsolete when it 
+is either too insecure or too buggy to use, when backward
+compatibility is broken, or when a new stable release comes out.
+Stable releases will be taken off the list only for security or
+privacy reasons.]
 
 Directory servers change their directories only at midnight GMT.  Any
 client which has not downloaded a directory since before midnight GMT,
@@ -828,6 +844,7 @@ Because of possible partitioning attacks related to accidentally or
 maliciously unsynchronized servers, the presence of multiple directory
 servers presents sever security issues.  Since solving these issues is
 an active research project, we leave them for a later draft.
+
 
 [XXXX Issues include:  How do directory servers synchronize?
    What happens when they disagree?  How many servers must a client
@@ -1027,5 +1044,6 @@ PAD [28KB-16-2-S bytes] (Random padding)
 \section{Appendix: Versioning and alphas}
 
 Today's alpha code does not publish its version as '1.0'; it uses
-'0.x' instead (currently '0.1').  Production versions should *not*
-retain backward compatibility with pre-production releases.
+'0.x' instead (currently '0.2' for packets, '0.2' for MMTP, and '0.1'
+for everything else).  Production versions should *not* retain
+backward compatibility with pre-production releases.
