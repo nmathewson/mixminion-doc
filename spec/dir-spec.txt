@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.26 2004/08/12 16:24:57 nickm Exp $
+$Id: dir-spec.txt,v 1.27 2004/08/12 16:55:13 nickm Exp $
 
                                 MIX3:3
            Type III (Mixminion) Mix Directory Specification
@@ -477,8 +477,6 @@ Table of Contents
 
    Each 'Signed-Directory' section MUST contain the following entries:
 
-     - 'DirectoryURL' : The URL base for this directory server. (See 5.1)
-
      - 'DirectoryIdentity' : The Identity key of the directory server
        that generated this directory.  The modulus of this key MUST be
        between 2048 and 4096 bits long, and the exponent MUST be 65537.
@@ -488,8 +486,6 @@ Table of Contents
 
      - 'DirectorySignature' : The signature of the directory digest
        with the directory server's identity key.
-
-     - 'Signed': The time when this directory was signed.
 
    (A Signed-Directory section is unsigned; see 2.5)
 
