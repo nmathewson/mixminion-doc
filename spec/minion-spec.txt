@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.3 2003/05/06 05:35:41 arma Exp $
+$Id: minion-spec.txt,v 1.4 2003/05/10 20:30:49 gd Exp $
 
            Type III (Mixminion) Mix Protocol Specifications
 
@@ -17,12 +17,15 @@ Status of this Document
    TeX file in the first place.  When you edit it, try to keep it
    looking like an RFC.
 
-   The organization of this document is kinda stolen from RFC2440.
+   The organisation of this document loosely follows the structure
+   of RFC2440.
 
    TODO:
       - Resolve XXXXs, esp: 3.2.3 - 4.
       - Describe crossover and server operations
       - Who else to add to authors?
+        [We should add an ACKS section where we put all the people that
+         have contributed to the project, as in the software release -GD]
       - Process E2E-spec
         - Incorporate Text-spec
 
@@ -141,7 +144,8 @@ Table of Contents
    revealing to any parties that the sender has done so, the following
    steps occur:
 
-      1. The sender creates a message, and chooses a recipient.
+      1. The sender creates a message, and chooses an ultimate
+         recipient.
 
       2. The sender compresses the message, splits it into fixed-sized
          chunks, and (optionally) encrypts the chunks with a known
@@ -201,9 +205,9 @@ Table of Contents
          address of the succeeding mix.  [Described in section
          3.3. below].
 
-      3. Through some means not described in this document, the
-         recipient delivers the SURBs anonymously to the sender,
-         possibly as the contents of a forward message.
+      3. Through some means the recipient delivers the SURBs
+         anonymously to the sender, possibly as the contents of a
+         forward message. 
 
       4. The sender constructs one or more packets for the recipient
          and inserts them into the network to be delivered, as in
@@ -217,15 +221,16 @@ Table of Contents
 
       5. When the recipient receives the final message, he removes a
          layer of encryption for each of the nodes in the chosen
-         path, and learns the message's contents. [Described XXXX]
+         path, and learns the message's contents.
 
 2.3. Bidirectional anonymity
 
    Because an anonymous recipient can tell which SURB was used to
    encode which packet, the process in section 2.2. above does not
-   provide bidirectional anonymity.  For a scheme which does, see the
-   Type III nymserver specification at "nym-spec.txt".  [XXXX this
-   document isn't there yet. XXXX]
+   provide bidirectional anonymity, unless the SURB was delivered
+   using a recipient anonymous channel.  For a scheme which supports
+   this, see the Type III nymserver specification at "nym-spec.txt".
+   [XXXX this document isn't there yet. XXXX]
 
 3. Message Format
    [XXXX]
@@ -234,7 +239,13 @@ Table of Contents
    [XXXX]
 
 3.1.1. Cryptographic primitives
-   [XXXX]
+   
+   Implementing a Type III remailer only requires the combination of
+   standardised cryptographic primitives. Most third party
+   cryptographic libraries or providers should support RSA-OAEP (PKCS#1
+   Standard [XXXX Ref]), AES, SHA-1 (NIST Standards [XXXX Refs]), and
+   ASN.1 notation. Furthermore a source of cryptographic random numbers
+   should be available.
 
 3.1.1.1. Message digest
 
@@ -293,6 +304,8 @@ Table of Contents
 
    K must be 20 octets long; M must be at least 20 octets long.
 
+   [XXXX Should we provide IVs. e.g. Encrypt(Z(16), Z(40)) -GD]
+
 3.1.1.4. Public-key cipher
 
    For a public-key cipher, we use RSA with PKCS1 encoding.  To make
@@ -315,7 +328,7 @@ Table of Contents
        PK_MAX_DATA_LEN = PK_ENC_LEN - PK_OVERHEAD_LEN = 214
             (Longest octet array that can be RSA-encrypted.)
 
-   All keys must use 65537 as their exponent.
+   All public keys must use 65537 as their exponent.
 
 3.1.2. Notation
 
@@ -368,6 +381,11 @@ Table of Contents
      super-pseudorandom permutation with key K.  
      (Len(K) = SPRP_KEY_LEN = 20; Len(SPRP_DEC(K,M)) = Len(M))
 
+   - SubKey(K,S) - Derivation of a named sub key, using a master key K
+     (Len(K) = 16) and an aribrary length ASCII String. 
+     (Len(SubKey(K,S)) = 16)
+     SubKey(K,S) = Hash(K, S)[0:16]
+
    To improve the readability of our specification, we use the
    following symbolic constants: 
    
@@ -377,6 +395,7 @@ Table of Contents
    - PK_ENC_LEN = 256
    - PK_MAX_DATA_LEN = 214
    - SPRP_KEY_LEN = 20
+   - HEADER_LEN=2048
 
    All fixed strings are encoded in ASCII.
 
@@ -418,32 +437,34 @@ Table of Contents
 
      * The Version field is used to manage concurrent versions of the
        protocol. If a Mix receives a packet with an unrecognized
-       version, it must discard that packet.  (Nodes must advertise in
-       their status blocks what versions of the protocol they support;
-       see "dir-spec.txt".)
+       version, it must discard that packet.  Note that the major and
+       minor version numbers are stored using their binary
+       representations (not the corresponding ASCII codes.) 
+       (Nodes must advertise in their status blocks what versions of
+       the protocol they support; see "dir-spec.txt".)
 
      * The Shared Secret is the base secret that is used to generate
        all other keys for the operations the node performs on the
        packet. It must be kept secret and discarded as soon as the
        packet has been processed.
 
-     * The Digest contains an integrity check of the remainder of the
-       current header. The digest does not cover the current
-       subheader: modifications to it are detected because of the OAEP
-       padding. [XXXX not subheader, rsa part.]
+     * The Digest contains an integrity check of the part of the
+       current header encrypted using AES in counter mode. The digest
+       does not cover the RSA encrypted subheader: modifications to it
+       are detected because of the OAEP padding.
 
      * The Routing Type defines how the mix should deliver or relay the
        message. If a mix receives a routing type it does not recognize,
-       it must discard the message. [XXXX values where? ref]
+       it must discard the message (see 2.2.1.1.)
 
      * Most routing methods require additional addressing information,
-       which is given in the Routing Info field.
+       which is given in the variable length Routing Info field.
 
      * The Routing Size field indicates the total size in octets of
        the Routing Information.
 
    We will refer to the fixed-size part of the subheader structure as:
-      FSHS(V, SK, D, RS, RT)  [MIN_SH = 42 octets]
+      FSHS(V, SK, D, RS, RT) = V|SK|D|RS|RT    [MIN_SH = 42 octets]
     
    We will refer to the entire subheader as:
       SHS(V, SK, D, RS, RT, RI) = FSHS(V,SK,D,RS,RT) | RI  
@@ -476,10 +497,10 @@ Table of Contents
    every DROP message should have a random payload.
 
    A FWD/IP4 routing type indicates that the message must be
-   retransmitted using the TLS/Mixminion transport protocol. The IP
-   field represents the IPv4 address.  The KEYID field contains the
-   SHA1 hash of the ASN.1 representation of the next node's identity
-   public key.
+   retransmitted using the TLS/Mixminion transport protocol (see
+   section 4.) The IP field represents the IPv4 address.  The KEYID
+   field contains the SHA1 hash of the ASN.1 representation of the
+   next node's identity public key.
 
    A SWAP routing type tells the node to exchange headers as described below.
 
@@ -488,6 +509,8 @@ Table of Contents
    IP4 addressed.  Path generation in this case is an open issue.
 
    See appendices for more information about SMTP and MBOX delivery.
+   [XXXX Cannot find this in the appendices. Should it move to
+   E2E-spec.txt? -GD]
 
 3.2.2. Header Structure
 
@@ -497,7 +520,7 @@ Table of Contents
    followed by a 1792-octet portion encrypted with a stream cipher.
    The key for the stream cipher is derived from the master secret SK
    as follows:
-           K = H(SK | "HEADER SECRET KEY")[0:16]
+           K = SubKey(SK,"HEADER SECRET KEY")
 
    The subheader is always at the start of the RSA-encrypted portion,
    and is followed by header material intended for the next mix.  Note
@@ -529,11 +552,31 @@ Table of Contents
            (Encrypted with RSA)   (Encrypted with AES)
            SSSSSSSSSSSSSSSSSSSS   SSSSSHHHHHHHHHHHHHHHHHHHHHHHHH.....
 
+   In order to decode an encrypted header H addressed to a mix with
+   public key PK, into a subheader SH and the rest of the messages
+   MH, the following operations could be performed.
+
+   // Decrypts the messages using the public key and the extracted key.
+   H1 = PK_Decrypt(PK, H[0:PK_ENC_LEN])
+   K  = SubKey(H1[2:KEY_LEN], "HEADER SECRET KEY")
+   H2 = Encrypt(K, H[PK_ENC_LEN: 2048 - PK_ENC_LEN]
+ 
+   // Reads the length of the routing information and extracts the 
+   // sub header. 
+   SH = (H1|H2)[0:MIN_SH + H1(38:2)]
+   MH = (H1|H2)[Len(SH):2048-Len(SH)]
+
 3.2.3. The entire message  
    [XXXX writeme]
 
 3.2.4. Constructing a Type III packet
-   [XXXX]
+   
+   The information about how to build messages, headers and SURBs is
+   provided for information purposes only, since a pure type III
+   remailer server is not required to be capable of creating
+   messages. Understanding how messages are created may be beneficial
+   for understanding why the remailer processes them in the way
+   specified in section 3.2.5.
 
 3.2.4.1. Building a header
    [XXXX rewrite to use new terms]
@@ -547,7 +590,7 @@ Table of Contents
    routing extension blocks directly after their respective
    subheaders), the header is constructed by appending random padding
    to achieve a total size of 2048 octets. Then, each subheader key is
-   used to create a key Hash(SharedSecret | "HEADER SECRET KEY") with
+   used to create a key SubKey(SharedSecret, "HEADER SECRET KEY") with
    which the part of the header after the subheader (but including its
    routing extension) is encrypted using counter-mode AES.
 
@@ -625,15 +668,21 @@ Table of Contents
 
    return H_1;
 
+   It is important to note that a user can create a SURB, by following
+   a similar procedure as described above. Since the objective is for
+   SURBs to be stateless, in the sense that they do not require any
+   secrets to be stored by their creator to be decoded, the full
+   procedure is more intricate (see "E2E-spec.txt" for details.)
+
 3.2.4.2. Encrypting the payload
    [XXXX rewrite to use new terms, move]
 
    The payload of a Mixminion message has a fixed length of 32 kb
-   - 2*16*128 octets = 28kb.   Payloads indicate their size.
+   - 2*16*128 octets = 28kb. Payloads indicate their size.
 
    (When sending a reply message with a SURB, we use payload encryption
    to prevent the crossover point from seeing an unencrypted payload. See
-   the 'end-to-end encoding' spec for more information.)
+   the "E2E-spec.txt" for more information.)
 
    We denote a payload as P.
 
@@ -680,7 +729,7 @@ Table of Contents
    following operations:
 
    PROCEDURE: Process a message M
-        PK_PART = PK_Decrypt(PK,H1[0:256]);
+        PK_PART = PK_Decrypt(PK,H1[0:PK_ENC_LEN]);
         If there is any problem with the OAEP padding discard the message.
 
         If Len(PK_PART) != MAX_RSA, discard the message.
@@ -801,6 +850,8 @@ Table of Contents
    ======== END TYPE III REPLY BLOCK =========
 
    [XXXX move to openpgpish format]
+   [XXXX Specify if the end of line is simply '\n' or CRLF like in
+   MMTP -GD]
 
    The version number should be in decimal ASCII and is the same as the
    binary version.
@@ -902,7 +953,7 @@ Table of Contents
         message.  Again, implementations should not be distinguishable
         in their timing in the case where the message is accepted or
         rejected.  When A receives a "REJECTED" reply, it must behave
-        is if delivery had failed, and retry the message later (up to
+        as if delivery had failed, and retry the message later (up to
         a reasonable retry interval).]
 
   * If a connection persists for longer than 15 minutes, the client
@@ -929,7 +980,8 @@ A.1. Appendix: A suggested pooling rule
    recommended rule (as used in Mixmaster) which is somewhat resistant
    to flooding attacks.  Implementors are strongly encouraged to use
    this algorithm, or another equally robust against active and
-   passive attacks.  (Be sure to read \cite{batching-taxonomy}.)
+   passive attacks.  (Be sure to read \cite{batching-taxonomy}. [XXXX
+   Ref]) 
 
    PROCEDURE: Choose sets of messages to transmit ("Cottrell-style batching")
 
