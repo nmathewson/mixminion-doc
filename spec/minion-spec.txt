@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.15 2003/10/02 14:23:33 nickm Exp $
+$Id: minion-spec.txt,v 1.16 2003/10/06 18:52:08 nickm Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -372,18 +372,22 @@ Table of Contents
    - Encrypt(K, M) = M ^ PRNG(K,Len(M)) - The encryption of an octet array
      M with our stream cipher, using key K.  (Encrypt(Encrypt(M)) = M.)
 
+   - SubKey(K,S) - Derivation of a named sub key, using a master key K
+     (Len(K) = 16) and an aribrary length ASCII String.
+     (Len(SubKey(K,S)) = 16)
+     SubKey(K,S) = Hash(K | S)[0:16]
+
    - SPRP_Encrypt(K, M) - The encryption of an octet array M using our
      super-pseudorandom permutation with key K.
      (Len(K) = SPRP_KEY_LEN = 20; Len(SPRP_ENC(K,M)) = Len(M))
+
+     SPRP_Encrypt(K,S,M) is shorthand for SPRP_Encrypt(SubKey(K,S),M)
 
    - SPRP_Decrypt(K, M) - The decryption of an octet array M using our
      super-pseudorandom permutation with key K.
      (Len(K) = SPRP_KEY_LEN = 20; Len(SPRP_DEC(K,M)) = Len(M))
 
-   - SubKey(K,S) - Derivation of a named sub key, using a master key K
-     (Len(K) = 16) and an aribrary length ASCII String.
-     (Len(SubKey(K,S)) = 16)
-     SubKey(K,S) = Hash(K, S)[0:16]
+     SPRP_Decrypt(K,S,M) is shorthand for SPRP_Decrypt(SubKey(K,S),M).
 
    - Int(bits, N) - A big-endian, bits-bit representation of the
      integer N.
@@ -766,7 +770,7 @@ Table of Contents
         // Phase 1
         if H2 is a reply block, then
                Let K_SURB = the end-to-end encryption key in H2
-               P = SRPR_Decrypt(K_SURB, "PAYLOAD ENCRYPT" P)
+               P = SPRP_Decrypt(K_SURB, "PAYLOAD ENCRYPT", P)
         else // H2 is not a reply block
                for i = N .. 1
                        P = SPRP_Encrypt(SK2_i, "PAYLOAD ENCRYPT", P)

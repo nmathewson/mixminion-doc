@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.16 2003/10/03 22:32:39 nickm Exp $
+$Id: dir-spec.txt,v 1.17 2003/10/06 18:52:08 nickm Exp $
 
 				Mix3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -120,24 +120,24 @@ Table of Contents
 
       Message ::= Section | Message Section
       Section ::= Header | Section Entry
-      Header ::= '[' Identifier ']' EOL
+      Header ::= '[' Identifier ']' OptSpace EOL
       Entry ::= Identifier ':' Space OptValue EOL
 
       Identifier ::= IdentifierChar | Identifier IdentifierChar
       IdentifierChar ::= [Any character from ASCII 33 through ASCII 126
          inclusive, excluding ASCII 58, ASCII 91, ASCII 93.]
 
-      OptValue ::= Value |
-      Value ::= NonSpaceValueChar | ValueChar Value
+      OptValue ::= Value OptSpace |
+      Value ::= NonSpaceValue | Value Space NonSpaceValue
+      NonSpaceValue ::= NonSpaceValueChar | NonSpaceValue NonSpaceValueChar
       NonSpaceValueChar ::= [Any character from ASCII 33 through ASCII
          126 inclusive.]
-      ValueChar ::= NonSpaceValueChar | ' ' | '\t'
 
       Space ::= SpaceChar | Space SpaceChar
       SpaceChar ::= ' ' | '\t'
       OptSpace ::= Space |
 
-      EOL ::= OptSpace '\n' | OptSpace '\r' | OptSpace '\r' \n'
+      EOL ::= '\n' | '\r' | '\r' '\n'
 
    An example follows (indented by a uniform number of spaces):
 
@@ -220,10 +220,11 @@ Table of Contents
       - First, any trailing whitespace on any line is removed, and every
         EOL is converted to a single NL character.
 
-      - Second, the message is converted to a "stub" format: the values
-        of any _unsigned_ entries in the message are replaced with the
-        empty string.  (Their entry lines now contain an identifier, a
-        colon, a single ' ' character, and a single NL character.)
+      - Second, the message is converted to a "stub" format: the values of
+        any _unsigned_ entries in the message are replaced with the empty
+        string, and trailing space is removed from their lines.  (Their
+        entry lines now contain an identifier, a colon, and a single NL
+        character.)
 
       - Third, a SHA-1 digest is computed over the resulting stub
         message.
@@ -336,6 +337,12 @@ Table of Contents
               the identity key.  (See "minion-spec.txt" for more
               information.)
 
+	      [XXXX This field is obsolete; it can be derived from the
+	      identity key.  We used to need it because the MMTP
+	      certificates used to be self-signed; now they are signed by
+	      the identity key.  This field will not be used in Mixminion
+	      0.0.6; it will be removed in Mixminion 0.0.7.]
+
         'Protocols': A comma-separated list of the versions of MMTP this
               server accepts.
 
@@ -410,7 +417,7 @@ Table of Contents
 
    If a descriptor's lifetime is all either in the past or contained
    within the lifetimes of more recently published descriptors for the
-   same server, that descriptor is said to be Superceded.
+   same server, that descriptor is said to be Superseded.
 
 4. Directory Format
 
@@ -554,7 +561,7 @@ Table of Contents
 
    For every mix, the directory SHOULD either include no descriptors
    from that mix; or include all of that mix's published descriptors
-   that are not expired or superceded, and that do not become valid
+   that are not expired or superseded, and that do not become valid
    before a given cutoff time. [[2 weeks]].
 
    A directory server decides, for every mix whose descriptors
