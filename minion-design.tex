@@ -166,7 +166,7 @@ describe our goals and assumptions in Section \ref{sec:assumptions},
 and then address the above list of improvements in Sections
 \ref{sec:design}-\ref{sec:nymservers}. We conclude with a summary of how
 our design stands up to known attacks; a list of future
-work (tasks which we should do next and feel confident we can complete);
+work (remaining tasks we feel confident we can complete);
 and finally a list of open questions (unresolved issues for which the
 research community currently has no answer).
 
@@ -267,80 +267,109 @@ and other mix features lacking in the Cypherpunk remailers.
 
 \subsection{Known attacks against mix-nets}
 
-Attacks against mix-networks aim at reducing the anonymity of users by
-linking messages injected in a network or a node to messages comming
-out of it. These attacks either try to subvert the process of
-selecting routes or hiding the correspondance by corrupting mixes, or
-they try to use side channels containing some information that can be
-used to link messages together. Finally if none of the above are
-possible, traffic analysis can take place whereby the flows of messages
-are processed to find out the most likely recipients or senders. This
-attack can happen in conjunction with injecting traffic controlled by
-the attacker.
+Attacks against mix-nets aim at reducing the anonymity of users by
+linking anonymous senders with the messages they send, by linking
+anonymous recipients with the messages they receive, or by linking
+anonymous messages with one another.  Attackers may
+try to trace messages through the network by observing network
+traffic, compromising mixes, compromising keys, delaying messages
+do they stand out from other traffic, or altering messages
+in transit.  Attackers may attempt to learn a message's destinations
+by flooding the network with dummy messages, replaying multiple copies
+of a message, or shaping traffic to isolate a target message from
+other unknown traffic.  Attackers may try to keep users from using
+the system securely by subverting route selection; or even analyze
+intercepted message text to look for commonalities between otherwise
+unlinked senders.
 
-\begin{itemize}
+Finally, even if all other attacks are foiled, a passive adversary can
+mount a long-term \emph{intersection attack} to correlate the times at
+which senders and receivers are active.
+% Mention that no defense short of N^2 padding is known, and that N^2
+% padding doesn't work?
 
-% control servers - I do not get this -GD
-\item \textbf{Compromised servers.} The most obvious attack that can be
-performed against any system using trusted intermediaries, is for an
-attacker to corrupt them. This can be done either by the attacker
-running its own servers, or by hacking into otherwise honest machines
-or using legal compulsion powers to force them to cooperate and reveal
-secrets. In order to avoid the possibility that compromised servers
-would compromise the anonymity of a communication, a series of mixes is
-used hopping that at least one of them will be honest.
+We discuss each one of these attacks in more detail below, along with the
+aspects of the Mixminion design that try to defend against it.  In
+Section \ref{sec:attacks}, we summarize attacks and defenses.
 
-\item \textbf{Directory-related attacks.} A variant of compromising the core
-mix servers is to compromise servers making the infrastructure of the
-network such as the ones responsible for giving out information about
-the addresses and keys of mixes. An attacker that is able to tamper
-with this information will be able to divulge wrong information, such
-as a corrupt subset of the network or wrong keys, that could allow
-them to compromize the anonymity of the users. % so what do we do
-					       % about this?
-\item \textbf{Intersection attacks.} In case different messages have
-some characteristics that can be persistantly observed throughout
-their journey in the network, they can be separated from rest of the
-traffic and therefore confused with fewer messages. In order to
-minimize the side channels provided Mixminion hides from all
-intermediaries information such as their position on the path or the
-length of the path (althouth there is a miximium of 32
-hops). Additionally the forward and reply paths are indistingushable
-making it it very difficult to divide packets into two distinc
-categories to partition the anonymity set.
-% Does the above cover partitioning attacks as well ?
+%% try to subvert the process of
+%% selecting routes or hiding the correspondence by corrupting mixes, or
+%% they try to use side channels containing some information that can be
+%% used to link messages together. Finally if none of the above are
+%% possible, traffic analysis can take place whereby the flows of messages
+%% are processed to find out the most likely recipients or senders. This
+%% attack can happen in conjunction with injecting traffic controlled by
+%% the attacker.
 
-\item \textbf{Tagging attacks.} An attacker instead of just observing
-characteristics and side channels in the communications could
-additionally try to inject some characteristics that he would hope to
-observe later to trace the message. The simplest way of doing so is by
-slightly modyfying the message, in a way that produces an observable
-result. Mixminion protects against this attack by making sure that all
-information that is destined to intermediate mixes has integrity
-checks, and messages are dropped if they have been modified. All
-information that is not integrity protected id hidden using random
-function whose keys should not be known to an adversary. Therefore it
-should not be possible for him to distinguish between a normal message
-and a tagged one. Finally the decision was taken that it is better to
-discard malformed ot tagged messages rather than risking compromizing
-the anonymity of users.
+%% \begin{itemize}
 
--delaying
--dropping
--textual analysis
--replay
--(n-1) attack
+%% \item \textbf{Compromised servers.} The most obvious attack against
+%% any system using trusted intermediaries, is for an
+%% attacker to corrupt them. This can be done either by the attacker
+%% running its own servers, or by hacking into otherwise honest machines
+%% or using legal compulsion powers to force them to cooperate and reveal
+%% secrets. In order to avoid the possibility that compromised servers
+%% would compromise the anonymity of a communication, a series of mixes is
+%% used, hoping that at least one of them will be honest.  
+%% % XXXX Ick.  With this attack -- and with no other attack -- we
+%% %      describe how one ordinarily foils it.   -NM
+%% % XXXX Mention explicitly the desired property that if even one 
+%% %      server is good, some anonymity is maintained? -NM
 
--flooding attack
--delaying attack
--timing attacks
+%% \item \textbf{Directory-related attacks.} A variant of compromising
+%% the core
+%% mix servers is to compromise servers making the infrastructure of the
+%% network such as the ones responsible for giving out information about
+%% the addresses and keys of mixes. An attacker that is able to tamper
+%% with this information will be able to divulge wrong information, such
+%% as a corrupt subset of the network or wrong keys, that could allow
+%% them to compromise the anonymity of the users. % so what do we do
+%% 					       % about this?
+%% \item \textbf{Partitioning attacks.} In case different messages have
+%% some characteristics that can be persistently observed throughout
+%% their journey in the network, they can be separated from rest of the
+%% traffic and therefore confused with fewer messages. In order to
+%% minimize the side channels provided Mixminion hides from all
+%% intermediaries information such as their position on the path or the
+%% length of the path (although there is a maximium of 32
+%% hops). Additionally the forward and reply paths are indistingushable
+%% preventing nodes from dividing packets into two distinct
+%% categories to partition the anonymity set.
+%% %XXXX The fix is early.
 
-\end{itemize}
+%% \item \textbf{Tagging attacks.} An attacker instead of just observing
+%% characteristics and side channels in the communications could
+%% additionally try to inject some characteristics that he would hope to
+%% observe later to trace the message. The simplest way of doing so is by
+%% slightly modifying the message, in a way that produces an observable
+%% result. Mixminion protects against this attack by making sure that all
+%% information that is destined to intermediate mixes has integrity
+%% checks, and messages are dropped if they have been modified. All
+%% information that is not integrity protected id hidden using random
+%% function whose keys should not be known to an adversary. Therefore it
+%% should not be possible for him to distinguish between a normal message
+%% and a tagged one. Finally the decision was taken that it is better to
+%% discard malformed ot tagged messages rather than risk compromising
+%% the anonymity of users.
+%% % XXXX Fix is early.
+
+%% \item \textbf{Pool attacks.}
+
+%% -delaying
+%% -dropping
+%% -replay
+%% -(n-1) attack
+
+%% -flooding attack
+%% -delaying attack
+%% -timing attacks
+%% \item \textbf{Timing attacks.}
+%%\end{itemize}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Design goals and assumptions}
-\label{sec:assumptions}
+v\label{sec:assumptions}
 
 Mixminion brings together the current best practical approaches
 for providing anonymity in a batching message-based free-route mix
@@ -898,6 +927,7 @@ support.  (See Section \ref{subsec:delivery-modules} below.)
 \subsection{Message types and delivery modules}
 \label{subsec:delivery-modules}
 
+%XXXX
 [I think it is important to say what modules get us in comparison to
 normal client side Mixminion (which servers can also use). In
 particular, access to some shared key material and plug-in for
@@ -1294,6 +1324,7 @@ own recognizable messages with the honest messages in the batch
 \cite{batching-taxonomy}. By repeatedly
 attacking each mix in the path, the adversary will link Alice and Bob.
 
+%XXXX
 Mixminion nodes use a \emph{timed dynamic-pool} batching strategy
 \cite{batching-taxonomy} adapted from Mixmaster. A
 mix fires every... [insert Cottrell mix description here. Perhaps put
@@ -1309,6 +1340,7 @@ the original honest messages from the mix, and again to flush the
 target message from the mix. This delay will be noticed by the other
 mixes, because they communicate over TLS with a heartbeat to detect
 delays.
+% XXXX Huh? Heartbeat? -NM
 
 This batching strategy also increases the cost of intersection attacks by
 providing large anonymity sets for each message in the network. Because
@@ -1399,57 +1431,72 @@ open problem.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%\section{Attacks and Defenses}
-%\label{sec:attacks}
+\section{Attacks and Defenses}
+\label{sec:attacks}
 %
 %[Do something akin to pages 13-15 of
 %\url{http://freehaven.net/doc/casc-rep/casc-rep.ps}.]
-%
-%\subsection{Mix attacks}
-%\label{subsec:mix-attacks}
-%
-%%\begin{description}
-%Replay attack
-%Message delaying
-%Message dropping
-%Tagging
-%n-1 attack (trickle, flooding)
-%intersection attack (short-term, long-term)
-%textual analysis, etc
-%%\end{description}
-%
-%\subsection{Exit-based attacks}
-%\label{subsec:attacks-exitbased}
-%
-%Attack: use delivery method to partition anon set.
-%Attack: use caps to partition anon set.
-%
-%[Need to expand this. -Nick]
-%
-%\subsection{Directory-based attacks}
-%\label{subsec:attacks-dirbased}
-%
-%\begin{description}
-%\item \emph{Compromize a directory server.} Identical directory listings
-%  are served by a large group of servers, and signed by all.
-%\item \emph{Lie to a directory server.}  Signed capability blocks, and
-%  the fact that a mix's signing key is its identity, prevent this
-%  attack.
-%\item \emph{Exploit differences in client directory knowledge.}  By
-%  only updating directory information nightly; by urging client
-%  software to pull updates as soon as possible after their release;
-%  and by 
-%\item \emph{Delay mix packets until directory information changes.}
-%  The delay in clients' using new information, along with dummy
-%  traffic sent to de-listed destinations and expired keys, should
-%  mitigate this attack. However, a complete solution remains an
-%  open problem.
-%\item \emph{Flood the directories with nonfunctional mix entries.}
-%  Availability statistics should mitigate this problem.  Nevertheless,
-%  it remains an area of active research. \cite{mix-acc,casc-rep}
-%[[WHAT OTHER DIRECTORY ATTACKS?]]
-%\end{description}
-%%\item \emph{X} Y.
+
+%XXXX WRITE SOMETHING HERE! -NM
+
+\subsection{Passive attacks}
+\label{subsec:passive-attacks}
+
+\begin{description}
+\item \emph{Intersection attack (short-term, long-term)} XXXX
+\item \emph{Textual analysis} XXXX
+\end{description}
+
+\subsection{Mix attacks}
+\label{subsec:mix-attacks}
+
+\begin{description}
+\item \emph{Compromise a mix} XXXX
+\item \emph{Compromise a mix's private key} XXXX
+\item \emph{Replay attack.}  Servers remember header checksums in
+  between key rotations; after keys are discarded, old headers can no
+  longer be decrypted.
+\item \emph{Message delaying.}  XXXX
+\item \emph{Message dropping.} XXXX
+\item \emph{Message tagging.}  Header checksums allow servers to
+  detect modified headers.  Using LIONESS on the payload prevents modified
+  payloads from being distinguishable from junk.  Finally, the
+  ``swap'' step renders exit path of a message irretrievable if the
+  payload is modified.
+\item \emph{N$-1$ attack (trickle, flooding)} The `timed dynamic-pool'
+  batching strategy limits the effectiveness of these attacks.
+\end{description}
+
+\subsection{Exit-based attacks}
+\label{subsec:attacks-exitbased}
+
+\begin{description}
+\item \emph{Use delivery method to partition traffic .} XXXX
+\item \emph{Use servers' exit capabilities to partition traffic.} XXXX
+\end{description}
+
+\subsection{Directory-based attacks}
+\label{subsec:attacks-dirbased}
+
+\begin{description}
+\item \emph{Compromise a directory server.} Identical directory listings
+  are served by a large group of servers, and signed by all.
+\item \emph{Lie to a directory server.}  Signed capability blocks, and
+  the fact that a mix's signing key is its identity, prevent this
+  attack.
+\item \emph{Exploit differences in client directory knowledge.}  By
+  only updating directory information nightly; by urging client
+  software to pull updates as soon as possible after their release;
+  and by 
+\item \emph{Delay mix packets until directory information changes.}
+  The delay in clients' using new information, along with dummy
+  traffic sent to de-listed destinations and expired keys, should
+  mitigate this attack. However, a complete solution remains an
+  open problem.
+\item \emph{Flood the directories with nonfunctional mix entries.}
+  Availability statistics should mitigate this problem.  Nevertheless,
+  it remains an area of active research. \cite{mix-acc,casc-rep}
+\end{description}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
