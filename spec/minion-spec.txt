@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.17 2003/10/06 19:01:01 arma Exp $
+$Id: minion-spec.txt,v 1.18 2003/10/06 19:06:12 nickm Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -381,13 +381,13 @@ Table of Contents
      super-pseudorandom permutation with key K.
      (Len(K) = SPRP_KEY_LEN = 20; Len(SPRP_ENC(K,M)) = Len(M))
 
-     SPRP_Encrypt(K,S,M) is shorthand for SPRP_Encrypt(SubKey(K,S),M)
+     SPRP_Encrypt(K,S,M) is shorthand for SPRP_Encrypt(Hash(K|S),M)
 
    - SPRP_Decrypt(K, M) - The decryption of an octet array M using our
      super-pseudorandom permutation with key K.
      (Len(K) = SPRP_KEY_LEN = 20; Len(SPRP_DEC(K,M)) = Len(M))
 
-     SPRP_Decrypt(K,S,M) is shorthand for SPRP_Decrypt(SubKey(K,S),M).
+     SPRP_Decrypt(K,S,M) is shorthand for SPRP_Decrypt(Hash(K|S),M).
 
    - Int(bits, N) - A big-endian, bits-bit representation of the
      integer N.
