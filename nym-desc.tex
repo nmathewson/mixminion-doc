@@ -1,0 +1,172 @@
+Specification of a nym server running on top of Mixminion.
+
+We assume that the underlying anonymizing network (in this case
+MixMinion) provides the following anonymous communications
+primitives:
+
+(A) -> B: M   - An anonymous party A sends a message to a named party B
+                the message M. M has a maximum length of L.
+A -> (B): M   - An named party A sends a message M to an anonymous
+                recipient B. M has a maximum length of L.
+(A) -> (B): M - An anonymous sender A sends a message M to an
+                anonymous recipient B. M has a maximum length of L.
+(B)[ID]       - A Single Use Reply Block (SURB) destined to B. A label
+                ID can be used to differentiate between different
+                SURBs.
+
+Implementing the anonymous primitives using MixMinion
+
+[...]
+
+The requirements of the Nym Server are:
+
+- The Nym server allows users without any special software (besides
+  standard SMTP) to send email [RFC2821] to anonymous recipients.
+- The Nym server should not be trusted or relied upon to maintain the
+  anonymity of the users. Although it should be trusted not to deny
+  service to honest users.
+- The Nym server should not be required to maintain more state than
+  its administrator wishes. In particular the administrator should
+  have the option not to store messages in clear or SURBs.
+- The nym server should provide reliable service, even if the
+  anonymous communication channels used are not. In particular it
+  should ensure that if users follows the protocols correctly none of
+  their mail will be dropped.
+- Clients that do not benefit from any anonymity properties do not
+  need any special software.
+- Neither clients or nym servers need to actually run anonymous
+  remailer nodes themselves. They can function by simply acting as
+  clients to the anonymous network, sending and receiving anonymous
+  messages. 
+
+The Nym model
+
+Users run special software, the Nym client (that understands MixMinion
+and Nym server commands), and anonymously create a fresh nym account on
+the nym server. After this setup phase any email received by the Nym
+server for the nym is anonymously forwarded to the appropriate
+user. The Nym server makes sure that the message has correctly arrived
+to the user before it is deleted.
+
+  Anonymous                      Nym             Rest 
+     User    <---MixMinion---> Server <--SMTP-- of the
+ (Nym Client)                                    World
+
+Client and Server Databases
+
+The objective of the design is to minimize the information required to
+be stored by both the client and server, while maintaining high
+reliability. 
+
+Client:
+
+list of {
+  Full Nym Name (Nym)
+  Server Address (A)
+  Server Verification key (KSv)
+  Client Signature Key (KCs) + Verification key (KCv)
+  Client Decryption Key (KCd) + Encryption key (KCe)
+  Kill phrase (KP)
+}
+
+Server:
+
+Server Signature Key (KSs) + Verification key (KSv)
+
+list of {
+  Full Nym Name (Nym)
+  Client Verification key (KCv)
+  Client Encryption key (KCe)
+  Hash of Kill Phrase (H(KP))
+  Should it keep SURBS? (KS?)
+  list of i = 1..n {
+    SURBS ((Nym)[i])
+  }
+  list of j=1..m {
+    Message (M[j])
+  }
+}
+
+Nym Server Public Information
+
+A Nym server needs to advertise its address for both SMTP and
+anonymous access, and a public verification key to verify messages
+sent by it. Additionally policy files need to be available concerning
+the creation of nyms (acceptable names, if it stores SURBs or not),
+and the conditions of service (max. messages sizes, how often SURBs
+should be given, lifetime of accounts, etc.) 
+
+Protocols
+
+Initialization:
+
+The client chooses a Nym Name (Nym) which will be the base of its
+email address on the nym server. The client also provides the server
+with public keys to encrypt (KCe) and verify (KCv) messages. The Kill
+Phrase is used in case the Signature keys are stolen or lost for the
+user to be able to destroy the Nym account. 
+
+In order to create the account the Client provides some means for the
+server to contact them back, in the form of SURB's.
+
+(C) -> NymServer: {CREATE,Nym, KCv, A, KSv, KCe, H(KP), KS?,n,(C)[1]..(C)[n]}KCs
+
+The Nym Server can deny an account creation request for a variety of
+reasons, which should be communicated to the used using the
+``message''. The server could be full, the Nym already in use, or rude.
+It is important for Nym server operators to have a clear policy on
+which nyms are acceptable and which are not.
+
+NymServer -> (C)[x]: {ACCEPT|DENY, A, KSv, Nym, KCv, Message}KSs
+
+On Server receiving messages:
+
+The Nym Server runs an SMTP [RFC2821] service. When a message
+received is addressed to a particular nym, it is encrypted under the
+nym's key (KCe) and stored on permanent storage. Depending on whether
+the Server possesses any SURBs corresponding to the nym it can forward
+the messages or simply wait for more SURBs. At the end of any MESSAGE
+the nym server can specify the number of additional SURBs that it
+requires to flush all messages. The client is not obliged to send the
+specified number of SURBs, but the server may stop receiving mail for
+this particular Nym, or drop the account.
+
+A -> NymServer: M (with SMPT to: NymB)
+NymServer -> (B): {MESSAGE, A, KSv, NymB, KCv,
+                   n,{M}KCe[1]..{M}KCe[n],m, info}KSs
+(B) -> NymServer: {RECEIVED,  NymB, KCv, A, KSv, n,
+                   H({M}KCe[1])..H({M}KCe[n]), m, (B)[1]..(B)[m]}
+
+To kill a Nym:
+
+(A) -> NymServer: KILL,NymA, KP
+
+Since a nym's signature key might be compromised or lost it is
+important to have a backup but abuse proof mechanism to destroy nyms
+on the server, along with all the stored information. Therefore the
+policy should be that if the server receives a kill messages with a
+``Kill phrase'' with a hash that matches the one stored for the nym,
+it must destroy all information about the concerned nym.
+
+Sending messages
+
+[Since we have decided that the SMTP mechanism is general we do not
+  need a specific sending ability for the Nym server]
+
+Multiplexed reliable mix communications and Information dispersal techniques
+
+[Since many different protocols might be using the anonymous
+  communication infrastructure it could be helpful if we create a port
+  abstraction using either an identifier at the beginning of the
+  payload or different mailbox names for the Local delivery present in
+  the last header of the message] 
+[In order to avoid retransmissions, that could help traffic analysis,
+  an idea would be to send the messages of the above protocol using a
+  forward error correcting scheme. The Server, and clients, could
+  measure the reliability of the network, by sending messages to
+  themselves, and encode each message in a (n out of m) fashion. Maybe
+  someone who is knowledgeable about such schemes would like to comment?]
+
+References
+
+[RFC2821] J. Klensin, Editor, Simple Mail Transfer Protocol
