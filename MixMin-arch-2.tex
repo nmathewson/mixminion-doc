@@ -17,7 +17,7 @@
 \section{Requirements}
 
 MixMinion is a classic store and forward mix design. A number of high
-level requirements have been identified, and guided the its design:
+level requirements guide its design:
 
 \begin{quote}
      ``The system must be resistant against passive traffic analysis.''
@@ -40,6 +40,8 @@ any message into the system. We should try to make any attempt to
 introduce malformed messages into the network fruitless. We should
 also try to avoid techniques that could amplify active attacks to
 become denial of service attacks.
+
+[Q so he could force eg trickle attacks by killing all but 1 message? -RD]
 
 \begin{quote}
      ``The system must make traffic confirmation expensive.''
@@ -66,7 +68,7 @@ particular position undetectable except in particular documented
 cases. 
 
 \begin{quote}
-     ``The system should provide forward security where possible, be
+     ``The system should provide forward security where possible, and be
      designed in such a way that it is possible to build forward
      secure systems on top of it.''
 \end{quote}
@@ -78,7 +80,7 @@ We use forward secure channels between mixes.
       of unobservability.''
 \end{quote}
 
-That can be archived by adding dummy traffic and traffic shaping but
+That can be achieved by adding dummy traffic and traffic shaping but
 is unlikely to be needed or used by all users. MixMinion should take
 into account that some of the traffic's only purpose is to act as
 cover traffic and manage it efficiently.
@@ -107,7 +109,7 @@ state. MixMinion should use techniques that make sure to minimize the
 amount of data and the time the data is kept on the mix nodes. 
 
 \begin{quote}
-     ``The design should be easy to be adapted to run on crypto
+     ``The design should be easy to adapt to run on crypto
      hardware. This could be done for efficiency or security reasons.''
 \end{quote}
 
@@ -144,7 +146,7 @@ system, and ease of integration with other products.
 \end{quote}
 
 We use the PKCS\#1 RSA-OAEP, RSA-PSS standard, SHA-1 Standard and
-Rijendal in counter mode. 
+Rijndael in counter mode. 
 
 \subsection{Rejected design decisions}
 
@@ -159,12 +161,14 @@ ones -GD]
    on intermediate nodes as possible; otherwise, users who preferred
    one kind of intermediate node over another would expose themselves
    to traffic analysis. [Q Was this the intention here? -NM]
-\item \emph{Receipts}
-\item \emph{Fancy ElGamal Schemes + verifiable mixing}.  These last
-   two we reject from our committment to a conservative design.
-\item \emph{Connection oriented mixes (Onion routing)}.  There are
-   other projects working on this more difficult goal.  Once again, it 
-   documents.
+\item \emph{Receipts}. Newer mix protocols which use receipts would
+   be nice to play with, but they're not mature enough yet.
+\item \emph{Fancy ElGamal Schemes + verifiable mixing}.  Again, we
+   reject these to maintain a conservative design.
+\item \emph{Connection oriented mixes (virtual circuits, Onion routing)}.
+   There are other projects working on this more difficult goal. 
+   Once again, it documents.
+   [Q Huh? -RD]
 \item \emph{Multiple inter-mix communication schemes.}  While it might
    be desirable to place a node behind a firewall which --for
    example-- might only permit HTTP or SMTP connections, we are
@@ -239,7 +243,7 @@ the mix, and MUST result in the packet being discarded.
 
 The \emph{Major and Minor Versions} are present in the header to help the mix
 server interpret the rest of the packet. If the server does not recognize
-the major or the Minor Version it MUST drop the packet (and check
+the major or the Minor Version it MUST drop the packet (it should also check
 its policy files to see if they are clear about the versions supported).
 
 The \emph{Master Secret} is a shared secret between the user and the
@@ -252,6 +256,11 @@ The \emph{timestamp} SHOULD be at a coarse granularity (a day) so that
 it cannot be used by corrupt mixes to link messages together. It
 SHOULD refer to GMT time worldwide so that a corrupt mix cannot guess
 in which time zone the sender is. The value of timestamps should be an
+%
+[Q new attacks where you can divide your batch into "older messages"
+and "newer messages" when you're targeting a specific sender? -RD]
+[Q And then there's the issue of when SURBs are valid for..ugh. -RD]
+%
 integer representing the number of whole days since Jan 1, 1970, GMT.
 
 Each packet generates a unique signature that is stored on the mix to avoid 
@@ -267,9 +276,11 @@ when the packet is transiting through the network. Another value N
 locally on the mix. In that case only the N first bytes of the body
 are to be given to the application.  
 
-(The size of 62kb has been chosen
-to fit into the maximum size UDP packet although UDP is not by default
-used for transport.)
+(We chose a size of 62kb so the messages will fit well in a transport
+medium that uses 64kb packets, such as UDP.)
+%has been chosen
+%to fit into the maximum size UDP packet although UDP is not by default
+%used for transport.)
 
 %  [Is 64kb a bit large for each packet? This is
 %much more than the average email and even with 20 hops (which should
@@ -283,7 +294,7 @@ The \emph{type field} of the header allows unobservable multiplexing of
 applications using anonymous communications. Some values have special
 meaning. Type 0 means that the packet is not to be processed by any
 module and MUST be sent to the address specified in the header. For
-any other value the body of the packet SHOULD given to a module taking
+any other value the body of the packet SHOULD be given to a module taking
 care of packets of this category. The values 1 to 255 are reserved for
 management functions defined by MixMinion standards such as deletion
 of cover traffic and packet reconstruction. The values from 256 to
@@ -316,19 +327,19 @@ MixMinion messages. The hash of the signature key of the next hop MAY
 also be included in the header. If it does not match the signature
 returned by the next address the message MUST be dropped. If the hash
 is not specified it should be filled with zero valued bytes, and that
-signifies that there SHOULD NOT be a check against the recipients key.
+signifies that there SHOULD NOT be a check against the recipient's key.
 
 \subsection{Encoding messages}
 
 A client should get hold, using some method, of a list of mixes along with 
 their capabilities and public keys. Special protocols should be defined to 
 perform these administrative operations, so that they do not leak any 
-information about potential routes, therefore compromising anonymity.
+information about potential routes (thus compromising anonymity).
 
 The client then chooses a number of mixes $M_0$ to $M_(N-1)$ with keys
 $K_0$ to $K_(N-1)$ and makes sure that consecutive pairs of them have
 policies that allow to communicate with each other. Assume that the
-message $M$ is to be sent to final address $M_0$. $M$ is of length $L$
+message $M$ is to be sent to the destination mix $M_0$. $M$ is of length $L$
 bytes and MUST have a maximum length of: \( L < 62kb - N*128 + 1 \)
 
 The client also needs to choose the final type of the message to guide
@@ -345,6 +356,7 @@ Define:
 - Len(M) (2 bytes) is the length of message M (* bytes)
 - x|y (Len(x)+Len(y) bytes) denotes x concatenated with y.
 - PAD(M,L) (L bytes) pads the message M (Len(M) <= L) to length L
+[Q Pads it with what? -RD]
 
 - H(M) (20 bytes) is the SHA-1 hash of M (* bytes)
 
@@ -352,9 +364,9 @@ Define:
   bytes) using the public key K as described in PKCS\#1.
 - RSA_OAEP_Decrypt(K,M) (73 bytes) Gives the decryption of the
   message M (128 bytes) under the private key corresponding to K.
-- Encrypt(K,M) (Len(M) bytes) Rijendal in Counter mode encryption 
+- Encrypt(K,M) (Len(M) bytes) Rijndael in Counter mode encryption 
   of message M using key K. 
-- Decrypt(K,M,i,j) (j bytes) Rijendal counter mode decryption 
+- Decrypt(K,M,i,j) (j bytes) Rijndael counter mode decryption 
   using the key material byte i to j. Len(M) = j.
 \end{verbatim}
 
@@ -480,7 +492,7 @@ while the errors after the mix stage MUST be reported in the output
 errors logs.
 
 For reasons relating to the efficient and stateless engineering of return 
-addresses Rijendal in Counter Mode [AppliedC] is used to perform the 
+addresses, we use Rijndael in Counter Mode [AppliedC] to perform the 
 encryption and decryption operations. The encryption and decryption
 equations for Counter Mode are:
 
@@ -508,6 +520,8 @@ between mix servers a forward secure transport protocol, MMTP, is used.
 Clients SHOULD implement this protocol if they wish to send anonymous 
 messages or receive messages using anonymous reply blocks.
 
+[Q Clients? Should we say anything about the mixes? -RD]
+
 \subsection{Definition of the MixMinion Transfer Protocol}
 
 A special channel should be established between mixes that provides
@@ -518,14 +532,14 @@ of the key exchange protocol the channel is bi-directional.
 
 SSL does not need to be modified in any way to provide forward secure
 communications. We will use a mix of ephemeral Diffie Hellman (DH)
-keys and key updating to archive our protocol goals.
+keys and key updating to achieve our protocol goals.
 
 Outline for SSL based protocol:
 
 \begin{verbatim}
 - A invents a new Diffie Hellman key 
   (of at least 1024 bits modulus)
-  and makes a certificate for signed by her signing key.
+  and makes a certificate signed by her signing key.
   A then initiates the SSL Handshake protocol with B.
 - B invents a DH key and makes a certificate using his signing
   key.
@@ -559,12 +573,17 @@ Protocol is TCP over IP. The standard listening TCP port should be
 number 48099 (until we register a port with www.iana.org)
 
 [Q Should we request a system (<1023) or user port -GD]
+[Q System ports can only be opened by root. we should avoid needing
+to be root. -RD]
+[Q I imagine it's hard to register a port with iana. Let's wait on
+that til everybody takes us seriously. -RD]
 
 All possible checks should be performed during the transfer protocol
-and if any of them fails the connection MUST stop and all state MUST
-be deleted. An error MAY be logged. In particular the certificate of
-the communication partners should be signed using a key that hashes to
-the address hash if it is present in the Master Header.
+and if any fail the connection MUST stop and all state MUST
+be deleted. An error MAY be logged. In particular, if the address
+hash element in the Master Header is nonzero, the certificate of
+the communication partners must be signed using a key that hashes
+appropriately.
 
 \section{Administrative Issues}
 
@@ -594,11 +613,13 @@ Signature: [The signed SHA-1 of all the previous fields using the
 \end{verbatim}
 
 [Q What does <LFCR> mean? -NM]
+ [Q I think it means "the standard thingie at the end of lines,
+    whatever it may be" -RD]
 
 [Q We must specify the capabilities section. -NM]
 
 The address field can contain more than one addresses separated by
-white spaces. The capabilities refer to modules. Clients should not 
+whitespace. The capabilities refer to modules. Clients should not 
 send messages relying on capabilities that a mix does not advertise.
 
 The Signature keys MUST NOT be used to encrypt or decrypt material.
@@ -616,7 +637,7 @@ node -GD]
 \subsection{Logging format permitted}
 
 Only aggregate per day information should be published. The
-log information MUST not be usable to link input with output
+log information MUST NOT be usable to link input with output
 messages. A node MAY provide information about the availability and
 reliability of other nodes.
 
@@ -633,13 +654,13 @@ processing by the node.
 
 \subsection{FORWARD}
 
-[Q This is the standard one, included only for completeness.  All
-mix nodes must support it. -NM]
+This type is the standard delivery type, included only for completeness.
+All mix nodes must support it.
 
 \subsection{DUMP}
 
-[Q specifies that the received message should be silently dropped.
-All mix nodes must support this.]
+The `dump' type specifies that the received message should be silently
+dropped. All mix nodes must support it.
 
 \subsection{INFO}
 
@@ -669,22 +690,22 @@ what should be the error correction rate? -GD]
 
 The principal aim of a mix network is
 to deliver messages that cannot be linked to a sender or a
-recipient. The attacks bellow either try to reduce the unlinkability
+recipient. The attacks below either try to reduce the unlinkability
 provided by the system, or the reliability of the system. Some
-attacks concern particular mixes, others concern the mix network as a
+attacks concern particular mixes, and others concern the mix network as a
 whole.
 
 \subsection{Classic mix attacks - [chaum]}
 
 Linkability by Size - If the size of input and output messages can be
-used to link particular messages then the mix fails. MixMinion use
+used to link particular messages then the mix fails. MixMinion uses
 fixed length messages and pads the messages after processing.
 
-Linkability by Content - If the content of the message provides any
-way of linking the input with the output messages then the mix
-fails. This attacks has both a passive variant, but also an active
-variant in which an attacker modifies a message to make it
-traceable. MixMinion should act as a random function for anyone that
+Linkability by Content - If the content of the message provides any way
+of linking the input with the output messages then the mix fails. While
+this is traditionally a passive attack, an active variant involves an
+attacker modifying (``tagging'') a message to make it traceable.
+MixMinion should act as a random function for anyone that
 does not know the private key of the server, except the users whose
 anonymity is protected. The user that constructs the message headers
 knows the secrets used to encrypt and pad the messages and can
@@ -695,25 +716,25 @@ outputting of the messages provides a way of linking them with
 incoming messages then the mix fails. MixMinion does not provide any
 guidance but a simple mix using Chaums original proposal in order to
 mix the messages: Each mix waits for a batch of valid messages to
-arrive, decrypts them and then outputs them in some random
-order. Other strategies can be implemented such as pool mixes and
-delay mixes.
+arrive, decrypts them and then outputs them in some unlinkable
+order (eg, alphabetized). Other strategies can be implemented such as
+pool mixes and delay mixes.
 
 Linkability by repetition - If a message is processed more than once,
 and its decryption and routing is deterministic, then it is obvious to
 whom the message is addressed and therefore the message can be
-traced. MixMinion implements some duplicates detection
+traced. MixMinion implements some duplicate detection
 mechanisms. These rely on signature and timestamp to
 detect messages that have been processed before, and at the same time
-minimize the resources used by to system.
+minimize the resources used by the system.
 
 \subsection{N-1 Attack - [BABEL]}
 
 The n-1 attacks can be considered generally as a ``fake cover traffic
 attack.'' The opponent tricks the mix to think that it has enough cover
 traffic to hide the correspondence of the inputs and output, but has
-in fact a way of distinguishing the cover traffic messages form the
-real ones. This has as an effect that the anonymity set of the
+in fact a way of distinguishing the cover traffic messages from the
+real ones. Thus the anonymity set of the
 messages is greatly reduced, and at the limit when only one valid
 message is processed the unlinkability of this message is totally
 compromised. The standard way of performing this attack is by flooding
@@ -728,7 +749,7 @@ this technique if he is ``shy,'' and does not want to be detected.
 
 \subsection{Traffic analysis attacks - Pfitzmann}
 
-Position in MIX route attack - Is a mix is able to know its own
+Position in MIX route attack - If a mix is able to know its own
 position in the route of a message it can use this information in
 order to partition the batches of messages. This attack assumes that
 the attacker controls a large number of mixes and is able to trace the
@@ -759,7 +780,7 @@ Some of the attacks presented in [IH2001 - Freedom] concern
 Onion-routing type systems, and do not directly affect MixMinion. The
 packet counting attack only affects onion routing services with
 first-come first-served routing policies. The attacks on traffic
-shaping are very close to the n-1 attacks an underline the need for a
+shaping are very close to the n-1 attacks and underline the need for a
 shaping strategy that always has some dummy traffic on the
 links. MixMinion is not concerned with this and should work with or
 without such strategies (although it would be weaker if it does not
@@ -773,13 +794,17 @@ route of a stream to see the results in its latency. If the stream
 under observation has its latency characteristics changed, then it is
 inferred that the guess was correct.
 
+[Q Actually, many of these attacks are based on low-latency (virtual
+circuit) systems. We get around them (for the most part) by having
+high-latency channels. -RD]
+
 \subsection{Traffic confirmation attacks}
 
 As described in many cases above traffic confirmation attacks are
 performed when there is already a suspicion that a particular user is
 associated with some communication. These attacks are very difficult
 to defend against. The most crude way of performing these attacks is
-to disconnect the the suspect to see if the communication stream stops.
+to disconnect the suspect to see if the communication stream stops.
 
 \subsection{Reputation and path selection attacks}
 
@@ -788,7 +813,8 @@ fact that statistics of reliability are compiled for mixes, so that
 reliable routes are selected. If Denial of Service attacks can
 influence these reputation systems, it may be the case that an
 attacker could influence its victim to choose a compromised route
-through the network.
+through the network. Similarly, a high-budget adversary could simply
+run more reliable nodes to get higher in the charts.
 
 \subsection{Legal attacks}
 
@@ -803,3 +829,4 @@ Key distribution, revocation infrastructure
 \section{Conclusions}
 \section{References}
 \end{document}
+
