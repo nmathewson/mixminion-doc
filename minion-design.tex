@@ -102,7 +102,10 @@ the Type I remailer network.
 \item \textbf{Forward anonymity:} Mixmaster uses SMTP (normal mail) for
 transport. We use TLS over TCP between remailers; thus we can introduce
 link encryption with ephemeral keys to ensure forward anonymity for
-each message.
+each message. Link encryption also makes obsolete many active and
+passive attacks that could have been performed on the communication
+links, and forces attackers to run corrupt nodes to attack the
+system. 
 
 % We also provide flexible delivery schemes ---
 %rather than just allowing delivery to mail or Usenet, we allow designers
@@ -174,7 +177,7 @@ Chaum introduced the concept of a MIX-net for anonymous communications
 MIXes (or MIX nodes), each of which is associated with a public
 key. Each MIX receives encrypted messages, which are then decrypted,
 batched, reordered, and forwarded on without any information
-identifying the sender. Chaum also proved the security of MIXes
+identifying the sender. Chaum demonstrates the security of MIXes
 against a \emph{passive adversary} who can eavesdrop on all
 communications between MIXes but is unable to observe the reordering
 inside each MIX.
@@ -197,7 +200,9 @@ targeting a specific message going into a MIX can manipulate the batch
 of messages entering that MIX so the only unknown message in the batch
 is the target message \cite{mixmaster-attacks,babel}.
 MIX cascade research includes real-time MIXes \cite{realtime-mix} and
-web MIXes \cite{web-mix}.
+web MIXes \cite{web-mix}. Even when not under attack cascades will
+provide smaller anonymity sets than networks since the least
+resourceful acts as a traffic bottleneck.
 
 \subsection{Deployed Remailer Systems}
 
@@ -346,7 +351,11 @@ Mixminion therefore provides only \emph{single-use} reply blocks. Since
 replies may be very rare relative to forward messages, and thus
 much easier to trace, the Mixminion protocol makes reply messages
 indistinguishable from forward messages even for the MIX nodes. Thus
-forward and reply messages can share the same anonymity set.
+forward and reply messages can share the same anonymity
+set. Unfortunately reply blocks are fundamentally more dangerous than
+forward secure communications due to the fact that the adversaries have
+in their possession a string that they can force intermediate mixes to
+decrypt until the originator is reached.
 
 \subsection{Tagging attacks}
 \label{subsec:tagging-attacks}
@@ -372,13 +381,18 @@ an attacking MIX can still alter a header that will be decrypted
 only after several more hops, and so tagging attacks are still possible.
 
 The most straightforward way to prevent tagging attacks is to
-authenticate the whole message at every hop.  For forward messages,
+verify the integrity of the whole message at every hop.  For forward messages,
 then, the padding added to a message must be derived deterministically,
 so that it is possible to calculate
 authentication tags for the whole message at each hop.  But
 the situation becomes more complicated when reply messages are
 introduced --- the message and the reply block are
-created by different users.
+created by different users. It is therefore impossible for the creator
+of the SURB to include in the header a checksum of a message it they
+do not yeat know. Mixminion uses a hybrid strategy to protect against
+such attacks, by protecting the headers using cryptographic checksums,
+while making sure that the addressing information contained in the
+message is destroyed if the payload is modified by an adversay.
 
 \subsection{Replies}
 \label{subsec:replies}
@@ -414,10 +428,12 @@ detail in Section \ref{subsec:tagging-defenses}.
 Mixminion allows Alice to send messages to Bob in one of three ways:
 
 \begin{enumerate}
-\item \textbf{Forward} messages where only Alice remains anonymous.
-\item \textbf{Direct Reply} messages where only Bob remains anonymous.
+\item \textbf{Forward} messages where only Alice remains anonymous
+($(A) \rightarrow B: M$.) 
+\item \textbf{Direct Reply} messages where only Bob remains anonymous 
+($A \rightarrow (B): M$.)
 \item \textbf{Anonymized Reply} messages where Alice \emph{and} Bob
-   remain anonymous.
+   remain anonymous ($(A) \rightarrow (B): M$.)
 \end{enumerate}
 
 We require parties that benefit from anonymity properties to run dedicated
@@ -430,6 +446,13 @@ performed by ordinary mail software can be used to include the reply
 block in a direct reply; this is sent to a node at the Reply-To:
 address, which extracts the reply block and constructs a properly
 formatted onion.)
+
+\begin{figure}
+\begin{center}
+\resizebox{15cm}{!}{\includegraphics{headerDiagram}}
+\caption{The header configurations for different anonymity functions.} 
+\end{center}
+\end{figure}
 
 Messages are composed of a header section and a payload. We divide
 a message's path into two \emph{legs}, and split the header section
@@ -482,7 +505,8 @@ properties:
       for encryption.
 \end{itemize}
 
-To fulfill the above requirements we use a large-block cipher; that
+To fulfill the above requirements we use a variable length block
+cipher adapted to the length of the payload; that
 is, a cipher that acts as a permutation on a block the size of its
 input (a header or the payload).  Possible candidates
 include LIONESS \cite{BEAR-LIONESS} and SPC \cite{SPC}.
@@ -556,11 +580,19 @@ corresponding payload into trash.
 %Nevertheless, this may still allow an adversary to
 %break anonymity in some cases.
 
-We briefly considered introducing \emph{cover-trash} to frustrate
+We briefly considered introducing \emph{cover-trash}, dummy messages
+designed to look like tagged messages, to frustrate
 these tagging attacks; but that problem is as complex as the dummy
-traffic problem \cite{langos02}. Instead, we use the decryption-by-hash-of-payload step at the
+traffic problem \cite{langos02}. Instead, we use the
+% decryption-by-hash-of-payload 
+``swap'' step at the
 crossover point to prevent the attacker from learning information from
-tagging attacks.  Specifically, our solution falls into several cases:
+tagging attacks. The second header of the message, that contains the
+path to the final destination of the forward path,  is encrypted by the
+sender by the hash of the payload that is to arrive at the mix. The
+mix then needs to perform the decryption and swap the first header for
+the second one.
+Specifically, our solution falls into several cases:
 
 \begin{itemize}
 \item Forward messages: if the message is tagged during the first leg,
@@ -600,6 +632,7 @@ points are more frequent on forward paths than direct replies or
 anonymized reply paths.
 %The protocol doesn't allow a MIX to know its location in the path (other
 %than the exit node), or the total length of the route.
+% [WE NEED TO SAY THIS SOMEWHERE SINCE IT IS AN IMPORTANT FEATURE! -GD]
 
 \subsection{Multiple-message tagging attacks}
 \label{subsec:multi-tagging}
@@ -720,6 +753,17 @@ attacker manages to get hold of the session key at a particular point
 they would have to observe all subsequent traffic to be able to update
 their key appropriately.
 
+Additionally link encryption makes active and passive attacks on the
+network links very difficult. Given that mix messages give an
+indication to the mixes about the identity of their successors it is
+hard for an 
+adversary to modify messages, inject messages in a node as if they
+were part of the normal communications, or delete messages. It is
+still possible to delay messages, unless an additional
+\emph{heartbeat} signal is included in the SSL tunnel. This forces a
+determined adversary to run nodes or to corrupt nodes in 
+order to break the anonymity of mixminion.
+
 The encrypted channel offers only limited protection against traffic
 analysis. Encrypted links between honest nodes prevent an adversary
 from recognizing even his own messages; but without link padding, he
@@ -732,6 +776,11 @@ support.  (See Section \ref{subsec:delivery-modules} below.)
 
 \subsection{Message types and delivery modules}
 \label{subsec:delivery-modules}
+
+[I think it is important to say what modules get us in comparison to
+normal client side mixminion (which servers can also use). In
+particular, access to some shared key material and plug-in for
+infrastructure critical services. -GD]
 
 Once a Mixminion packet reaches the final MIX in its path, it must
 either be delivered to its intended recipient, dropped if it is an
@@ -907,7 +956,8 @@ is as follows:  Messages don't
 contain any timestamp or expiration information. Each MIX must keep
 hashes of the headers of all messages it has processed since the last time
 it rotated its key. MIXes should choose key rotation frequency based on
-security goals and on how many hashes they want to store.
+security goals and on how many hashes they want to store, and
+advertise it widely along with their public key information.
 
 Note that this solution does not entirely solve the partitioning problem
 --- near the time of a key rotation, the anonymity set of messages will
@@ -1033,7 +1083,14 @@ single-use. There are a number of approaches for building nymservers
 from single-use reply blocks.
 
 In the first approach, nymservers keep a stock of reply blocks for
-each mailbox, and use a reply block for each incoming message. As long
+each mailbox, and use a reply block for each incoming message. 
+
+\[(A) \rightarrow \mathrm{Nym}: \{\mathrm{Register} ,A', V_{A'}, (A)_1 \dots
+(A)_n\}_{S_{A'}}\]
+\[B \rightarrow \mathrm{Nym}: A', M\]
+\[\mathrm{Nym} \rightarrow (A)_i: M\]
+
+As long
 as the owner of the pseudonym keeps the nymserver well-stocked, no
 messages will be lost.  But it is hard for the user to know how many
 new reply blocks to send; indeed, under this approach, an attacker can
@@ -1044,7 +1101,14 @@ A more robust design uses a protocol inspired by e-mail retrieval
 protocols such as IMAP \cite{IMAP} or POP \cite{POP3}:
 messages arrive and queue at the nymserver, and the user periodically
 checks the status of his mail and sends a sufficient batch of reply
-blocks so the nymserver can deliver that mail. 
+blocks so the nymserver can deliver that mail.
+
+\[(A) \rightarrow \mathrm{Nym}: \{\mathrm{Register} ,A', V_{A'}\}_{S_{A'}}\]
+\[B \rightarrow \mathrm{Nym}: A', M\]
+\[(A) \rightarrow \mathrm{Nym}: \{\mathrm{Query} ,A', (A)_1 \dots
+(A)_n\}_{S_{A'}}\]
+\[\mathrm{Nym} \rightarrow (A)_i: M\]
+
 In this case, the nymserver doesn't need to store any reply blocks.
 The above flooding attack still works, but now it is exactly
 like flooding a normal IMAP or POP mailbox, and the usual techniques (such as
