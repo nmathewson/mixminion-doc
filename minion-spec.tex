@@ -289,6 +289,15 @@ return H_1;
   	DIGEST = HASH( Encrypt(K, EH | H_(N+1)) | J_i ) )
 	H_i = ESHS(PK_i, V, SK_i, DIGEST, F, A_i) | Encrypt(K, EH | H_(N+1))
 
+   Also, you need to generate J_i differently.  The second step
+   is now
+
+	J_i = J_i XOR PRNG(HASH(SK_i, ``HEADER SECRET KEY''),
+  		Len(128*16))[128*15 -Len(J_i) +Len(header_i):Len(J-i)];
+
+   This approach is now working in code.  If somebody could confirm it
+   to be sound, or simplify it, that would be keen.
+
       -NM]
 
 \subsection{The Payload of messages}
