@@ -154,6 +154,11 @@ encrypted using the Encrypt function with key=Hash(Shared Secret,
 ``ROUTING EXTENSION SECRET KEY'') and appended to the RSA encrypted
 subheader.
 
+[XXXX-EXT It would seem that no integrity checking is done on the extended
+      headers.  Instead, let me suggest that the extended headers be
+      hashed along with the rest of the header, and encrypted with the 
+      same key.  (See changes below, marked with XXXX-EXT) -NM ]
+
 We will formally refer to the subheader structure as:
 SHS(V, SK, D, F, A)
 And to the RSA-OAEP encrypted subheader structure as:
@@ -276,6 +281,16 @@ Process:
 
 return H_1;
 
+  [XXXX-EXT I suggest that the lines from "DIGEST = HASH(..." onward
+   be replaced with something like:
+
+	IF i = N (set appropriate routing type and A_i)
+	EH = ( extended_headers for routing info, if len(A_i) won't fit.
+  	DIGEST = HASH( Encrypt(K, EH | H_(N+1)) | J_i ) )
+	H_i = ESHS(PK_i, V, SK_i, DIGEST, F, A_i) | Encrypt(K, EH | H_(N+1))
+
+      -NM]
+
 \subsection{The Payload of messages}
 
 The payload of a Mixminion message has a fixed length of 32 kb
@@ -347,11 +362,25 @@ Messages are transfered from node to node using the custom Type III
 transport protocol or email.  A node with private key PK receiving
 message M = (H1, H2, P) performs the following operations:
 
+[XXXX-EXT The lines beginning with "If there is any problem" should
+     be:
+        If there is any problem with the OAEP padding discard the message.
+        Check that D = H(H1[128:15*128])
+        Let n_extra = number of extended headers
+        H1 = H1[128:15*128] | PRNG(HASH(SK, "RANDOM 
+                                               JUNK")[0:16])[0:128*n_extra]
+	H1 = H1 XOR PRNG(HASH(SK, "HEADER SECRET KEY"), Len(H1))
+        Reconstruct A_i from H1[0:128*n_extra]
+        H1 = H1[0:n_extra]
+	H2 = SPRP_DEC(SK, ``HEADER ENCRYPT'',H2);
+        ....
+        Will this work? -NM]
+
 PROCEDURE: Process a message M
 	SHS(V, SK, D, F, A) = PK_Decrypt(PK,H1[0:128]);
 	If there is any problem with the OAEP padding discard the message.
 	If the routing info spans across many blocks extract them and
-		decrypt them.
+		decrypt them. 
 	Check that D = H(H1[128:15*128]);
 	H1 = H1[128:15*128] | PRNG(HASH(SK, ``RANDOM
 						JUNK'')[0:16])[0:128];
