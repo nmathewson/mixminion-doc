@@ -1,4 +1,4 @@
-$Id: spec-issues.txt,v 1.2 2003/07/24 03:33:21 nickm Exp $
+$Id: spec-issues.txt,v 1.3 2003/08/03 07:30:38 nickm Exp $
 
 				MIX3:X
     Open Issues in Type III (Mixminion) Mix Protocol Specifications
@@ -49,8 +49,7 @@ Table of Contents
    3.6.     Automatic retrieval of server information
    3.7.     Jurisdictions and twins
    4.       Unspecified components
-   4.1.     Nymserver
-   4.2.     Standard API
+   4.1.     RFC822-style interface
 
 0. Meta-issues
 
@@ -117,6 +116,9 @@ Table of Contents
    cache the result of the lookup until a connection fails, in order to
    prevent spoofing attacks.
 
+   [Peter says we should use TTLs instead so you can move a server
+   without shutting down the old one.  Sounds good.]
+
    Pro:
       - Servers with dynamically assigned IP become viable.
       - Changing a server's IP no longer delays traffic until the
@@ -148,7 +150,7 @@ Table of Contents
 
    Right now, the network may be too easy to DOS.  In particular, there
    are unpleasantly high work multipliers for attacks that send junk
-   packets to nodes, forcing the nodes to RSA-decrypt the packets them
+   packets to nodes, forcing the nodes to RSA-decrypt the packets
    before they can find out that they are invalid.
 
    Another attack arises because RSA encryption is far cheaper than
@@ -213,7 +215,7 @@ Table of Contents
    way to send multi-part messages.
 
    This functionality *may* take the format of a canonical subset of
-   MIME, but Lucky thinks that such a thing would drive us into
+   MIME, but Lucky thinks that such a thing would drive us into a 
    Lovecraftian state of madness.
 
 2.3. Improved K-of-N algorithm
@@ -312,7 +314,7 @@ Table of Contents
 3.4. Unadvertised broken links
 
    We may or may not want a way for a directory to advertise that,
-   although N1 and N2 both work, and N1 and N2 both claim allow
+   although N1 and N2 both work, and N1 and N2 both claim to allow
    messages from one other, the N1-N2 link is broken nonetheless.
 
 3.5. Anonymity information in descriptor blocks
@@ -336,7 +338,7 @@ Table of Contents
    There may be some value in allowing others to get this information
    by querying the nodes themselves.
 
-   Here's an exchange between George an Nick on the subject.
+   Here's an exchange between George and Nick on the subject.
 
         [XXXX I think it is important to have a standard way to query a
               server given an IP and a port. -GD]
@@ -429,35 +431,7 @@ Table of Contents
    standardized, though they would not form a part of any of the
    current specification documents.
 
-4.1. Nymserver
+4.1. RFC822-style interface 
 
-   We need a standard nymserver protocol.
-
-   The consensus seems to be toward a POP-like implementation that
-   would allow clients to request lists of message headers, and delete
-   or retrieve each message at their discretion.  
-
-   (If nymservers relay every message to the client automatically, an
-   attacker could DOS a client by exhausting their store of SURBs, or
-   mount a traffic analysis attack by flooding the nym with spam.)
-
-   There is probably some value to allowing clients to pre-load a
-   nymserver with a set of SURBs, in order to allow reduced message
-   latency.
-
-   In recent discussion, on a.p.a.s, some users have suggested that nym
-   users ought to have a way to tell their nymservers to drop traffic
-   according to certain rules.  This may be useful, but may allow
-   partitioning.
-
-   There is also some tension between the requirement that nymsevers
-   should encrypt information as soon as it arrives, and the
-   requirement that nymservers should look for duplicate information to
-   discourage floods and DOS attacks.
-
-4.2. Standard API
-
-   Somebody should write a standard API for invoking type III clients.
-
-   There may be value in specifying both an in-process and an
-   out-of-process (CLI) interface.
+   It'd be nice to have a standard way to feed a single text file to
+   a CLI and get a message sent.
