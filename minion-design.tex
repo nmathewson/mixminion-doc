@@ -266,13 +266,45 @@ certified.-Nick
 
 \subsection{Exit policies and abuse}
 
-Looks quite straightforward. More generally, this should be a discussion
-about capabilities for each mix.
+One important entry in a node's capability block is its \emph{exit
+policy}. Exit abuse is a serious barrier to wide-scale remailer deployment
+--- rare indeed is the network administrator tolerant of machines that
+potentially deliver hate mail to the President.
 
-How do clients communicate with a mix to learn its capabilities? Or does
-the mix communicate capabilities to the directory server and the client
-gets them from there? Or both. Ties in with directory server section
-below.
+On one end of the spectrum are \emph{open exit} nodes which will
+deliver anywhere; on the other end are \emph{middle-man} nodes which
+only relay traffic to other remailer nodes. More generally, nodes can
+set individual exit policies to declare which traffic they will let
+exit from them, such as traffic for local users or other authenticated
+traffic \cite{onion-discex00}.
+
+Preventing abuse of open exit nodes is an unsolved problem. If
+receiving mail is opt-in, an abuser can forge an opt-in request from
+his victim. Indeed, requiring recipients to declare their interest
+in receiving anonymous mail is risky --- human rights activists in
+Guatemala cannot both sign up to receive anonymous mail and retain
+plausible deniability.\footnote{
+  Compare with the 1965 U.S. Supreme Court case Lamont v. Postmaster
+  General (381 U.S. 301), where the Post Office would detain mail it
+  deemed to be `communist political propaganda' and instead send a form
+  to the addressee telling him to send back the signed form if he wanted
+  to receive such mail. The government maintained a list of citizens
+  who had filled out these forms.
+} Similarly, if receiving mail is opt-out, an abuser can deny service
+by forging an opt-out request from a legitimate user. We might instead
+keep the mail at the exit node and send a note to the recipient
+informing telling them how to collect their mail; but this increases
+server liability by storing messages (see \ref{sec:nymservers} below),
+and also doesn't really solve the problem.
+
+Of course, a mixture of open and restricted exit nodes will allow the
+most flexibility for volunteers running servers. But while a large number
+of middle-man nodes is useful to provide a large and robust network, the
+small number of exit nodes still simplifies \emph{traffic confirmation}
+(attacks where the adversary observes both a suspected user and the
+network's exit nodes and looks for timing or packet correlations). The
+number of available open exit nodes remains a limiting security parameter
+for the remailer network.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
