@@ -208,7 +208,7 @@ cipher, and we avoid extensions that would help an adversary divide the
 anonymity set.
 
 Mixminion uses the same general MIX-net paradigm as previous work
-\cite{chaum-mix, mixmaster-attacks, others}. The sender Alice chooses a
+\cite{chaum-mix,mixmaster-attacks,others}. The sender Alice chooses a
 path through the network. She repeatedly ``onion'' encrypts her message,
 starting with the last
 MIX in her path, and sends the onion to the first MIX in her path. Each
@@ -218,7 +218,7 @@ Section \ref{subsec:delivery-modules}.
 
 While Mixminion protects against known \emph{traffic analysis} attacks
 (where an adversary given a message attempts to learn its sender or
-receiver \cite{jfraymond, simon}), we do not fully address \emph{traffic
+receiver \cite{rackoff93cryptographic,raymond00}), we do not fully address \emph{traffic
 confirmation} attacks. In a traffic confirmation attack, the adversary
 treats the MIX network as a black box and observes the behavior of
 senders and receivers. Over time, he can intersect the set of senders
@@ -298,7 +298,7 @@ split into two equal-size subheaders as well. Each hop contains a hash
 of the subheader it's a part of, so we can do integrity-checking of the
 path within that leg (but still not the payload). Each hop also contains
 a symmetric key which is used to decrypt the rest of the message. The
-MIX can also use that key to place predictable padding at the end of
+MIX can use the same key to place predictable padding at the end of
 the subheader, so the hash will match even though each hop regrows the
 subheader to maintain constant length.
 
@@ -318,8 +318,8 @@ the dotted line.  We use a variable block size block cipher named BEAR
 the property that if any bit of the encrypted material is changed the
 decryption will look like random bits. We can use BEAR in a mode where
 decryption and encryption are equivalent, by using the same key for
-both hash steps. See \ref{subsec:tagging} for a discussion of why this
-all-or-nothing encryption approach helps protect against tagging.
+both hash steps. See Section \ref{subsec:tagging} for a discussion of
+how this all-or-nothing encryption approach helps protect against tagging.
 
 \begin{figure}
 \begin{center}
@@ -329,7 +329,7 @@ all-or-nothing encryption approach helps protect against tagging.
 \end{figure}
 
 Because the path is split into two legs, we can cleanly support anonymized
-reply messages. Alice simply includes Bob's reply block as the second leg,
+reply messages. Alice simply uses Bob's reply block as the second leg,
 and generates her own path for the first leg.
 
 \subsection{Defenses against tagging attacks}
@@ -340,14 +340,14 @@ it, an adversary could tag the payload of a forward message when it
 leaves Alice, and then recognize it when it reaches Bob. Specifically,
 if our encryption mechanism were an ordinary counter-mode cipher, he
 might alter a specific byte in the payload of a message going into the
-MIX-net. Since many of the outgoing messages will be in part predictable
+MIX-net. Since many of the messages will be in part predictable
 (either entirely plaintext, or have predictable PGP header material),
-the adversary can then observe messages coming out of the MIX-net and
+the adversary can then observe messages exiting the MIX-net and
 look for payloads that have an anomaly at that byte.
 
 We use BEAR as our encryption primitive to minimize the amount of
 information an adversary can learn from tagging. If he tags a message
-coming out of Alice, the payload will be entirely random when it reaches
+leaving Alice, the payload will be entirely random when it reaches
 Bob. Thus if he tags more than one message in the entire MIX-net, he
 learns only one bit from each tagged message, so he cannot distinguish
 the tagged messages. We briefly considered introducing \emph{cover-trash}
@@ -469,12 +469,12 @@ transmitted.
 \subsection{Message types and delivery modules}
 \label{subsec:delivery-modules}
 
-Once a Mixminion packet reaches the final MIX in its path, it must be
-dropped (if it is a dummy message), or delivered to its intended
-recipient (if it is not).  In order to support different kinds of
-delivery, each header contains a type code for the action to be taken
-to deliver the message.  A few types--such as DUMMY, SMTP, and LOCAL
-DELIVERY--are specified as a part of the Mixminion standard.  Others
+Once a Mixminion packet reaches the final MIX in its path, it must
+either be delivered to its intended recipient, or dropped if it's an
+intra-network dummy message. In order to support different kinds of
+delivery, the header includes a type code for the action to be taken
+to deliver the message.  A few types --- such as `dummy', `SMTP', and `local
+delivery' --- are specified as a part of the Mixminion standard.  Others
 may be added by future extensions, in order to implement
 abuse-resistant exit policies (see Section \ref{subsec:exitpolicies}),
 to administer nymservers (see Section \ref{sec:nymservers}), to publish
@@ -489,19 +489,20 @@ a mailbox name.\footnote{A {\it mailbox name} is the ``{\tt user@domain}''
 part of an e-mail address. Mixminion uses only mailbox names in the
 protocol, because the comment parts of an e-mail address could potentially
 be different for senders who have obtained an address from different
-sources, leading to a reduction in anonymity sets.}
+sources, leading to smaller anonymity sets.}
 In our current design, this information is placed
-in a variable-length annex to the final header\footnote{It must be
-in the header, since putting delivery information in the payload would
-prevent people from creating SURBs that can be delivered by SMTP.
-On the one hand, under the ``header swap'' method described in
-\ref{subsec:header-swap}, the all-or-nothing property of BEAR prevents
-the generator of a reply block from putting any information in the
-payload.  On the other hand, under the ``distinguish replies'' method
-in \ref{subsec:distinguish-replies}, the delivery information would
-create a portion of the payload that the final node it could
-distinguish from random garbage, thus allowing a tagging attack
-against the reply block.}.
+in a variable-length annex to the final header.
+%\footnote{It must be
+%in the header, since putting delivery information in the payload would
+%prevent people from creating SURBs that can be delivered by SMTP.
+%On the one hand, under the ``header swap'' method described in
+%\ref{subsec:header-swap}, the all-or-nothing property of BEAR prevents
+%the generator of a reply block from putting any information in the
+%payload.  On the other hand, under the ``distinguish replies'' method
+%in \ref{subsec:distinguish-replies}, the delivery information would
+%create a portion of the payload that the final node could
+%distinguish from random garbage, thus allowing a tagging attack
+%against the reply block.}.
 % See my messages of April 9 and 10 titled ``SMTP service'' for a more
 % detailed version of the above argument. -Nick
 %
@@ -512,11 +513,11 @@ against the reply block.}.
 % supports it, and not doing so would be a step backwards, and (C)    
 % that there's not much reason not to.]    -Nick
 
-The types each MIX supports are described in a \emph{capability
-block}, which also includes the MIX's address, long-term (signing)
-public key, short-term key (for use in header encryption), and
-forwarding strategy (if any).  MIXes sign these capability blocks, and
-publish them on directory servers (see section \ref{sec:dir-servers}).
+The types each MIX supports are described in a \emph{capability block},
+which also includes the MIX's address, long-term (signing) public key,
+short-term key (for use in header encryption), and batching strategy.
+MIXes sign these capability blocks
+and publish them on directory servers (see Section \ref{sec:dir-servers}).
 Clients download this information from the directory servers.
 
 % Is all of the stuff above really in the caps block?  Or do we break
@@ -528,11 +529,11 @@ Clients download this information from the directory servers.
 % there would be no point in having two separate update mechanisms. --DH
 
 The possibility of multiple delivery methods doesn't come free: their
-presence may fragment the anonymity set.  For example, if there were 5
-ways to send a SMTP message to Bob, an attacker could partition Bob's
-incoming mail by assuming that one of those ways was Alice's favorite.
-Furthermore, an active attacker Mallory could lure users into using an
-exit node he had compromized by advertising that node as supporting a
+presence may fragment the anonymity set.  For example, if there were five
+ways to send an SMTP message to Bob, an attacker could partition Bob's
+incoming mail by guessing that one of those ways is Alice's favorite.
+An active attacker could even lure users into using a compromised
+exit node by advertising that node as supporting a
 rare but desirable delivery method.
 
 We claim that these attacks do not provide an argument against
@@ -773,15 +774,6 @@ while more, I think.
 \url{http://archives.seul.org/mixminion/dev/Apr-2002/msg00031.html}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Implementation choices}
-\label{sec:implementation}
-
-some details about how to build it. logging and statistics? etc.
-
-nick?
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \section{Attacks and Defenses}
 \label{sec:attacks}
 
@@ -800,24 +792,6 @@ n-1 attack (trickle, flooding)
 intersection attack (short-term, long-term)
 textual analysis, etc
 %\end{description}
-
-\subsection{Tagging attacks on fixed routes}
-[This isn't in the right format. -Nick]
-
-As described in ?? the ``header swap'' method reduces the potential
-for tagging attacks by making the second part of the route dependent
-on the payload. This reduces the effective path length of the attacked
-messages, which could lead to vulnerabilities. In particular if the
-same path is chosen for many packets, which presents traffic analysis
-related problems in itself, an attacker could discover the destination
-of a sequence of packets using a tagging attack on the first part of
-the route, then followed by an attack on the second part of the route
-to discover the destination of a sequence of packets. For this attack to
-work, in addition to fixed routes being used for many packets, an attacker
-would need to control the node at which the crossover operation is
-performed. This attack is only possible against one victim at a time,
-and can only be performed by one attacker at a time.
-
 
 \subsection{Exit-based attacks}
 \label{subsec:attacks-exitbased}
@@ -864,6 +838,9 @@ design to peripheral design choices, need more attention:
 \begin{itemize}
 \item We need to analyze the proposed defense against the multiple-message
 tagging attack.
+\item batching strategy
+\item ways of safely choosing paths for multiple messages
+\item a word about spec, implementation, deployment
 \end{itemize}
 
 
@@ -878,9 +855,5 @@ tagging attack.
 
 \bibliography{minion-design}
 
-
-
 \end{document}
-
-
 
