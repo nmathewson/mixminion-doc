@@ -1,4 +1,6 @@
-\documentclass{llncs}
+% \documentclass[10pt, twocolumn]{IEEEtran}
+\documentclass[11pt]{IEEEtran}
+% \documentclass{llncs}
 
 \usepackage{url}
 \usepackage{graphics}
@@ -34,28 +36,26 @@
 
 % Removed for anonymous review
 % 
-\author{George Danezis\inst{1} \and Roger Dingledine\inst{2} \and David Hopwood\inst{3}
-        \and Nick Mathewson\inst{2}}
-\institute{Cambridge University
-\email{\emailaddr{george.danezis@cl.cam.ac.uk}}
-\and
-The Free Haven Project
-\email{\emailaddr{{arma,nickm}@freehaven.net}}
-\and
-Independent consultant
-\email{\emailaddr{david.hopwood@zetnet.co.uk}}}
-%\author{Authors anonymous for submission}
+%\author{George Danezis\inst{1} \and Roger Dingledine\inst{2} \and David Hopwood\inst{3}
+%        \and Nick Mathewson\inst{2}}
+%\institute{Cambridge University
+%\email{\emailaddr{george.danezis@cl.cam.ac.uk}}
+%\and
+%The Free Haven Project
+%\email{\emailaddr{{arma,nickm}@freehaven.net}}
+%\and
+%Independent consultant
+%\email{\emailaddr{david.hopwood@zetnet.co.uk}}}
+\author{...}
 %\institute{}
-
 
 \maketitle
 \pagestyle{plain} 
-% IH2002 wants page numbers
-  
+ 
 \begin{abstract}
 
 We present Mixminion, a message-based anonymous remailer protocol that
-supports secure single-use reply blocks. MIX nodes cannot distinguish
+supports secure single-use reply blocks. Mix nodes cannot distinguish
 Mixminion forward messages from reply messages, so forward and reply
 messages share
 the same anonymity set. We add directory servers that allow users to
@@ -63,66 +63,109 @@ learn public keys and performance statistics of participating remailers,
 and we describe nymservers that allow users to maintain long-term
 pseudonyms using single-use reply blocks as a primitive. Our design
 integrates link encryption between remailers to provide
-forward anonymity. Mixminion brings together the best solutions from
-previous work to create a conservative design that protects against most
-known attacks.
+forward anonymity. Mixminion %brings together the best solutions from
+%previous work to
+protects against most known attacks.
 
 \end{abstract}
 
-\noindent \textbf{Keywords:} anonymity, MIX-net, peer-to-peer, remailer, nymserver, reply block
+\noindent \textbf{Keywords:} anonymity, mix-net, peer-to-peer, remailer, nymserver, reply block
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Introduction}
+\section{Overview}
 \label{sec:intro}
 
-Chaum first introduced anonymous remailer designs over 20 years ago
+Chaum first introduced anonymous remailers over 20 years ago
 \cite{chaum-mix}. The research community has since introduced many new
-designs and proofs
-\cite{abe,web-mix,babel,flash-mix,realtime-mix,kesdogan,shuffle,hybrid-mix},
+designs and proofs \cite{abe,babel,flash-mix,kesdogan,shuffle,hybrid-mix},
 and discovered a variety of new attacks
-\cite{back-traffic-analysis,langos02,disad-free-routes,desmedt,mitkuro,raymond00},
-but the state of deployed remailers has changed remarkably little since
-Cottrell published his Mixmaster software \cite{mixmaster-attacks,mixmaster-spec}
-in 1994.  Part of the difficulty in expanding the deployed remailer base is
-due to the liability involved in running a remailer node on the Internet,
-and part is due to the complexity of the current infrastructure ---
-it is fairly hard to add new experimental features to the current software.
+\cite{back-traffic-analysis,langos02,disad-free-routes,desmedt,mitkuro,raymond00}.
+But because many of the newer designs require considerable coordination or
+synchronization, deployed remailers still use Cottrell's Mixmaster
+design from 1994 \cite{mixmaster-attacks,mixmaster-spec}. Here we describe
+Mixminion, a protocol for asynchronous loosely federated remailers that
+maintains Mixmaster's flexibility while addressing the following flaws:
 
-The Mixminion Project aims to deploy a cleaner remailer design
-in the same spirit as Mixmaster, with the goals of expanding
-deployment, documenting our design decisions and how well they stand
-up to all known attacks, and providing a research base for
-experimental features. We describe our overall design in Section
-\ref{sec:design}, including a new primitive called a \emph{single-use
-reply block} (SURB).  Mixmaster provides no support for replies, but
-instead relies on the older and less secure Cypherpunk Type I remailer
-design \cite{remailer-history}. By integrating reply capabilities into
-Mixminion, we can finally retire the Type I remailer network.
+\begin{itemize}
+\item \textbf{Replies:} Mixmaster does not support replies or anonymous
+recipients --- people who want these functions must use the older and
+less secure Cypherpunk Type I remailer design \cite{remailer-history}. We
+introduce a new primitive called a \emph{single-use reply block} (SURB),
+which makes replies as secure as forward messages. Our design goes a
+step further: in Mixminion most remailers in a path cannot distinguish
+reply messages from forward messages. We also describe how to securely
+build higher-level systems such as nymservers using these SURBs. By
+integrating reply capabilities into Mixminion, we can finally retire
+the Type I remailer network.
 
-We introduce link encryption with ephemeral keys to ensure forward
-anonym\-ity for each message. We also provide flexible delivery schemes ---
-rather than just allowing delivery to mail or Usenet, we allow designers
-to add arbitrary modules to handle incoming and outgoing messages. By
-separating the core mixing architecture from these higher-level modules,
-we can both limit their influence on the anonymity properties of the
-system, and also extend the Mixminion network for uses other than
-anonymous email. We
-go on in Section \ref{sec:dir-servers} to describe a design for directory
-servers to track and distribute remailer availability, performance,
-and key information, and then describe in Section \ref{sec:nymservers}
-how to securely build higher-level systems such as nymservers using SURBs.
+\item \textbf{Forward anonymity:} Mixmaster uses SMTP (normal mail) for
+transport. We use TLS over TCP between remailers; thus we can introduce
+link encryption with ephemeral keys to ensure forward anonymity for
+each message.
 
-Mixminion is a best-of-breed remailer protocol that uses conservative design
-approaches to provide security against most known attacks. The overall
-Mixminion Project is a joint effort between cryptography and anonymity
-researchers and Mixmaster remailer operators. This design document
-represents the first step in peer review of the Type III remailer
-protocol.
+% We also provide flexible delivery schemes ---
+%rather than just allowing delivery to mail or Usenet, we allow designers
+%to add arbitrary modules to handle incoming and outgoing messages. By
+%separating the core mixing architecture from these higher-level modules,
+%we can both limit their influence on the anonymity properties of the
+%system, and also extend the Mixminion network for uses other than
+%anonymous email.
+
+\item \textbf{Exit policies:} Exit abuse is a serious barrier to wide-scale
+remailer deployment: most ISPs do not tolerate users who potentially
+deliver hate mail, etc. While the original Mixmaster design assumed all
+nodes have identical capabilities and roles (and thus messages can exit
+from any node), Mixminion allows each node to specify an exit policy. We
+describe a protocol which allows recipients to opt out of receiving mail
+from remailers, but at the same time makes it difficult for an adversary
+to deny service to interested recipients.
+
+\item \textbf{Replay prevention and key rotation:} ...
+
+\item \textbf{Directory servers:} Mixmaster uses several \emph{ad hoc}
+approaches to distributing remailer availability, performance, and
+key information. But the fact that users and remailers operate with
+different information introduces \emph{partitioning} attacks. Mixminion
+uses a small group of synchronized redundant directory servers
+to provide uniform information about the network.
+
+\item \textbf{Dummy traffic:} Cottrell briefly mentions dummies in
+\cite{mixmaster-attacks}, but they are not part of the specification
+\cite{mixmaster-spec}. Mixminion uses a simple dummy policy which provably
+improves anonymity. % compared to the absence of dummies.
+
+\end{itemize}
+
+%Part of the difficulty in expanding the deployed remailer base is
+%due to the liability involved in running a remailer node on the Internet,
+%and part is due to the complexity of the current infrastructure ---
+%it is fairly hard to add new experimental features to the current software.
+
+We review the basic mix-net protocol in Section \ref{sec:related},
+and then address the above list of improvements in Sections
+\ref{sec:design}-\ref{sec:nymservers}. We conclude with a list of future
+work (tasks which we should do next and feel confident we can complete),
+followed by a list of open questions (unresolved issues for which the
+research community currently has no answer).
+
+%The Mixminion Project aims to deploy a cleaner remailer design
+%in the same spirit as Mixmaster, with the goals of expanding
+%deployment, documenting our design decisions and how well they stand
+%up to all known attacks, and providing a research base for
+%experimental features.
+
+%Mixminion is a best-of-breed remailer protocol that uses conservative design
+%approaches to provide security against most known attacks. The overall
+%Mixminion Project is a joint effort between cryptography and anonymity
+%researchers and Mixmaster remailer operators. This design document
+%represents the first step in peer review of the Type III remailer
+%protocol.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Related Work}
+\label{sec:related}
 
 \subsection{MIX-nets}
 
@@ -621,7 +664,7 @@ based on TLS \cite{TLS}.
 TLS allows the establishment of an encrypted tunnel using ephemeral
 Diffie-Hellman keys. In order to guarantee that the receiving end is
 the one intended by the creator of the anonymous message, the
-receiving node can sign the ephemeral key. As soon as a session key
+receiving node signs the ephemeral key. As soon as a session key
 has been established, the parties destroy their Diffie-Hellman keys
 and begin sending messages through the tunnel. After each message, the
 parties perform a standard key update operation to generate a fresh
@@ -924,14 +967,14 @@ We must specify a directory
 service as a part of our standard. Thus Mixminion provides protocols for
 MIXes to advertise their capability certificates to directory servers,
 and for clients to download \emph{complete} directories.\footnote{
-  New advances in Private Information Retrieval \cite{malkin-thesis}
-  may down the
-  road allow clients to efficiently and privately download a subset of
-  the directory. We recommend against using the MIX-net to anonymously
-  retrieve a random subset: an adversary observing the directory servers
+  We recommend against using the MIX-net to anonymously retrieve a random
+  subset of the directory: an adversary observing the directory servers
   and given two hops in a message's path can take the intersection over
   recently downloaded directory subsets to guess the remaining hops in
-  the path.}
+  the path. Private Information Retrieval \cite{malkin-thesis} may down
+  the road allow clients to efficiently, securely, and privately download
+  a subset of the directory.
+}
 Servers can work together to ensure correct and complete data by
 successively signing certificate bundles, so users can be sure that a
 given MIX certificate has been seen by a threshold of directory servers.
