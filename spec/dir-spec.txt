@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.23 2004/08/09 21:23:33 nickm Exp $
+$Id: dir-spec.txt,v 1.24 2004/08/12 04:53:28 nickm Exp $
 
 				MIX3:3
            Type III (Mixminion) Mix Directory Specification
@@ -113,12 +113,6 @@ Table of Contents
    and CR (ASCII 9, 32-126 inclusive), and not beginning with a space
    or a tab.  An EOL is an optional Space, followed by either a CR
    ('\r', ASCII 13), a NL ('\n', ASCII 10), or a CR-NL sequence.
-
-   [XXXX Is there any reason to handle non-ASCII here?  I don't want to
-    walk down the road of having a dozen competing charsets and
-    encodings. -NM]
-   [XXXX Everybody using Minion is going to support ASCII, so I think
-    it's fine to make them use it here. -RD]
 
    Here is a grammar, using C syntax for characters:
 
@@ -371,17 +365,6 @@ Table of Contents
         *FWD/IPv4 messages.]
 
         'Port': A port at which IP accepts incoming MMTP connections.
-
-        'Key-Digest': The KEYID of this server, encoded in BASE64.  This
-              is the same as the SHA-1 digest of the ASN.1 encoding of
-              the identity key.  (See "minion-spec.txt" for more
-              information.)
-
-	      [XXXX This field is obsolete; it can be derived from the
-	      identity key.  We used to need it because the MMTP
-	      certificates used to be self-signed; now they are signed by
-	      the identity key.  This field will not be used in Mixminion
-	      0.0.6; it will be removed in Mixminion 0.0.7.]
 
         'Protocols': A comma-separated list of the versions of MMTP this
               server accepts.
@@ -726,6 +709,23 @@ Table of Contents
         4. Signature collection (23:30 through 00:00)
         5. Publication (00:00)
 
+   In outline, voting proceeds as follows: a group of directory servers, all
+   of whom agree on the membership of the group, publish votes on which mixes
+   should be included in the directory, which mixes should be recommended,
+   and which versions of the software should be recommended.  Each member
+   collects the published votes, computes the outcome of the voting process,
+   and signs this result.  Members then collect one another's signatures,
+   and publish a multiply-signed consensus directory.
+
+   This process is not guaranteed to succeed.  If all members of the voting
+   group behave correctly, are accessible to one another on the network, and
+   are in agreement about members of the voting group, then a single
+   consensus directory signed by all members will be produced.  It is
+   possible, however, for consensus to break in several ways.  In the worst
+   case, no consensus is reached, and each directory server signs an
+   different directory.  In this case, users and directory server
+   administrators must choose how to respond; see 7.6.
+
 7.1. Research and configuration
 
    On an ongoing basis, directory servers gather information about server
@@ -775,13 +775,20 @@ Table of Contents
 
    Once a directory server has results from all other directory servers in
    its voting group, or once the tabulation period has elapsed, each directory
-   server computes a consensus directory as follows:
+   server computes a consensus directory as follows.
+
+   [When discussions below refer to "a majority", we mean a simple majority
+   (more than one half) of the members of the voting group.  Members who
+   cast no vote in a given day (for example, because their servers are down)
+   are treated as having cast an "empty" vote -- that is, having voted
+   against every mix and against every recommended software version.]
 
       1. Validate each "vote" directory.  Verify that all formats are
          correct, and all signatures are valid.  Check that the Valid-After
          and Valid-Until times correspond to the following day; that the
          Voting-Servers list is identical to our own; that the Status is
-         "vote"; and that the Version number matches ours.
+         "vote"; and that the Version number matches ours.  If any of these
+         checks fail, do not consider the "vote" directory in step 2.
 
       2. Determine the contents of the consensus directory:
           - For each distinct mix identity in any vote directory:
@@ -835,6 +842,25 @@ Table of Contents
    Directory servers SHOULD change their directories only at midnight
    GMT.
 
+7.6. Consensus failure
+
+   If the directory servers disagree about the consensus directory, each
+   directory server collects signatures from only whose servers who agree
+   with it about the final consensus (see 7.5 above).
+
+   If a directory server cannot find any other directory servers who agree
+   with it about the voting set, or who have signed the same consensus
+   directory, it re-signs its own first vote as its final directory.
+
+   On any day when a directory server fails to agree on a single consensus
+   directory signed by all members of its voting group, it SHOULD report to
+   its administrator that consensus has failed, and explain how.  Restoring
+   consensus (by fixing or excluding broken or misconfigured servers) is the
+   administrators' responsibility.
+
+   If clients find a consensus directory signed by insufficient trusted
+   directory servers, it SHOULD worn the user, and respond appropriately (see
+   8 below).
 
 8. Downloading directories
 
@@ -842,10 +868,12 @@ Table of Contents
    GMT, SHOULD download a fresh directory before generating any packets.
 
    Upon downloading a directory, a client SHOULD check the signatures for all
-   of the Signed-Directory sections for which it recognizes the identity key.
-   If there are valid signatures from less than a majority of the client's
-   known servers on the directory, then the client SHOULD at least warn the
-   user.
+   of the Signed-Directory sections for which it recognizes the identity key
+   as that of a trusted directory server.  If the directory has valid
+   signatures from less than a majority of the client's trusted directory
+   servers, then the client software SHOULD at least warn the user that the
+   directory quorum could be compromised, and MAY refuse to run, or reuse an
+   older directory until consensus is reestablished.
 
 A.1. Versioning and Alphas
 
