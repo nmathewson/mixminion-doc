@@ -307,6 +307,10 @@ ok -GD]
       that the recipient have a private key, and thus breaks
       deniability and is nott as 'stateless' as the password-only
       approach, but it still works if that's what you want.  -NM]
+[XXXX Wait a second: the TAG field is in the, Routing field that is in the 
+      subheader. This subheader is already encrypted under the receipients
+      public keys, and therefore we do not need to reencrypt it.
+      Am I missing something? -GD]
 
 \subsection{The header structure}
 
@@ -636,6 +640,8 @@ MIX-to-MIX communications.
 [XXXX Do we want to allow other suites for client-to-server
       communication in order to accommodate clients with older SSL
       implementations? -NM]
+[XXXX Since we define mixminion now I do not think that we will find
+      ``older'' clients out there ;) -GD]
 
 X.509 certificates need not be signed; instead, they must contain
 a key matching that used in the KEYID portion of the header's routing
