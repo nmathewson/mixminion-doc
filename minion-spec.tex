@@ -539,6 +539,21 @@ include in that document, than having to specify the generic SMTP
 delivery mechanism (which must have standard abuse/spam resistance,
 volume control, awareness of nyms etc.) -GD]
 
+[XXXX I was under the impression that we earlier agreed =not= to go
+ down this route when we said that applications must give only [RT,
+ RI, Hash(SK),P] to the 'module manager', rather than giving H1 and H2
+ as well as we used to do.  The reason I want SMTP to go in is that
+ otherwise we can't send anonymous mail to people without software,
+ which was part of our software.  I agree that we need to figure out
+ abuse/spam resistance, but that doesn't mean we shouldn't figure out
+ the other issues as well.
+ 
+ (Even in the case of SURB-only, abuse still shows up, since people
+ can still anonymously mailbomb you with mixminion packets.)
+
+ So, without the abuse/spam issues, is what I propose above basically
+ okay? -NM]
+
 \subsection{The header structure}
 
 Each type III message has two headers with identical structure. These
@@ -703,7 +718,6 @@ PROCEDURE: Process a message M
 	   	Put (H1, H2, P) in queue to be sent to the address in RI.
         Otherwise:
 		Give (RT, RI, HASH(SK,``APPLICATION KEY''), P) to
-		
 Module manager. 
 
 \section{Single Use Reply Block exchange formats}
@@ -935,7 +949,7 @@ portions are non-normative descriptions of TLS.)
 	"RECEIVED", CRLF, HASH(M|"RECEIVED JUNK"), (10+20 bytes).
   It looks the same from outside but it does not make the client
   wonder, if the corruption was a bug or not. -GD]
-
+[ Good idea. -NM]
 
 * A sends an TLS handshake renegotiation message.
   (and MUST not reuse the same key for 
@@ -1057,6 +1071,7 @@ services, keys, and exit policies over a set period of time.
 [I think we should include a serial number, a unique identifying
 number (20 bytes that could be its SHA) the time and date the above
 was published. -GD]
+[Okay. -NM]
 
 The digest of a descriptor block is computed by removing the contents
 of the signature field, and computing the SHA-1 digest of
@@ -1156,6 +1171,18 @@ think we should be less strict about having to download the directory
 before sending. And maybe allow anonymous access to direcoty
 servers. (Hey the first application!) -GD]
 
+[I think there are worse exploits by _not_ requiring that users
+download the latest version of the application.  If they don't
+download before sending, a passive adversary knows that all messages
+through removed nodes are from users who haven't downloaded, and all
+messages through new nodes are from users who have.  
+
+On the other hand, all we learn by seeing a user get the directory is
+that she plans to send ... which we would have learned when she sent
+her first packet.
+
+Are there other exploits I'm not seeing? -NM]
+
 A directory includes all the servers that were uploaded to the
 directory before some cutoff time the previous day, and which proved
 upon some random number of tests and probings to have a real Mixminion
@@ -1171,6 +1198,16 @@ servers for a later draft.
 [XXXX I think we should by default support multiple servers, otherwise
    we have a weak link in the chain. The operator of the Directory can
    screw everybody. -GD]
+[XXXX I agree that this is the weak link... but solving this is an
+   area of active research.  How do directory servers synchronize?
+   What happens when they disagree?  How many servers must a client
+   contact before he/she has enough information?  How do we catch
+   dishonest directory servers?
+
+   For now, the current spec implies that there can be multiple
+   directory servers, but that they can get out of synchronization,
+   and thereby endanger people's anonymity.  That's about the best we
+   can do for now, until we come up with a more clever idea. :) -NM]
 
 \section{Statistics Information Exchange formats}
 
