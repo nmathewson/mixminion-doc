@@ -11,6 +11,14 @@
    Proposal: keep them both. -NM
    Sounds good, until we hear from GD that they're unnecessary. :) -RD
 
+   I do not think that cryptographically they are necessary, but they
+   give the node a warm feeling that the other node is processing the
+   message. Originally I thought we could provide a signature on a
+   batch of them, so that the nodes can prove they have sent the
+   messages. I do not think that anything breaks if we get rid of
+   them. -GD]
+ 
+
 2. Email encryption: what do we do?
 
    Proposal: SURBs include an encryption key; anonymous SURB-using
@@ -22,10 +30,31 @@
    And for non-anonymous SURB-using senders, the mail gateway they
    use does it for them when it takes the reply block and attaches their
    payload. -RD
+   For non-anonymous SURBs the problem does not arise since the
+   message never appears in clear exept at the begining of the trip
+   -GD.
+
+   Now the following problem occurs: when you receive a SURB, how do
+   you know that the associated key is indeed the key that the creator
+   of the SURB intended for you to use in order to encrypt the
+   message. This is the reason why I thought that instead of using
+   pure junk to pad SURBs to 16*128 bytes on can use the HASH of the
+   public key. Therefore if you trust that the SURB you have goes to
+   the right recipient (because of the hashes in the sub headers), 
+   then you automatically trust the key that
+   comes with it. (how to trust that you have the right SURB is
+   another problem). -GD
+   PLEASE see the ``The payload of a message'' section for a
+   discussion of this as well as the archived messages:
+   ``Payload encryption''
+   http://archives.seul.org/mixminion/dev/May-2002/msg00060.html
 
 2b. Mail gateways. We should specify these.
 
    XXXX
+
+   I feel it should be part of a different standard. Since it is a
+   service (like others) that runs on top of Mixminion. -GD
 
 3. Email transport exchange format.
 
@@ -47,6 +76,13 @@
    turns out to not work so well, we can always back off to the "imbed
    the length with some redundancy" option from earlier. -RD
 
+   We have to always include a header or footer explaining how to not
+   receive anonymous messages in the future. To avoid being
+   spammers. Generally (except in the case of the final hop of a SURB)
+   I think that delivering SMTP should be an application level issue
+   that is dealt in a different document along with how to send
+   email. -GD
+
 4. Stateless replies and SMTP (depends on 2 and 3, if I understand correctly)
 
    Proposal: stateless replies put E_recipient_key(nHops | seed) as
@@ -63,10 +99,12 @@
    RSA/3DES/SHA1.  -NM
 
    I think this is ok. -RD
+   Seems fine -GD
    
 6. How often do/must we rehandshake?
 
    Proposal: see note in text. -NM
+             Agree in the text -GD
 
 7. Local delivery
 
@@ -79,11 +117,22 @@
        Servers are free to provide other implementations for local 
    delivery. -NM
 
+
 8a. Server descriptor rules for Local mode
 
    Proposal: If a server supports LOCAL delivery, it MAY have a
    'Modules/Local' section, which contains only a version string,
    which must be "1.0". -NM
+
+   I think it should be the other way around: 
+	we have Incomming/MMTP so maybe rename to Outgoing/MMTP
+        and create an Outgoing/SMTP descriptor.
+        Then naturally you can have local services such as 
+		Local/Mailbox
+		Local/FreeHaven
+		Local/NymServer
+		Local/ListServ
+	Acting as different service ports. -GD
 
 8b. Server descriptor rules for SMTP mode.
 
@@ -97,6 +146,10 @@
 
    XXXX
 
+   Question 9 + 10 are an active research area, and given that we
+   provide meachanisms fo doing dummy messages and link padding we
+   should not specify anything in the spec. -GD
+
 11. Need to write: algorithm for processing a reply.
 
    XXXX
@@ -105,6 +158,7 @@
 
     Proposal: not until later. -NM
     Agreed. They won't be "too big" anytime soon. -RD
+    Agreed. -GD
 
 13. Do we change directories to XML?  What about descriptor blocks?
 
@@ -128,18 +182,30 @@
 
     Also, will XML signatures serve our purposes? -NM
 
+    I have no experiance with XML so as long as we can sign and trust
+    the thing I have no problem with it. -GD
+
 14. Sensible support for multiple directory servers.
 
     Proposal: save for for later. -NM
     Agreed. -RD
+    Yes -GD
 
 15. We should write the nymserver spec too. We can keep it pretty much
     separate from this Mixminion spec.
+    I will start working on this as soon as I am back from Belgium (5
+    Aug 02). I will try to put on paper the scribbles of the CFP
+    napkins and additional issues. May be this is a better place to
+    define general SMTP transport (except for last hop of SURB)
+    instead of the general mixminion spec document. -GD
 
 16. We'll also want somebody from the Mixmaster crowd to go through and
     write a "backward compatibility with Mixmaster" addendum, to specify
     what dual Mixmaster/Mixminion servers should do when they receive a
     given packet. (Len?)
+
+    If we could have a hack so that both services can run as different
+    binaries, it will be easier to phase out the mixmaster stuff. -GD
 
 \section{Message Format}
 
@@ -415,6 +481,16 @@ ok -GD]
       'decrypt a payload' to full-blown 'decrypt and process a packet'. 
 
       So what does it get us?  -NM]  
+[XXXX I always considered the above described mechanism to be used
+only in the case of the last hop (the header before the last valid
+one) for SURBs. I did not forsee it as a general SMTP delivery
+mechanism. Therefore conceptually the packet transmitted is still the
+full mixminion packet, so that the last hop can make sure of its
+integrity (using the headers) and can recover secrets in it. I would
+argue that only using SMTP in that mode makes it simple (and easier to
+include in that document, than having to specify the generic SMTP
+delivery mechanism (which must have standard abuse/spam resistance,
+volume control, awareness of nyms etc.) -GD]
 
 \subsection{The header structure}
 
@@ -750,6 +826,8 @@ even doing it when there is not much other traffic. -GD]
 
    This way, no key that has been used to send messages can be used
    after 120 seconds to send messages again. -NM]
+[XXXX
+   This is good! -GD]
 
 Protocol outline: (Portions marked with '*' are normative; other
 portions are non-normative descriptions of TLS.)
@@ -773,6 +851,8 @@ portions are non-normative descriptions of TLS.)
   (Future clients that support more protocols should transmit
    "PROTOCOL", a list of comma-separated protocol versions, and a CRLF.)
 
+[Why not having the magic word ``MMTP'' instead of ``PROTOCOL''? -GD]
+
 * If B is not willing to use any protocol A supports, B closes the 
   connection.
 
@@ -785,11 +865,15 @@ portions are non-normative descriptions of TLS.)
 
 [XXXX Roger was wondering: what is the purpose of the RECEIVED ack? If
    the server goes away without warning, SSL will tell us. -NM]
+[XXXX Having a positive reply gives me a warm feeling. me experiance
+   with protocol failures tell me that once you have put you message
+   in, and the link fails, there is usually difficult to know if the
+   last message made it or not. -GD]
 
 [XXXX proposal to allow link-level padding:
 
   If the hash sent from A to B is incorrect, B instead sends
-          "BAD SHA1", CRLF, HASH(M|"BAD SHA1"), (9+20 bytes).
+          "BAD SHA1", CRLF, HASH(M|"BAD SHA1"), (10+20 bytes).
 
   (We provide this option in order to support link-level padding.  If
   B did not send a hash of the incorrect message, a passive adversary
@@ -797,6 +881,14 @@ portions are non-normative descriptions of TLS.)
   message were not the same length as the RECEIVED message, an
   adversary might be able to distinguish padding from messages by the
   differing lengths of the reply messages. -NM]
+[ I think that we should not allow malformed messages. If you want the
+  above then the initial message should be:
+	"JUNK", CRLF, M, HASH(M|"JUNK") (6 + 32k + 20 bytes)
+  with reply:
+	"RECEIVED", CRLF, HASH(M|"RECEIVED JUNK"), (10+20 bytes).
+  It looks the same from outside but it does not make the client
+  wonder, if the corruption was a bug or not. -GD]
+
 
 * A sends an TLS handshake renegotiation message.
   (and MUST not reuse the same key for 
@@ -915,6 +1007,10 @@ services, keys, and exit policies over a set period of time.
      'Packet-Key': The public key used to encode encode subheaders for
          this server, encoded in ASN.1, represented in BASE64. 
 
+[I think we should include a serial number, a unique identifying
+number (20 bytes that could be its SHA) the time and date the above
+was published. -GD]
+
 The digest of a descriptor block is computed by removing the contents
 of the signature field, and computing the SHA-1 digest of
 the result.  The signed digest is the OAEP/PCKS1 signature of the
@@ -1008,6 +1104,11 @@ Directory servers change their directories only at midnight GMT.  Any
 client which has not downloaded a directory since before midnight GMT,
 must download a fresh directory before generating any packets.
 
+[There is going to be an orgy of traffic analysis exploits there. I
+think we should be less strict about having to download the directory
+before sending. And maybe allow anonymous access to direcoty
+servers. (Hey the first application!) -GD]
+
 A directory includes all the servers that were uploaded to the
 directory before some cutoff time the previous day, and which proved
 upon some random number of tests and probings to have a real Mixminion
@@ -1020,6 +1121,9 @@ servers for a later draft.
 
 [XXXX We need to support multiple directory servers. I propose we
    leave this for later. -NM]
+[XXXX I think we should by default support multiple servers, otherwise
+   we have a weak link in the chain. The operator of the Directory can
+   screw everybody. -GD]
 
 \section{Statistics Information Exchange formats}
 
