@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.30 2004/08/24 22:18:40 nickm Exp $
+$Id: dir-spec.txt,v 1.31 2004/12/13 06:01:56 nickm Exp $
 
                                 MIX3:3
            Type III (Mixminion) Mix Directory Specification
@@ -506,10 +506,10 @@ Table of Contents
    item for each server who voted on this directory:
 
      - 'Voting-Server' : Each item contains a fingerprint, a single space,
-       and a URL base.  Each fingerprint is a base-64 encoded SHA1 hash of
-       the ASN.1 encoding of the directory server's identity key; each URL
-       base MUST be escaped.  (See 5.1 below for more information on URL
-       bases.)  The items are sorted by fingerprint.
+       and a URL base.  Each fingerprint is an uppercase hexadecimal-encoded
+       SHA1 hash of the ASN.1 encoding of the directory server's identity
+       key; each URL base MUST be escaped.  (See 5.1 below for more
+       information on URL bases.)  The items are sorted by fingerprint.
 
    The 'Recommended-Software' section MUST contain the following
    entries, in order:
