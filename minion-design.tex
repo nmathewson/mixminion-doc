@@ -109,17 +109,18 @@ passive attacks on the communication links.
 %system, and also extend the Mixminion network for uses other than
 %anonymous email.
 
-\item \textbf{Replay prevention and key rotation:} 
-If an adversary records the input and output batches of a mix and then
-replays a given message, that message's decryption will be exactly the
-same. Thus, an attacker can completely break the security of the mix-net by
-replaying an incoming message, and observing which output message is 
-similarly repeated
-\cite{chaum-mix}. Mixmaster offers replay prevention by
-keeping a list of recent message IDs --- but to keep the list from
-getting too long, it expires old entries. The adversary simply has to
-wait until the mix has forgotten about a
-message before replaying it. Mixminion counters this flaw by introducing
+\item \textbf{Replay prevention and key rotation:} If an adversary records
+the input and output batches of a mix and then replays a message, that
+message's decryption will remain the same. Thus an attacker can completely
+break the security of the mix-net \cite{chaum-mix}. Mixmaster 2.0 offered
+replay prevention by keeping a list of recent message IDs --- but because
+it expired old entries to keep the list short, the adversary simply
+has to wait until the mix has forgotten a message and replay it. Newer
+versions of Mixmaster keep a replay cache and also discard messages more
+than a certain number of days old. To block timestamp attacks, clients
+randomly add or subtract a few days from the timestamp. But this approach
+may still be open to statistical attacks; see Section \ref{subsec:replay}.
+Mixminion instead counters replays by introducing
 key rotation: a message is addressed to a given key, and after the key
 changes no messages to the old key will be accepted, so the mix can forget
 about all the messages addressed to old keys. The
@@ -153,9 +154,9 @@ to provide uniform information about the network.
 
 \item \textbf{Dummy traffic:} Cottrell briefly mentions dummy messages
 in \cite{mixmaster-attacks}, but they are not part of the specification
-\cite{mixmaster-spec}. Mixminion currently uses a simple dummy policy to
-improve anonymity. Because we use our own transport, we fully support
-a variety of link padding and dummy traffic schemes.
+\cite{mixmaster-spec}. Mixminion uses a simple dummy policy for now,
+but because we use our own transport, we support many
+link padding and dummy traffic schemes.
 
 \end{itemize}
 
@@ -1641,9 +1642,16 @@ Mixminion specification \cite{mixminion-spec}.
 
 \section*{Acknowledgments}
 
-We thank Susan Born, Lucky Green, David Hopwood, David Mazieres, Peter
-Palfrader, Len Sassaman, Andrei Serjantov, Robyn Wagner, and Bryce
-Wilcox-O'Hearn for helpful design discussions, editing, and suggestions.
+This paper incorporates ideas from the Mixmaster development team,
+particularly Len Sassaman, Scott Renfro, Peter Palfrader, Ulf M\"oller,
+Lance Cottrell, and Bram Cohen, to improve the Type II remailer protocol;
+their effort was abandoned in favor of Mixminion.
+
+Susan Born, Lucky Green, David Hopwood, David Mazieres, Peter Palfrader,
+Len Sassaman, Andrei Serjantov, Robyn Wagner, and Bryce Wilcox-O'Hearn
+provided helpful design discussions, editing, and suggestions. We further
+thank all the unnamed cypherpunks out there who have worked on remailer
+issues for the past decades.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
