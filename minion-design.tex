@@ -40,9 +40,11 @@ The Free Haven Project
 \begin{abstract}
 
 We describe a packet-based anonymous remailer protocol which supports
-single-use reply blocks and includes link-level encryption to provide
-forward anonymity. We include justification for various design decisions
-and a detailed description of attacks and defenses. And some other stuff.
+secure single-use reply blocks and includes link-level encryption to provide
+forward anonymity. We describe designs for directory servers and nymservers,
+and discuss their anonymity implications. We include justification
+for various design decisions and a detailed description of attacks and
+defenses. And some other stuff.
 
 \end{abstract}
 
@@ -55,7 +57,8 @@ Keywords: anonymity, peer-to-peer, remailer, store-and-forward, reply block %, .
 
 Chaum first introduced anonymous remailer designs over 20 years ago
 \cite{chaum-mix}. The research community has since introduced many new
-designs and proofs, and discovered a variety of new attacks, but the
+designs and proofs \cite{big chain of cites?}, and discovered a variety
+of new attacks \cite{more cites?}, but the
 state of deployed remailers has changed remarkably little since Cottrell
 published his Mixmaster software \cite{mixmaster-attacks} eight years
 ago. Part of the difficulty in expanding the deployed remailer base is
@@ -125,6 +128,23 @@ added message padding, message pools, and other MIX features lacking
 in the cypherpunk remailers. At about the same time, Gulcu and Tsudik
 introduced the Babel system \cite{babel}, which also created a practical
 remailer design (although one that never saw widespread use).
+
+\subsection{Remailer Statistics}
+
+Levien's \emph{statistics pages} \cite{levien} track both remailer
+capabilities (such as what kinds of encryption the remailer supports)
+and remailer up-times, observed by pinging the machines in question
+and by sending test messages through each machine or group of machines.
+Such \emph{reputation systems} improve the reliability of MIX-nets by
+allowing users to avoid choosing unreliable MIXes. The Jack B Nymble 2
+remailer client \cite{potato} allows users to import statistics files
+and can then pick remailers according to that data. Users can specify
+minimum reliability scores, decide that a remailer should always or never
+be used, and specify maximum latency. Ongoing research on more powerful
+reputation systems includes a reputation system for free-route networks
+\cite{mix-acc} and a more secure one for MIX cascades \cite{casc-rep}.
+
+% maybe add a subsection on nymservers too?
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -205,11 +225,41 @@ of attacks known as \emph{tagging attacks}.
 \end{center}
 \end{figure}
 
-The ``header swap'' mechanism could be used in order to minimize the information leaked by \emph{tagging attacks}. Each mixminion packet, when created, has two headers: the first one contains a series of sub headers encrypted as an onion under the public keys of a sequence of nodes. Each of these sub headers contain some symmetric key and a hash to check the integrity of the header. The second header contains sub headers in the form of an onion as well but is also encrypted under the keys contained in the first header, as well as the hash of the payload. The second header could also be a single use reply block (SURB) provided by another party. The payload is finally encrypted using all the keys contained in the first header and the second if it is not a SURB.
+The ``header swap'' mechanism could be used in order to minimize the
+information leaked by \emph{tagging attacks}. Each mixminion packet,
+when created, has two headers: the first one contains a series of sub
+headers encrypted as an onion under the public keys of a sequence of
+nodes. Each of these sub headers contain some symmetric key and a hash
+to check the integrity of the header. The second header contains sub
+headers in the form of an onion as well but is also encrypted under
+the keys contained in the first header, as well as the hash of the
+payload. The second header could also be a single use reply block (SURB)
+provided by another party. The payload is finally encrypted using all
+the keys contained in the first header and the second if it is not a SURB.
 
-The packet travels through nodes that perform the operations illustrated on \emph{figure 1}. Each node decrypts the RSA sub header, retrieves the key and checks the integrity of the first header. If someone has tampered with it, the packet is discarded. If the header is correct, the secret is used to decrypt the second header and the payload. The is one special node, at the ``crossover point'', in the path that in addition to the standard operation, decrypts the second header using the hash of the payload and swaps the two headers.
+The packet travels through nodes that perform the operations illustrated
+on \emph{figure 1}. Each node decrypts the RSA sub header, retrieves
+the key and checks the integrity of the first header. If someone has
+tampered with it, the packet is discarded. If the header is correct,
+the secret is used to decrypt the second header and the payload. The
+is one special node, at the ``crossover point'', in the path that in
+addition to the standard operation, decrypts the second header using
+the hash of the payload and swaps the two headers.
 
-The primitive used for encryption and decryption is BEAR \cite{BEAR}, a variable block size block cipher. It offers the property that if any bit of the encrypted material is changed the decryption will look like random bits for anyone that does not know the key. Therefore we minimize an attackers benefit for tagging the message. It is impossible to tag the headers because any modification is detectable. It is also fruitless to modify the payload of the message: if it is modified before the crossover point, the second header will not be decryptable, and if it is modified afterward the first part of the path should offer enough anonymity. Of course in order to make this scheme as secure as if tagging attacks did not exist we should require users to choose the double path length for each message. In practice users might choose to select shorter paths, given that the tagging attack provides very little information and is very difficult to mount.
+The primitive used for encryption and decryption is BEAR \cite{BEAR},
+a variable block size block cipher. It offers the property that if any
+bit of the encrypted material is changed the decryption will look like
+random bits for anyone that does not know the key. Therefore we minimize
+an attackers benefit for tagging the message. It is impossible to tag the
+headers because any modification is detectable. It is also fruitless to
+modify the payload of the message: if it is modified before the crossover
+point, the second header will not be decryptable, and if it is modified
+afterward the first part of the path should offer enough anonymity. Of
+course in order to make this scheme as secure as if tagging attacks did
+not exist we should require users to choose the double path length for
+each message. In practice users might choose to select shorter paths,
+given that the tagging attack provides very little information and is
+very difficult to mount.
 
 \subsection{Approach two: the `distinguish replies' method}
 
@@ -217,38 +267,35 @@ The primitive used for encryption and decryption is BEAR \cite{BEAR}, a variable
 
 \subsection{Link-level encryption and what it gets us}
 
-Unlike remailer types I and II that used SMTP as their underlining 
-transport mechanism, Mixminion clients and nodes will communicate between 
-them using a forward secure encrypted channel based on TLS \cite{TLS}.
+Unlike remailer types I and II that used SMTP as their underlying 
+transport mechanism, Mixminion clients and nodes communicate 
+using a forward secure encrypted channel based on TLS \cite{TLS}.
 TLS allows the establishment of an encrypted tunnel using ephemeral 
 Diffie-Hellman keys. In order to make sure that the receiving end is the 
 one intended by the creator of the anonymous message, the ephemeral key could be 
 signed by the receiving node. As soon as a session key has been established 
 the Diffie-Hellman keys are destroyed and messages start being sent through the
 tunnel. After each message a standard key update operation is performed to generate 
-a new key and the old key material is deleted. The update mechanism does not require 
-any asymmetric encryption techniques, which makes the process fast.
+a new key and the old key material is deleted. Key updates don't use any
+asymmetric encryption techniques, so they are quite fast.
 
 The above scheme offers forward secrecy in the sense that even the nodes 
-that exchange messages are not in a position to decrypt or even recognize 
+that exchange messages are not able to decrypt or even recognize 
 messages that might have been intercepted on the links. This makes it impossible 
 to comply with decryption notices that might be served in some jurisdiction.
 It also makes it necessary for an adversary to corrupt and control nodes in order
 to have enough information to trace back a forward anonymous communication by 
-requesting nodes to decrypt it. Reply blocks can still be used for this purpose.
+requesting nodes to decrypt it. (Reply blocks can still be used for this purpose.)
 Even if an attacker manages to get hold of the session key at a particular point
 they would have to observe all subsequent traffic to be able to update their key
 appropriately. 
 
-The forward secure encrypted channel does not offer any protection against 
-traffic analysis. An adversary is still able to measure how much traffic is 
-being transmitted and its recipient.
-
-
-% Diffie-Hellman with ephemeral keys. OpenSSL. Some discussion of how
-% this makes purely passive adversaries worse off, but really not that
-% much worse off because they can still watch the number of characters
-% going by on the channel.
+The forward secure encrypted channel offers only limited protection
+against traffic analysis. Encrypted links between honest nodes prevent
+an adversary from recognizing even his own messages; but without
+link padding, he is still able to measure how much traffic is being
+transmitted.
+%and its recipient.
 
 \subsection{Message types and delivery modules}
 
@@ -323,9 +370,9 @@ must address, and then propose a secure but inefficient design.
 \subsection{Directory-related attacks}
 \label{subsec:dir-server-attacks}
 
-A fairly broad category of vulnerabilities stems from differing
-knowledge among clients over time, and an adversary's ability to
-create or exploit such differences.
+A fairly broad category of vulnerabilities stems from the fact that
+knowledge among clients changes over time, and an adversary's ability
+to create or exploit such changes.
 
 In the most simple attack, an adversary who controls a directory
 server can provide a different information to clients it wishes to
@@ -481,12 +528,38 @@ nick?
 \section{Attacks and Defenses}
 \label{sec:attacks}
 
-\subsection{Tagging attacks on fixed routes}
-
-As described in ?? the ``header swap'' method reduces the potential for tagging attacks but making the second part of the route dependent on the payload. This reduces the effective path length of the attacked messages, which could lead to vulnerabilities. In particular if the same path is chosen for many packets, which presents traffic analysis related problems in itself, an attacker could discover the destination of a sequence of packets using a tagging attack on the first part of the route, then followed by an attack on the second part of the route to discover the destination of a sequence of packets. For this attack to work in addition to choosing fixed routes for many packets and attacker would need to control the node at which the crossover operation is performed. This attack is only possible against one victim at a time, and can only be performed by one attacker at a time.
-
 my aim here is to do something akin to pages 13-15 of
 http://freehaven.net/doc/casc-rep/casc-rep.ps
+
+\subsection{MIX attacks}
+\label{subsec:mix-attacks}
+
+%\begin{description}
+Replay attack
+Message delaying
+Message dropping
+Tagging
+n-1 attack (trickle, flooding)
+intersection attack (short-term, long-term)
+textual analysis, etc
+%\end{description}
+
+\subsection{Tagging attacks on fixed routes}
+
+As described in ?? the ``header swap'' method reduces the potential
+for tagging attacks by making the second part of the route dependent
+on the payload. This reduces the effective path length of the attacked
+messages, which could lead to vulnerabilities. In particular if the
+same path is chosen for many packets, which presents traffic analysis
+related problems in itself, an attacker could discover the destination
+of a sequence of packets using a tagging attack on the first part of
+the route, then followed by an attack on the second part of the route
+to discover the destination of a sequence of packets. For this attack to
+work in addition to choosing fixed routes for many packets and attacker
+would need to control the node at which the crossover operation is
+performed. This attack is only possible against one victim at a time,
+and can only be performed by one attacker at a time.
+
 
 
 
@@ -494,7 +567,7 @@ http://freehaven.net/doc/casc-rep/casc-rep.ps
 \label{subsec:attacks-dirbased}
 
 \begin{description}
-\item \emph{Comprimise a directory server.} Identical directory listings
+\item \emph{Compromise a directory server.} Identical directory listings
   are served by a large group of servers, and signed by all.
 \item \emph{Lie to a directory server.}  Signed capability blocks, and
   the fact that a MIX's signing key is its identity, prevent this
@@ -510,7 +583,7 @@ http://freehaven.net/doc/casc-rep/casc-rep.ps
   open problem.
 \item \emph{Flood the directories with nonfunctional MIX entries.}
   Availability statistics should mitigate this problem.  Nevertheless,
-  it remains an area of active research. \cite{mix-acc} \cite{casc-rep}
+  it remains an area of active research. \cite{mix-acc, casc-rep}
 [[WHAT OTHER DIRECTORY ATTACKS?]]
 \end{description}
 %\item \emph{X} Y.
