@@ -1,4 +1,4 @@
-$Id: path-spec.txt,v 1.8 2003/11/11 21:41:26 weasel Exp $
+$Id: path-spec.txt,v 1.9 2003/11/12 05:58:13 nickm Exp $
 
                               MIX3:path
                  Type III (Mixminion) Path Generation
@@ -333,6 +333,16 @@ Table of Contents
 
       0. Remove any RandomHops components that are zero hops
          long (i.e. "*0").
+
+         If PATH has only a single component, and that component is
+         a GaussianHops component "~N", and the path(s) to be
+         generated are for forward messages (not replies or SURBs), 
+         replace the contents of PATH with two components: "?" and
+         "~M", where M = N-1.
+           
+              (This way, a user can say ~5 for a forward path, and
+              be sure of having at least one hop in each leg as
+              required.)
 
       1. If the last component of PATH is a ByNickname component, then
          verify that the corresponding server:
