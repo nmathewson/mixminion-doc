@@ -142,8 +142,8 @@ against a \emph{passive adversary} who can eavesdrop on all
 communications between MIXes but is unable to observe the reordering
 inside each MIX.
 
-Recent research on MIX-nets includes ``stop-and-go'' MIX-nets
-\cite{kesdogan}, distributed ``flash MIXes'' \cite{flash-mix} and their
+Recent research on MIX-nets includes stop-and-go MIX-nets
+\cite{kesdogan}, distributed flash MIXes \cite{flash-mix} and their
 weaknesses \cite{desmedt,mitkuro}, and hybrid MIXes \cite{hybrid-mix}.
 
 One type of MIX hierarchy is a cascade.
@@ -173,8 +173,8 @@ followed closely with a collection of scripts that used Phil Zimmermann's
 PGP to encrypt and decrypt remailed messages. Later, Cottrell implemented
 the Mixmaster system \cite{mixmaster,mixmaster-spec}, or ``Type II'' remailers,
 which added message padding, message pools, and other MIX features lacking
-in the Cypherpunk remailers. Note that Mixmaster does not include reply
-functionality, so deployed remailer systems still use the less secure
+in the Cypherpunk remailers. Note that Mixmaster does not include replies,
+so deployed remailer systems still use the less secure
 long-term Cypherpunk reply blocks.
 
 At about the same time, Gulcu and Tsudik introduced the Babel
@@ -244,7 +244,7 @@ Mixminion uses the same general MIX-net paradigm as previous work
 \cite{chaum-mix,mixmaster-attacks,babel}. The sender Alice chooses a
 path through the network. She repeatedly ``onion'' encrypts her message,
 starting with the last
-MIX in her path, and sends the onion to the first MIX in her path. Each
+MIX in her path, and sends the onion to the first MIX. Each
 MIX unwraps a single layer of the onion, pads the message to a fixed
 length (32 Kbytes in our current design), and passes the result to the
 next MIX. We describe the behavior of the last MIX in
@@ -337,9 +337,9 @@ The most straightforward way to prevent tagging attacks is to
 authenticate the whole message at every hop.  For forward messages,
 this requires that when padding is added to a message, the padding is
 derived deterministically, so that it is possible to calculate
-authentication tags for the whole message at each hop.  However,
+authentication tags for the whole message at each hop.  But
 the situation becomes more complicated when reply messages are
-introduced, because the message and the reply block are
+introduced --- the message and the reply block are
 created by different users.
 
 \subsection{Replies}
@@ -378,7 +378,7 @@ Mixminion allows Alice to send messages to Bob in one of three ways:
 \begin{enumerate}
 \item \textbf{Forward} messages where only Alice remains anonymous.
 \item \textbf{Direct Reply} messages where only Bob remains anonymous.
-\item \textbf{Anonymized Reply} messages where both Alice and Bob
+\item \textbf{Anonymized Reply} messages where Alice \emph{and} Bob
    remain anonymous.
 \end{enumerate}
 
@@ -585,9 +585,9 @@ messages;\footnote{
   so even if the adversary tags a subset of the messages he doesn't know
   (unless he owns the whole cascade) where the tagged messages went.
 }
-an adversary who wants to match a tag signature with certainty would
+to match a tag signature with certainty an adversary would
 have to own all $k$ crossover points.  (And even then, it seems harder
-because the subsets of her messages would overlap with subsets of
+as the subsets of her messages would overlap with subsets of
 messages from other senders.)
 
 % The argument above seems a little handwavy to me.  We should either
@@ -602,7 +602,7 @@ dropping them.  The crossover point in question simply doesn't deliver
 the message to the second leg. Therefore, if the adversary doesn't own
 most of the crossover points that Alice chooses, a successful
 multiple-message tagging attack seems infeasible.  We leave a security
-analysis of this multiple-paths approach to future work; but see
+analysis of multiple-paths idea to future work; but see
 Section \ref{sec:maintaining-anonymity}.
 
 \section{Related design decisions}
@@ -773,7 +773,7 @@ of redundant extensions, and against the use of rare extensions.
 One important entry in a node's capability block is its \emph{exit
 policy}. Exit abuse is a serious barrier to wide-scale remailer deployment
 --- rare indeed is the network administrator tolerant of machines that
-potentially deliver hate mail to the U.S. President.
+potentially deliver hate mail. % to the U.S. President.
 
 On one end of the spectrum are \emph{open exit} nodes that will
 deliver anywhere; on the other end are \emph{middleman} nodes that
@@ -1075,16 +1075,12 @@ is downloading his mail from a nymserver.
 %[This subsection is draft/experimental/controversial. Don't pay much
 %attention to it yet.]
 
-How a MIX-net design groups messages into batches, and how paths are
-chosen, has a large effect on the degree of anonymity it can provide.
-A possible definition of ideal anonymity for a MIX-net is as follows:
-
-\begin{quote}
-Ideal anonymity is achieved when each message leaving (resp. entering)
-the network could correspond with uniform probability to any message
-entering (resp. leaving) the network, during a period approximately
-equal to the maximum network latency.
-\end{quote}
+A MIX-net design groups messages into batches and chooses paths; the
+approaches it uses affect the degree of anonymity it can provide. We
+might define ideal anonymity for a MIX-net to be when each message leaving
+(resp. entering) the network could correspond with uniform probability
+to any message entering (resp. leaving) the network, during a period
+approximately equal to the maximum network latency.
 
 This ideal is not achieved by protocols like Mixmaster that use random
 delays: if the maximum latency of such a network is $t$, then the
@@ -1098,9 +1094,10 @@ Also, because Mixmaster is both {\em asynchronous} (messages can enter and
 leave the network at any time) and uses free routes, it is subject to
 the attacks described in Section 4 of \cite{disad-free-routes}.
 % Should really summarise them, but I don't have time :-(
-One possible approach that we want to explore using Mixminion is a
-strategy called {\em synchronous batching}, that prevents these
-attacks even when free routes are used, as well as improving the
+We would like to explore a
+%One possible approach that we want to explore using Mixminion is a
+strategy called {\em synchronous batching}. This approach prevents these
+attacks even when free routes are used, and improves the
 trade-off between latency and anonymity.
 
 The network has a fixed {\em batch period}, $t_\mathrm{batch}$, which is closely
@@ -1117,8 +1114,9 @@ attacker (which would be fatal for this design).
 
 The latency is between $\ell t_\mathrm{hop}$ and $t_\mathrm{batch} +
 \ell t_\mathrm{hop}$, depending on when the message was submitted.
-Typically we would have $t_\mathrm{hop} < t_\mathrm{batch}/n$, so the
-latency is at most $2t_\mathrm{batch}$, independent of the path length
+Typically we would have $t_\mathrm{hop} < t_\mathrm{batch}/n$, where
+$n$ is the number of MIXes in the network, so the
+latency is at most $2t_\mathrm{batch}$ independent of the path length
 $\ell$.
 
 %The set of messages sent to a node in a given hop period is called a
@@ -1168,20 +1166,15 @@ $\ell$.
 %however it gives users no choice in the set of nodes used.
 
 In practice, several considerations have to be balanced when choosing
-a batching strategy and network structure:
+a batching strategy and network structure. These include maximising
+anonymity sets (both batch sizes through each node and the overall
+anonymity sets of users); bandwidth considerations; reliability;
+enabling users to choose nodes that they trust; and interactions with
+the reputation system.
 
-\begin{enumerate}
-\item maximising anonymity sets, i.e. both batch sizes through each
-      node, and the overall anonymity sets of users,
-\item bandwidth considerations,
-\item reliability,
-\item enabling users to choose nodes that they trust,
-\item interactions with the reputation system.
-\end{enumerate}
-
-Further analysis of the trade-offs will be needed before choosing a
+Further analysis of is needed before we can choose a
 final network structure. Note that a planned structure, where each
-users' software follows the plan consistently when constructing
+user's software follows the plan consistently when constructing
 routes, will generally be able to achieve stronger and more easily
 analysed security properties than less constrained approaches.
 
@@ -1250,19 +1243,18 @@ Type III remailer protocol. Many of the ideas, ranging from the core
 design to peripheral design choices, need more attention:
 
 \begin{itemize}
-\item We need to analyze the proposed defense against the multiple-message
-tagging attack.
+%\item We need to analyze the proposed defense against the multiple-message
+%tagging attack.
 \item We need more research on batching strategies that resist trickle
 and flooding attacks \cite{batching-taxonomy} as well as intersection
 attacks on asynchronous free routes \cite{disad-free-routes}.
-% help, say that last phrase better -RRD
 \item We need a more thorough investigation of multiple-message tagging
-attacks, and an analysis of various ways of safely choosing paths when
+attacks, and an analysis of how to safely choose paths when
 sending many messages.
 \item We claim that we use conservative techniques, but an all-or-nothing
 variable-length block cipher is pushing it. Can we keep indistinguishable
 forward messages and replies using a simpler design?
-\item We need stronger intuition about how to improve security via
+\item We need stronger intuition about how to use
 dummy messages.
 \item We intend to draw up a more complete specification, which can lead
 to implementation and deployment of the Mixminion design.
