@@ -127,22 +127,13 @@ important to keep too many from existing at a time.)
 * The Shared Secret is the base secret that is used to generate all
 other keys for the operations of the node on the packet. It must be
 kept secret and discarded as soon as the packet has been processed. 
-* The Digest contains an integrity check of the remainder of the
-current header (128*15 bytes in total).  It is calculated on the
-remaining subheaders and the junk that will be present at then end 
-of headers when the node receives the message. 
+* The Digest contains an integrity check of the remainder of the current
+header (128*15 bytes in total). The digest does not cover the current
+subheader: modifications to it are detected because each subheader is
+encrypted using OAEP padding.
 
-[XXXX Don't we want the digest to cover the current subheader too?
-      Otherwise a bad server can modify the directly-next-header
-      (he still can't know what he's changing, but hey). -RD]
-
-[XXXX OAEP is supposed to detect modifications to the RSA-encrypted
-      next header, and reject it.  This can't be used to mount a
-      tagging attack; such attacks are useless if you try to make the 
-      immediately next hop drop. -NM]
-
-* The Routing Type of a message defines how the MIX should deliver or
-  relay it.  Most routing methods require addition addressing information.
+* The Routing Type defines how the MIX should deliver or relay the
+  message.  Most routing methods require addition addressing information.
   The Routing Size field indicates the total size of the routing
   information.   If the information is too long to fit in a single
   subheader, it may spill into subsequent subheaders.
@@ -155,8 +146,9 @@ of headers when the node receives the message.
   of 128 bytes.  If the routing info is longer than 86-42=44 bytes, then
   one or more additional subheaders have to be added.
 
-  When an additional block is added to fit the routing info, it must be a
-  multiple of 128 bytes and should have the following structure:
+  When an additional block is added to fit the routing info, it must be
+  a multiple of 86 bytes (ie 128 when encrypted) and should have the
+  following structure:
  
   Routing Extension:
 
@@ -166,17 +158,7 @@ of headers when the node receives the message.
 * The address data length is specified by the ``Routing Size'' field
   contained in the subheader.
 * Padding of zeroes is used to make the size of the Routing Extension a
-  multiple of 128 bytes.  
-
-  [XXXX Something's wrong here. the routing size limits the routing info
-        in the first subheader to fit within the 86 byte limit (the
-        size of the plaintext of a subheader), but here we talk about
-        128, the size of the crypttext of the subheader. What's up?
-   -RD]
- 
-  [XXXX OAEP padding adds 41 bytes.  Thus, for PK_Encrypt(Foo, K) to
-        fit in 127 bytes (to be input for RSA), you need Len(Foo)<=86.
-   -NM]
+  multiple of 86 bytes.  
 
 The Routing Extension corresponding to a particular subheader is
 encrypted using the Encrypt function with key=Hash(Shared Secret,
@@ -195,6 +177,9 @@ ESHS(PK, SK, D, F, A)
 
 [XXXX They used to be Flags and Address. We do not have a Flags
 anymore since all the information is contained in the address. -GD]
+
+[XXXX so should we remove F and rename A to R? Does SHS include the
+routing extension blocks? -RD]
 
 \subsection{Routing information}
 
@@ -219,15 +204,15 @@ A DROP routing type indicates a dummy message, to be discarded.
 
 A FWD/IP4 routing type indicates that the message has to be
 retransmitted using the TLS/Mixmaster transport protocol. The IP field
-of represents the IPv4 address.  The KEYID field represents the hash of
+represents the IPv4 address.  The KEYID field represents the hash of
 the next node's tranport public key.
 
 [XXXX Are the TLS keys different from the keys used to encrypt the
       headers?  I claim they should be. -NM]
 [XXXX YES! They have to be different since they are discarded after
-      the key exchange. The signature/verifucation key pair can be
-      used for both purposes (signing ethemeral keys, and signing the
-      mix encryption keys).
+      the key exchange. The signature/verification key pair can be
+      used for both purposes (signing ephemeral keys, and signing the
+      mix encryption keys). -GD]
 [XXXX That's not what I meant:  Is a server's RSA key that it uses 
       for decrypting headers, the same RSA key as key it uses for
       MMTP (as hashed in KeyID.)?  I still say yes... -NM]
@@ -248,7 +233,7 @@ the next node's tranport public key.
                    using the same key for signing stuff and decrypting
                    stuff.  It makes me think of adaptive attacks.
                 b) It's easier to implement that way: Keeping non-SSL 
-                   RSA keys separaterly from SSL RSA keys makes things
+                   RSA keys separately from SSL RSA keys makes things
                    more modular.
                 c) It costs us nothing in performance, except when
                    we generate new keys.
@@ -256,9 +241,12 @@ the next node's tranport public key.
 
 A SWAP routing type tells the node to exchange headers as described below.
 
-The EMAIL field in the SMTP type of address should be a valid email
+The EMAIL field in the SMTP routing type should be a valid email
 address [RFC2821].  It must be NUL-terminated.  The TAG field is
 appended to the message in an X-Remailer-Tag header.
+
+[XXXX should we mention david hopwood's remark about 'mailbox' vs
+ 'email address'? -RD]
 
 The LOCAL routing type is used for messages to be delivered to a local
 user.  The USER field must be NUL-terminated; the TAG field is
@@ -282,7 +270,7 @@ separate type in the standard.
       either of SMTP or LOCAL; neither is more "returny" than the other.
 
       Would it solve your concerns to add a type field to LOCAL? -NM]
-[XXXX Ok, here is my real concern: I do not want every differen client
+[XXXX Ok, here is my real concern: I do not want every different client
       to implement their own version of the stateless reply block, in
 such a way that they cannot interoperate. So I would rather have some 
 standard fields containing the HOPS and KEY information along with any
@@ -293,7 +281,7 @@ other variable information. -GD]
 
       Proposed text:
          If a client does not wish to remember all of her outstanding
-         reply blocks, she may generate them a 'stateless' mode.  She  
+         reply blocks, she may generate them in 'stateless' mode.  She  
          does so by using an SMTP or LOCAL delivery type, and setting
          the TAG field to 
               (nHops | E(seed, sha1(password) | pad up to 32b.
@@ -309,23 +297,34 @@ other variable information. -GD]
 
 	 To keep replies indistinguishable from encrypted/tagged
          forwards, we set the TAG field of SMTP/Local to =exactly=
-         32K.
+         32 bytes.
 
          Sound ok?                                 -NM ]
 
 [XXXX I would add a type field for identification, and I think it is
 ok -GD]
 
+[XXXX That's interesting. My first thought would have been to PK-encrypt
+      the hop secrets to the recipient. So not even a (separate) password
+      needs to be remembered. But I guess that takes up a lot of
+      space. -RD]
+
+[XXXX Speaking of which, exactly 32 bytes of what? it looks like the
+      above proposed 'tag' format has some recognizable plaintext? So
+      we may need to PK-encrypt it anyway, or otherwise make it always
+      plausible? -RD]
+
+
 \subsection{The header structure}
 
-Each type III message has two identical headers that are swapped at
-the crossover point.
+Each type III message has two headers with identical structure. These
+headers are swapped at the crossover point.
 
 A header is 16*128 bytes long and contains up to 16
 subheaders. Assuming that we have N subheaders SH0..SHN containing
 secrets SK0..SKN, the header is constructed by appending headers
-SH0..SHN together and with some random padding to achieve a total size
-of 126*16 bytes. Then, each subheader key is used to create a key
+SH0..SHN together with some random padding to achieve a total size
+of 128*16 bytes. Then, each subheader key is used to create a key
 Hash(SharedSecret, ``HEADER SECRET KEY'') with which the part of the
 header after the subheader (but including its address extension) is
 encrypted with using the stream cipher. 
