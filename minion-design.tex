@@ -51,43 +51,77 @@ Keywords: anonymity, peer-to-peer, remailer, store-and-forward, reply block %, .
 \label{sec:intro}
 
 Chaum first introduced anonymous remailer designs over 20 years ago
-\cite{chaum-mix}. The research community has since introduced many
-new designs and proofs, and discovered a variety of new attacks, but
-the state of deployed remailers has changed remarkably little since
-Cottrell published his Mixmaster software \cite{mixmaster-attacks} eight years
-ago. Part of that is due to the liability involved in running a remailer
-node on the Internet, and part is due to the complexity of the current
-infrastructure --- it is very hard to add new experimental features
-to the current software.
+\cite{chaum-mix}. The research community has since introduced many new
+designs and proofs, and discovered a variety of new attacks, but the
+state of deployed remailers has changed remarkably little since Cottrell
+published his Mixmaster software \cite{mixmaster-attacks} eight years
+ago. Part of the difficulty in expanding the deployed remailer base is
+due to the liability involved in running a remailer node on the Internet,
+and part is due to the complexity of the current infrastructure ---
+it is very hard to add new experimental features to the current software.
 
 The Mixminion project aims to deploy a cleaner updated remailer design
-in the same spirit as Mixmaster, with the goals of expanding deployment
-and providing a research base for experimental features. Specifically, we:
+in the same spirit as Mixmaster, with the goals of expanding deployment,
+documenting our design decisions and how well they stand up to all known
+attacks, and providing a research base for experimental features. We
+describe our overall design in Section \ref{sec:design}, including two
+designs for a new primitive called a \emph{single-use reply block}
+(SURB).  Mixmaster provides no support for replies, instead relying
+on the older and less secure cypherpunk type 1 remailer design
+\cite{cypherpunk-remailer}. By integrating reply capabilities into
+Mixminion, we can finally retire the type 1 remailer network.
 
-\begin{itemize}
-\item Introduce a new primitive called a \emph{single-use reply block}
-(SURB), and describe how to build higher-level systems such as nymservers
-using these SURBs. Mixmaster provides no support for replies, instead
-relying on the older and less secure cypherpunk remailer design
-\cite{cypherpunk-remailer}.  By integrating reply capabilities into
-Mixminion, we can finally retire the cypherpunk type 1 remailer network.
-\item Introduce link-level encryption with ephemeral keys to ensure
-forward anonymity for each message.
-\item Provide flexible delivery schemes --- rather than just allowing
-delivery to mail or usenet, we allow designers to add arbitrary modules to
-handle incoming messages. By separating the core mixing architecture from
-these higher-level modules, we can limit their influence on the anonymity
+We go on in Section \ref{sec:rep-servers} to describe a design for
+Reputation Servers to track and distribute remailer availability,
+performance, and key information, and then describe in Section
+\ref{sec:nymservers} how to build higher-level systems such as nymservers
+using SURBs. We introduce link-level encryption with ephemeral keys to
+ensure forward anonymity for each message. We also provide flexible
+delivery schemes --- rather than just allowing delivery to mail or
+usenet, we allow designers to add arbitrary modules to handle incoming
+messages. By separating the core mixing architecture from these
+higher-level modules, we can limit their influence on the anonymity
 properties of the system.
-\item Describe a \emph{reputation server} design to give users more
-information about the current state and reliability of Mixminion servers.
-% \item probably some more
-\end{itemize}
 
+Mixminion aims to be a best-of-breed remailer which uses conversative
+design approaches to provide security against most known attacks.
 Many of our design decisions impacted anonymity in surprising ways. Herein
 we document and analyze some of these influences to provide more intuition
 to developers and users.
 
-% ...
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Related Work}
+
+\subsection{MIX-nets}
+
+Chaum introduced the concept of a MIX-net for anonymous communications
+\cite{chaum-mix}. A MIX-net consists of a group of servers, called MIXes
+(or MIX nodes), each of which is associated with a public key. Each
+MIX receives encrypted messages, which are then decrypted, batched,
+reordered, stripped of the sender's name and identifying information, and
+forwarded on. Chaum also proved security of MIXes against a \emph{passive
+adversary} who can eavesdrop on all communications between MIXes but is
+unable to observe the reordering inside each MIX.
+
+Current research directions on MIX-nets include ``stop-and-go'' MIX-nets
+\cite{kesdogan}, distributed ``flash MIXes'' \cite{flash-mix} and their
+weaknesses \cite{desmedt,mitkuro}, and hybrid MIXes \cite{hybrid-mix}.
+
+\subsection{Deployed Remailer Systems}
+
+The first widespread public implementations of MIXes were produced by the
+cypherpunks mailing list. These ``Type I'' \emph{anonymous remailers}
+were inspired both by the problems surrounding the {\tt anon.penet.fi}
+service \cite{helsingius}, and by theoretical work on MIXes. Hughes wrote
+the first cypherpunks anonymous remailer \cite{remailer-history}; Finney
+followed closely with a collection of scripts which used Phil Zimmermann's
+PGP to encrypt and decrypt remailed messages. Later, Cottrell implemented
+the Mixmaster system \cite{mixmaster}, or ``Type II'' remailers, which
+added message padding, message pools, and other MIX features lacking
+in the cypherpunk remailers. At about the same time, Gulcu and Tsudik
+introduced the Babel system \cite{babel}, which also created a practical
+remailer design (although one that never saw widespread use).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -101,15 +135,8 @@ http://archives.seul.org//mixminion/dev/Mar-2002/msg00014.html
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Related Work}
-
-Just a matter of writing it up. Mixes. Mixmaster/Babel. Flash/StopandGo.
-
-I'll get to it later on if others don't. -RRD
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 \section{Design Overview}
+\label{sec:replies}
 
 \subsection{Packet structure, how packets travel}
 
@@ -147,6 +174,7 @@ below.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Reputation Servers}
+\label{sec:rep-servers}
 
 initially the reputation servers are just to track participating
 mixes
@@ -161,6 +189,7 @@ http://archives.seul.org/mixminion/dev/Apr-2002/msg00002.html
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Nym management and single-use reply blocks}
+\label{sec:nymservers}
 
 we've got two competing notions for how to do nymservers, and i think
 it's becoming clear that one is better than the other. good to describe
@@ -190,6 +219,7 @@ http://archives.seul.org/mixminion/dev/Apr-2002/msg00047.html
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Implementation choices}
+\label{sec:implementation}
 
 some details about how to build it. logging and statistics? etc.
 
@@ -198,6 +228,7 @@ nick?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Attacks and Defenses}
+\label{sec:attacks}
 
 my aim here is to do something akin to pages 13-15 of
 http://freehaven.net/doc/casc-rep/casc-rep.ps
@@ -205,6 +236,7 @@ http://freehaven.net/doc/casc-rep/casc-rep.ps
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Future Directions}
+\label{sec:conclusion}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
