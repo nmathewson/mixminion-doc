@@ -39,7 +39,8 @@
 \title{Mixminion: Design of a Type III Anonymous Remailer Protocol}
 
 %\author{George Danezis\inst{1} \and Roger Dingledine\inst{2} \and Nick Mathewson\inst{2}}
-\author{George Danezis \and Roger Dingledine \and Nick Mathewson}
+\author{George Danezis \\ University of Cambridge \\ george.danezis@cl.cam.ac.uk \and
+Roger Dingledine and Nick Mathewson \\ The Free Haven Project \\ \{arma,nickm\}@freehaven.net}
 %\institute{Cambridge University
 %\email{\emailaddr{george.danezis@cl.cam.ac.uk}}
 %\and
@@ -271,7 +272,7 @@ forward messages only by passive observers --- the mix nodes can still
 tell them apart. Babel's reply addresses are also multiple-use, making them
 less secure than forward messages due to replay vulnerabilities.
 
-The first widespread public implementations of mixes were produced by the
+The first widespread public implementations of mixes were produced by
 contributors to the Cypherpunks mailing list. These ``Type I''
 \emph{anonymous remailers} 
 were inspired both by the problems surrounding the {\tt anon.penet.fi}
@@ -279,7 +280,7 @@ service \cite{helsingius}, and by theoretical work on mixes. Hughes
 wrote the first Cypherpunk anonymous remailer \cite{remailer-history};
 Finney followed closely with a collection of scripts that used Phil
 Zimmermann's PGP to encrypt and decrypt remailed messages. Later, Cottrell
-implemented the Mixmaster system \cite{mixmaster}\cite{mixmaster-spec},
+implemented the Mixmaster system \cite{mixmaster-attacks}\cite{mixmaster-spec},
 or ``Type II'' remailers, which added message padding, message pools,
 and other mix features lacking in the Cypherpunk remailers.
 
@@ -457,7 +458,7 @@ network; who can operate mixes of its own; and who can compromise some
 fraction of the mixes on the network. Our adversary tries to
 link senders and receivers, to identify the sender or
 receiver of a given message, or trace a sender forward (or a receiver
-backward) to their messages.
+backward) to its messages.
 
 The Mixminion design tries to make it as hard as possible for an
 adversary observing the network to gain any additional information
@@ -490,8 +491,8 @@ resisting the attacks described above.
 
 Mixminion does not implement reusable reply blocks, such as those in
 the Cypherpunk 
-remailer and in Babel despite their convenience, because they pose a security risk -- by their very
-nature they let people send multiple
+remailer and in Babel. They are convenient, but they pose a security
+risk -- by their very nature they let people send multiple
 messages through them.  An attacker can use this property to
 trace the recipient's path: if two incoming batches both include a
 message to the same reply block, then the next hop must be in the
