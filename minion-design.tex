@@ -168,14 +168,17 @@ the Mixmaster system \cite{mixmaster}, or ``Type II'' remailers, which
 added message padding, message pools, and other MIX features lacking
 in the cypherpunk remailers. Note that Mixmaster does not include reply
 functionality, so deployed remailer systems still use the less secure
-long-term cypherpunk reply blocks. At about the same time, Gulcu and
-Tsudik introduced the Babel system \cite{babel}, which also created a
-practical remailer design (although one that never saw widespread
-use).  
+long-term cypherpunk reply blocks.
 
-% Mention that Babel has distinguishable replies?  (_Possibly_
-% replayable and taggable ones too.)  -Nick
-
+At about the same time, Gulcu and Tsudik introduced the Babel
+system \cite{babel}, a practical remailer design with many desirable
+features. While it provides replies, they are only indistinguishable
+from forward messages by passive observers; the MIX nodes can still
+distinguish. Babel's reply addresses are multiple-use, making them less
+secure than forward messages due to replay vulnerabilities. Babel also
+introduces \emph{inter-MIX detours}, where nodes can rewrap a message
+and send it through a few randomly chosen new hops --- so even the sender
+cannot be sure of recognizing his message as it leaves the MIX.
 
 %\subsection{Robustness}
 %
@@ -458,9 +461,9 @@ constant length.
 
 For forward messages, Alice provides both legs; for anonymous replies, Alice
 uses Bob's reply block as the second leg, and generates her own path
-for the first leg.  (To send a direct reply, Alice can use an empty
+for the first leg.  To send a direct reply, Alice can use an empty
 first leg, or send the reply block and message to a MIX that can wrap
-them for her.)
+them for her.
 
 When Alice creates her message, she encrypts the second subheader
 with a hash of her payload (she also does the usual layered onion
@@ -580,6 +583,7 @@ The protocol doesn't allow a MIX to know its location in the path (other
 than the exit node), or the total length of the route.
 
 \subsection{Multiple-message tagging attacks}
+\label{subsec:multi-tagging}
 
 The above design is still vulnerable to a subtle and dangerous
 attack. If Alice sends a group of messages along the same path, the
@@ -676,7 +680,10 @@ asymmetric encryption techniques, so they are relatively fast.
 % I'm not sure, though, whether we want one of the cert-based ones (A)
 % or one of the the anon-server ones. (B) -Nick
 
-The purpose of link-layer encryption is to provide forward secrecy: 
+The purpose of link-level encryption is to provide forward secrecy: 
+% link-level, *not* link-layer. link-layer is a layer-2 OSI thing.
+% saying that our transport level protocol uses link-layer encryption
+% makes no sense. -RRD
 after the keys
 have been deleted, not even the
 nodes that exchange messages can decrypt or recognize messages
@@ -838,8 +845,16 @@ the input and output batches of a MIX and then replays a message after
 the MIX has forgotten about it, the message's decryption will be exactly
 the same. Thus, Mixmaster does not provide the forward anonymity that we want.
 
-Chaum first observed this attack in \cite{chaum-mix}, but his solution
---- to include in each message a timestamp that describes when that message
+Chaum first observed this attack in \cite{chaum-mix},
+but his solution (which is proposed again in Babel\footnote{
+  Actually, Babel is vulnerable to a much more direct timestamp attack:
+  each layer of the onion is timestamped with ``the number of seconds
+  elapsed since January 1, 1970 GMT, to the moment of message composition
+  by the sender.'' Since the number of people composing a message on
+  the same second will likely be small, an adversary owning a MIX at the
+  beginning of the path and another at the end could trivially recognize
+  a message.
+}) --- to include in each message a timestamp that describes when that message
 is valid --- also has problems. Specifically, it introduces a new class
 of \emph{partitioning} attacks, where the adversary can distinguish and
 track messages based on timestamps. If messages have short lifetimes,
@@ -1004,7 +1019,7 @@ launch a DoS attack by flooding the mailbox to exhaust the available
 reply blocks and block further messages from getting delivered.
 
 A more robust design uses a protocol inspired by e-mail retrieval
-protocols such as IMAP or POP \cite{IMAP,POP3}:
+protocols such as IMAP \cite{IMAP} or POP \cite{POP3}:
 messages arrive and queue at the nymserver, and the user periodically
 checks the status of his mail and sends a sufficient batch of reply
 blocks so the nymserver can deliver that mail. 
@@ -1038,19 +1053,51 @@ comfortable.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%\section{Maintaining anonymity sets}
-%
-%\subsection{Long-term nyms: how to choose paths for reply blocks}
-%\label{subsec:choosing-paths}
-%
-%This question is hard. We're going to have to argue about it for a
-%while more, I think.
-%
-%See subsec:batching above. --DH
-%
-%\subsection{Transmitting large files with Mixminion}
-%
-%\url{http://archives.seul.org/mixminion/dev/Apr-2002/msg00031.html}
+\section{Maintaining anonymity sets}
+
+\subsection{Transmitting large files with Mixminion}
+
+We would like to use Mixminion as a transport layer for higher-level
+anonymity applications such as anonymous publication systems
+\cite{freenet, freehaven}, but much research remains before we can
+provide security for users transferring large files over Mixminion.
+
+Alice wants to send a large file to Bob; thus she must send many Mixminion
+messages. Conventional wisdom suggests that she should pick a different
+% can I get a \cite here? -RRD
+path for every message, but an adversary that owns all the nodes in
+\emph{any} of the paths could learn her identity --- without any work
+at all. (Even an adversary owning a very small fraction of the network
+can perform this attack, since the Mixminion message size is small.)
+
+% Assuming Alice picks five nodes at random for
+%each path, at 28k of data per packet (assuming no redundancy or overhead)
+%an adversary owning only 1\% of the MIXes has a better than even chance
+%of identifying Alice as soon as she sends her fourteen packet. By the
+%time she sends message 92 (meaning her file is roughly 2.5 megabytes),
+%Alice has a less than 1\% chance of keeping her anonymity.
+
+Alice seems more likely to maintain her unlinkability by sending all the
+messages over the same path. On the other hand, a passive adversary can
+still watch the flood of messages traverse that path. We must hope the
+honest nodes will rearrange and obfuscate streams of messages enough to
+foil these attacks. The multiple-message tagging attacks described in
+Section \ref{subsec:multi-tagging} make the situation even more dangerous.
+
+A compromise approach is to pick a small number of paths and use them
+together. Still, if the messages are sent all at once, it seems clear
+we're going to need some really good cover traffic schemes before we
+can offer security.
+
+\subsection{Long-term nyms: how to choose paths for reply blocks}
+\label{subsec:choosing-paths}
+
+In fact, this same problem comes up when the owner of a pseudonym is
+downloading his mail from a nymserver.
+
+Cue for David Hopwood's discussion, somewhere around here. Feel free
+to muck this section up however it seems best.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1123,22 +1170,24 @@ and flooding attacks \cite{batching-taxonomy} as well as intersection
 free-route attacks \cite{disad-free-routes}.
 % help, say that last phrase better -RRD
 \item We need a more thorough investigation of multiple-message tagging
-attacks, and an analyze of various ways of safely choosing paths when
+attacks, and an analysis of various ways of safely choosing paths when
 sending many messages.
+\item We claim that we use conservative techniques, but an all-or-nothing
+variable-length block cipher is pushing it. Can we keep indistinguishable
+forward messages and replies using a simpler design?
+\item We need stronger intuition about how to improve security via
+dummy messages.
 \item We intend to draw up a more complete specification, which can lead
 to implementation and deployment of the Mixminion design.
-\item and there are a few more
 % We'll have to get another spec cobbled together before anybody can review
 % this system thorougly.  Should we mention some place for people to
 % get a more formal spec?  I wouldn't be able to review our system at
 % the level that I'd want to without one.  -Nick 
 \end{itemize}
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section*{Acknowledgments} Removed for anonymous review.
+%\section*{Acknowledgments} Removed for anonymous review.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
