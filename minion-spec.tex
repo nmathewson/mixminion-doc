@@ -31,13 +31,13 @@
    until it is delivered, or until a certain amount of time has
    passed. -NM]
 
-9. ``End-to-end'' issues
+9. "End-to-end" issues
 
   [I've added a revised version of my E2E note to the repository. -NM]
   [Looked at the E2E document, and I think it is v.good. We need to update 
    the main specs to be in conformance with it. I quite like the fact that 
    they are separate documents, since the one can be used to implement a
-   ``pure'' server and the other a client or an ``impure server'' -GD]
+   "pure" server and the other a client or an "impure server" -GD]
   [If by 'pure' you mean 'relay', yes.  But implementing things like
    SMTP exit nodes requires that a server be able to decode messages
    properly. -NM]
@@ -256,7 +256,7 @@ subheader: modifications to it are detected because of the OAEP padding.
     Address Data:     Variable
     Padding:          Variable
 
-* The address data length is specified by the ``Routing Size'' field
+* The address data length is specified by the "Routing Size" field
   contained in the subheader.
 * The final Routing Extension block is padded with zeroes so it is
   exactly 128 bytes.
@@ -324,7 +324,7 @@ SK_0..SK_N (and placing routing extension blocks directly after their
 respective subheaders), the header is constructed by appending 
 random padding to achieve a total size
 of 128*16 bytes. Then, each subheader key is used to create a key
-Hash(SharedSecret | ``HEADER SECRET KEY'') with which the part of the
+Hash(SharedSecret | "HEADER SECRET KEY") with which the part of the
 header after the subheader (but including its routing extension) is
 encrypted using counter-mode AES.
 
@@ -348,10 +348,10 @@ Process:
         SIZE_i = 128 + Len(EXT(RI_i))
 
   // Calculate the Junk that will be appended during processing:
-  J_0 = ``'';
+  J_0 = "";
   for i = 1 .. N
-        J_i = J_(i-1) | PRNG(HASH(SK_i | ``RANDOM JUNK'')[0:16], SIZE_i)
-        Stream_i = PRNG(HASH(SK_i | ``HEADER SECRET KEY''), 128*15 + SIZE_i);
+        J_i = J_(i-1) | PRNG(HASH(SK_i | "RANDOM JUNK")[0:16], SIZE_i)
+        Stream_i = PRNG(HASH(SK_i | "HEADER SECRET KEY"), 128*15 + SIZE_i);
         J_i = J_i XOR Stream_i[128*15 -Len(J_i) + SIZE_i:Len(J_i)];
   end
 
@@ -359,7 +359,7 @@ Process:
   H_(N+1) = Rand(128*16 - sum(SIZE_1 .. SIZE_N));
 
   for i = N .. 1
-        K = HASH(SK_i | ``HEADER SECRET KEY'')[0:16];
+        K = HASH(SK_i | "HEADER SECRET KEY")[0:16];
         IF i = N (set appropriate routing type and A_i)
         EH = EXT( RI_i+1 )
         REST = Encrypt(K, (EH | H_(i+1)))
@@ -405,7 +405,7 @@ Process:
                 end
         endif
         // Phase 2
-        H2 = SPRP_ENC(SHA1(P), ``HIDE HEADER'', H2)
+        H2 = SPRP_ENC(SHA1(P), "HIDE HEADER", H2)
         P = SPRP_ENC(SHA1(H2), "HIDE PAYLOAD", P)
 
         for i = N .. 1
@@ -431,22 +431,22 @@ PROCEDURE: Process a message M
         H1 = H1 XOR PRNG(HASH(SK, "HEADER SECRET KEY")[0:16], Len(H1))
         RI = RI | H[0:128*n_extra]
         H1 = H1[128*n_extra:128*16]
-        H2 = SPRP_DEC(SK, ``HEADER ENCRYPT'',H2);
-        P = SPRP_DEC(SK, ``PAYLOAD ENCRYPT'',P);
+        H2 = SPRP_DEC(SK, "HEADER ENCRYPT",H2);
+        P = SPRP_DEC(SK, "PAYLOAD ENCRYPT",P);
 
         if routing type is DROP:
                 End.
         if routing type is SWAP-FWD:
                 P = SPRP_DEC(SHA1(H2), "HIDE PAYLOAD", P)
-                H2 = SPRP_DEC(SHA1(P), ``HIDE HEADER'', H2)
+                H2 = SPRP_DEC(SHA1(P), "HIDE HEADER", H2)
                 Swap H1 and H2;
         if routing type is SWAP-FWD or FWD:
                 Put (H1, H2, P) in queue to be sent to the address in RI.
         Otherwise:
-                Give (RT, RI, HASH(SK,``APPLICATION KEY''), P) to
+                Give (RT, RI, HASH(SK, "APPLICATION KEY"), P) to
                 Module manager.
 
-The ``Application Key'' is provided to the module as a shared secret
+The "Application Key" is provided to the module as a shared secret
 between the constructor of the header and the module that is in charge
 of processing it.  The hash step above prevents the module from using
 the master secret Sk in any way that could inadvertently compromise
@@ -508,7 +508,7 @@ be replayed. To do this a hash of the secret contained in the
 subheader is kept for as long as the public key under which it was
 encrypted is in use. The Hash should be computed in the following way:
 
-X = HASH(SharedSecret | ``REPLAY PREVENTION'')
+X = HASH(SharedSecret | "REPLAY PREVENTION")
 
 The value X is not secret, and its secrecy should not be relied upon.
 The integrity of the list should be secured and the X values lists may
@@ -721,8 +721,8 @@ the entries:
  
 The digest of a descriptor block is computed by removing the contents of the
 digest and signature fields, and computing the SHA-1 digest of the resulting
-ASCII string.  (That is, ``Digest: DATADATADATA...'' is replaced with
-``Digest:''.)  The signed digest is the OAEP/PKCS1 signature of the digest
+ASCII string.  (That is, "Digest: DATADATADATA..." is replaced with
+"Digest:".)  The signed digest is the OAEP/PKCS1 signature of the digest
 with the server's identity key.  This value is represented in BASE64.
 
 [Note: before computing the digest, all implementations must normalize CR and
@@ -952,7 +952,7 @@ message is delivered anonymously, and providing an opt-out address and
 an abuse contact.
 
 The EMAIL field in the SMTP routing type should be a valid mailbox
-[RFC2821]. A mailbox is the canonical form of the ``user@domain''
+[RFC2821]. A mailbox is the canonical form of the "user@domain"
 part of an e-mail address. Mixminion uses only mailboxes, because the
 display name and comment parts of an e-mail address could potentially be
 different for senders who have obtained an address from different
