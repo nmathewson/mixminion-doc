@@ -1,4 +1,4 @@
-$Id: spec-issues.txt,v 1.7 2003/10/01 22:15:24 nickm Exp $
+$Id: spec-issues.txt,v 1.8 2004/03/01 06:36:48 nickm Exp $
 
 				MIX3:X
     Open Issues in Type III (Mixminion) Mix Protocol Specifications
@@ -39,7 +39,7 @@ Table of Contents
    2.5.     Path selection in non-freeroute networks -- RESOLVED, NEED SPEC
    2.6.     News -- RESOLVED, NEED SPEC
    2.7.     PKI bootstrapping
-   2.8.     Multiple recipients
+   2.8.     Multiple recipients -- CLOSED
    2.9.     Plaintext payload versioning
    3.       Issues in MIX3:3: 'dir-spec.txt'
    3.1.     Directory agreement
@@ -239,14 +239,7 @@ Table of Contents
           gpg --with-key-data --list-key KEYID
      ]
 
-2.8. Multiple recipients
-
-   Right now, you can only specify a single recipient mailbox for each
-   outgoing mail message.  There should be some way to allow for
-   multiple recipients, but to deal with the attendant abuse issues.
-
-   [3Aug: <=8 addresses.  If client gets more than 8, divides into N/8
-     messages.  Eliminate dups at client; dups at server are error.]
+2.8. Multiple recipients -- CLOSED
 
 2.9. Plaintext payload versioning
 
