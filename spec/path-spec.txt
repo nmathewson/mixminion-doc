@@ -1,4 +1,4 @@
-$Id: path-spec.txt,v 1.4 2003/11/07 06:44:08 nickm Exp $
+$Id: path-spec.txt,v 1.5 2003/11/07 07:33:14 weasel Exp $
 
                               MIX3:path
                  Type III (Mixminion) Path Generation
@@ -252,7 +252,7 @@ Table of Contents
             PathSpec.
           - The second leg of the path satisfies the second leg of
             the PathSpec.
-      
+
       - If the PathSpec has one leg, then:
           - The path has one leg.
           - The path's leg satisfies the PathSpec's leg.
@@ -367,6 +367,11 @@ Table of Contents
                   hop in step 2 above, then remove the last component.
                   If the last component in the resulting path is a
                   ByNickname component, remove the last component.
+
+                   (Explanation: Suppose the path is Foo,~1 , and the ~1
+                    expands to nil.  The expanded path specifier is "Foo"; we
+                    don't want to remove the Foo in order to replace it with our
+                    (previously chosen) exit hop.)
 
                Call the resulting expanded path specifier "ESPEC".
 
