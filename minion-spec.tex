@@ -682,7 +682,9 @@ the entries:
      'Nickname': A human-readable identifier for this server.  If it
          contains any periods, it must be a fully qualified DNS name
          which resolves to the provided IP for the entire lifetime of
-         this Descriptor block.  It must be no more than 128 characters.
+         this Descriptor block.  It must be no more than 128
+         characters.  It may contain only the characters 
+         [A-Za-z0-9_.!@#] and '-'.
      'Identity': The modulus of this Mix node's long-term signing key,
          represented in ASN.1, and encoded in BASE64.  Whitespace in
          this field is ignored, to allow the key to span multiple
@@ -792,12 +794,13 @@ A directory takes the following form:
 
  [Directory]
  Version: 1.0
- Valid-After: YYYY/MM/DD HH:MM:SS
- Valid-Until: YYYY/MM/DD HH:MM:SS
+ Published: YYYY/MM/DD HH:MM:SS
+ Valid-After: YYYY/MM/DD
+ Valid-Until: YYYY/MM/DD
  [Signature]
- Identity: Base64-encoded public key, in ASN.1
- Digest: Digest of this document.
- Signature: Base64-encoded OAEP/PKCS1 signature of this document, with
+ DirectoryIdentity: Base64-encoded public key, in ASN.1
+ DirectoryDigest: Digest of this document.
+ DirectorySignature: Base64-encoded OAEP/PKCS1 signature of this document, with
      the contents of this field removed.
  [Server]
      (Server descriptor block)
