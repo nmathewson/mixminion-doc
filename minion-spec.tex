@@ -54,6 +54,12 @@ with the smallest building block.
        schedule using 4 hashes. It would be eough to do the following:
 	- K_(x+1) := K << (x*32 bytes) XOR H(x) for x=0 to 3
  I do not understand why we use P in the LIONESS at all.]
+[XXXX 1) The LIONESS paper claims that the keys should be 'independent';
+         can you elaborate more on your proposal?  Specifically,  what
+         is ``x''?  What's K(0)?
+      2) P is not the same as for OAEP; it's a parameter so we use
+         different keys for the header and the payload.  We were using
+         it already. -NM ]
 
 - SPRP_DECRYPT(K1,K2,K3,K4,M) (Len(M) bytes) Inverts SPRP_ENCRYPT.
 
@@ -67,15 +73,12 @@ string (a quotation from Thomas Paine):
      "He who would make his own liberty secure, must guard even his
       enemy from oppression." 
 
+(Though weaknesses have been found in OAEP's original security proofs,
+they seem not to appear when you're using RSA.)
+
 All fields are packed in Internet (MSB first) order.
 
-[XXXX I've backed off from using OAEP+: As far as I can tell from the
-      literature, the weaknesses in OAEP's security proofs only appear
-      when you're using something other than RSA.  With RSA, I believe
-      the claim is still that OAEP is secure. -NM]
-[XXXX I agree that for most practical purposes OAEP is secure. Using
-      the standard construction will allow implementors to use ready
-      made libreries. -GD]
+All RSA encryption uses the public exponent 65535.
 
 \subsection{The subheader structure and address extensions}
 
@@ -106,15 +109,6 @@ kept secret and discarded as soon as the packet has been processed.
 current header (128*15 bytes in total).  It is calculated on the
 remailing subheaders and the junk that will be present at then end 
 of headers when the node receives the message. 
-   [XXXX All the flags were redundant. 
-    I removed END because it's redundant with respect to routing type.
-    I removed EXTADDR because it's redundant with resped to routing
-      size.
-    I removed RTRN because it's redundant with respect to routing
-       type.
-    I removed SWAP because it makes address type redundant.   -NM]
-    [XXXX Cool! You are right they were, as long as we make clear that
-    routing types make the message being treated in different ways -GD] 	
 
 * The Routing Type of a message defines how the MIX should deliver or
   relay it.  Most routing methods require addition addressing information.
@@ -126,10 +120,9 @@ of headers when the node receives the message.
   discard the message. 
 
   The subheader is are encrypted using RSA after having been padded
-  using OAEP+, using a 1024 bit key.  This results in an encrypted block
+  using OAEP, using a 1024 bit key.  This results in an encrypted block
   of 128 bytes.  If the routing info is longer than 86-42=44 bytes, then
   additional subheader have to be added.
-  [XXXX Should the above really be OAEP+? or simply OAEP? -GD]
 
   When an additional block is added to fit the routing info, it must be be a
   multiple of 128 bytes and should have the following structure:
@@ -138,18 +131,6 @@ of headers when the node receives the message.
 
     Address Data:     Variable
     Padding:          Variable
-
-  [XXXX I removed the number of blocks; it's redundant with respect to
-  routing size. -NM]
-  [XXXX What purpose does the magic number serve? -NM]
-  [XXXX It was originally there to make sure that the decryption was
-  correct. It is not releven any more because:
-	- we do not use a AONT for the additional block
-	  (could modify bits inside without modufying first 4 bytes)
-	- the integrity of the additional block is protected by the
-  	  message digest in the header (this should be made clear!).
-	- I have removed it now.
-	-GD]
 
 * The address data length is specified by the ``Routing Size'' field
   contained in the subheader.
@@ -198,6 +179,9 @@ the next node's tranport public key.
       the key exchange. The signature/verifucation key pair can be
       used for both purposes (signing ethemeral keys, and signing the
       mix encryption keys).
+[XXXX That's not what I meant:  Is a server's RSA key that it uses 
+      for decrypting headers, the same RSA key as key it uses for
+      MMTP (as hashed in KeyID.)?  I still say yes... -NM]
 
 A SWAP routing type tells the node to exchange headers as described below.
 
@@ -220,7 +204,15 @@ separate type in the standard.
 0x0101 RTRN  (HOPS: 1 byte , KEY: 20 bytes) : 21 bytes
 
 -GD]
+[XXXX Hm.  I'd rather not have 2 types that do exactly the same thing.
+      Perhaps RTRN should behave differently, or LOCAL should have a
+      type field of its own.
 
+      As things stand above, you can do stateless return delivery with
+      either of SMTP or LOCAL; neither is more "returny" than the other.
+
+      Would it solve your concerns to add a type field to LOCAL? -NM]
+ 
 \subsection{The header structure}
 
 Each type III message has two identical headers that are swapped at
@@ -325,9 +317,12 @@ Process:
 	   [ XXXX The above processing is only happening if it is NOT
 	a reply block. Otherwise it is impossible to know the keys
 	SK2_i. For a reply block there is no other processing]
-
+           [ XXXX Ah!  Perhaps, then, there should be a third
+	          procedure that breaks down the relationship between
+                  ``Construct a message'' here and ``create a single header''
+                  above. -NM]
 	// Phase 2
-	H2 = SPRP(P, ``HIDE HEADER'', H2)
+	H2 = SPRP_ENC(P, ``HIDE HEADER'', H2)
 
 	for i = N .. 1
 		H2 = SPRP_ENC(SK1_i, "HEADER ENCRYPT",H2)
