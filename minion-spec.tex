@@ -60,6 +60,17 @@ with the smallest building block.
       2) P is not the same as for OAEP; it's a parameter so we use
          different keys for the header and the payload.  We were using
          it already. -NM ]
+[XXXX I discussed the key shedule with Markus Kuhn and we seem to agree 
+     that since the subkeys are going to be input in hash functions there 
+     is no need to hash them before hand. They just need to be different 
+     from each other. The simplest way of doing that would be:
+		K1 = K XOR 0x00..01 
+		K2 = K XOR 0x00..02
+		K3 = K XOR 0x00..03
+		K4 = K XOR 0x00..04
+     	You can also XOR P into the subkeys if you want the cipher to be 
+	different for the headers and the payload.
+     -GD]
 
 - SPRP_DECRYPT(K1,K2,K3,K4,M) (Len(M) bytes) Inverts SPRP_ENCRYPT.
 
@@ -193,7 +204,7 @@ The LOCAL routing type is used for messages to be delivered to a local
 user.  The USER field must be NUL-terminated; the TAG field is
 free-form.
 
-(Tag fields can be used to  implement stateless reply blocks by
+(Tag fields can be used to implement stateless reply blocks by
 reminding recipients of the master secrets they used to generate the
 reply block.)
 
