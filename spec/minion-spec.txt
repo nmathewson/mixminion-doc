@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.19 2003/10/07 19:55:40 nickm Exp $
+$Id: minion-spec.txt,v 1.20 2003/10/07 20:14:09 weasel Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -660,8 +660,8 @@ Table of Contents
      // Calculate the sizes of the subheaders.
      for i = 1 .. N
         // OAEP Padding plus invariant parts plus routing info.
-	if i = N then
-	   Set RI from R
+        if i = N then
+           Set RI from R
         else
            Set RI = RI_(i+1)
         endif
@@ -700,7 +700,7 @@ Table of Contents
              Let RT = RT_(i+1), RI = RI_(i+1)
         endif
 
-        SH0 = SHS(V, SK_i, Z(20), len(RI), RT, RI)
+        SH0 = SHS(V, SK_i, Z(HASH_LEN), len(RI), RT, RI)
         SH_LEN = LEN(SH0)
         H0 = SH0 | H_(i+1)
 
