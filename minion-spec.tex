@@ -124,7 +124,7 @@ they seem not to appear when you're using RSA.)
 
 All fields are packed in Internet (MSB first) order.
 
-All RSA encryption uses the public exponent 65535.
+All RSA encryption uses the public exponent 65537.
 
 \subsection{The subheader structure and address extensions}
 
@@ -204,6 +204,7 @@ There are 5 predefined routing types:
 
 0x0100 SMTP   (EMAIL ADDRESS: variable, TAG: variable) Variable bytes
 0x0101 MBOX   (USER: variable, TAG: variable) Variable bytes
+0x0102 MIX2   (EMAIL ADDRESS: variable).  Type-2 remailer support.
 
 0x1000-0xEFFF: UNALLOCATED
 
@@ -678,7 +679,7 @@ the entries:
          this field is ignored, to allow the key to span multiple
          lines.  The modulus of this key should be at least 2048 bits
          long and no more than 4096 bits long.  The exponent of this 
-         key must be 65535.
+         key must be 65537.
 
 	 Clients should at least give a warning if the identity key of
          any server should ever change. [XXXX Write more in section
@@ -909,3 +910,33 @@ The TAG field is appended to the message in an X-Remailer-Tag header.
 [XXXX Until we have better answers about abuse prevention, nobody should
   actually implement an SMTP module. :) -NM]
 
+\section{Appendix: Backward compatibility with type-II remailers}
+
+In order to share anonymity sets with type-III remailers while
+retaining type-II support, some remailers may wish to use Mixminion to
+deliver type-II messages.  This is done as follows:
+
+Nodes that accept both type-II and type-III messages may advertise the
+fact in their server descriptor by including a section of the form:
+ 
+         [Incoming/Mix2]
+         Address: (type-II remailer's email address)
+         KeyID: (type-II key id)
+         Signature: (signature of identity key with type-II key)
+	 (Optionally, KeyID and Signature repeated any number of
+                      times.)
+
+This section advertises that the mix can handle type-II messages
+intended for a given type-II identity (email address) and set of keys
+(keyids).
+
+The value of 'Signature' must be the base-64 representation of the
+RSA-OAEP/PKCS1 signature (using the type-II remailer key) of the SHA-1
+hash of the ASN.1 representation of this node's identity key.  
+
+Upon receiving a type-II message, if a bridging node notices that the
+destination node is also a type-III node, the bridging node unbase64's
+the type-II message's contents, and uses them (plus random
+padding) as the payload of a type-III message for that node.  The
+routing type must be 'MIX2' (0x0102); the routing info must be equal
+to the destination mix's type-II address.
