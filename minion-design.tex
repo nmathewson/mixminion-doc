@@ -285,12 +285,11 @@ We choose to drop packet-level compatibility with Mixmaster and the
 cypherpunk remailer systems, in order to provide a simple extensible
 design. We can retain minimal backwards compatibility by ``remixing''
 Type II messages to be Type III messages, thus increasing the anonymity
-set of the Type III network. Type II messages, when received by a
-remailer capable of understanding both Type II and III and destined for
-a remailer capable of understanding both Type II and III, are treated
+set of the Type III network. Type II messages, when travelling between
+remailers capable of understanding both Type II and III, are treated
 as plaintext and encrypted to the next remailer in the chain using its
-Type III key. The message is then sent as Type III encrypted message,
-and decrypted to reveal the Type II message.
+Type III key. The message is sent as a Type III encrypted message, but
+it decrypts to reveal the Type II message.
 
 We also provide a new feature: a reply block mechanism that is as secure
 as forward messages.
