@@ -9,29 +9,28 @@
    [Agreed.  We should make an actual list of appendices that we
     need, and start writing them all.-NM]
 
-4. Description of mixing algorithm should go in descriptor blocks. -NM
+2. Description of mixing algorithm should go in descriptor blocks. -NM
    [XXXX Unless the mixing method requires special packaging of the message 
          we could require the servers to specify the amount of anonymity that
          they expect to give to each message. The information theoretic one
          presented by myself and Andrei could do the job quite well. -GD]
 
-6. We should specify: are 'DROP'-type messages dropped before they go
+3. We should specify: are 'DROP'-type messages dropped before they go
     into the mix pool, or after they're pulled from the pool?
 
   [Before. -NM]
   [My feeling is After, but I should think about it... -GD]
   [Roger seemed pretty sure that it should be 'before', but I don't
    remember why.  Roger? -NM
-   
 
-7. We should specify: what happens when a message is undeliverable?
+4. We should specify: what happens when a message is undeliverable?
 
   [We retry for a while, then drop it. -NM]
   [Specifically: we retry the message with subsequent message pools
    until it is delivered, or until a certain amount of time has
    passed. -NM]
 
-9. "End-to-end" issues
+5. "End-to-end" issues
 
   [I've added a revised version of my E2E note to the repository. -NM]
   [Looked at the E2E document, and I think it is v.good. We need to update 
@@ -42,12 +41,14 @@
    SMTP exit nodes requires that a server be able to decode messages
    properly. -NM]
 
-10. K-of-N delivery or fragments.
+6. K-of-N delivery or fragments.
     [I believe this is covered by the E2E spec -GD]
     [Yes, but we don't actually specify the erasure algorithm.  I'm
      currently leaning towards the one using Vandermonde matrices with
      values from GF(2^n), but it isn't actually specified at a byte
     level anywhere but its own source code. -NM]
+
+7. Path selection algorithm.
 
 \section{FUTURE ISSUES}
 (These are unresolved issues that we don't want to think about till we
@@ -60,6 +61,9 @@ have more stuff done.)
    [Actually, we may need these first two pieces for Mixminion 1.0;
     else we won't be deployable. -NM]
 3. When do dummy messages get generated?
+   [Current hypothesis: As a first cut, we're going to have nodes add
+    dummies to the outgoing batch every mix interval, with a geometric
+    distribution, with 5 hops, with the sender as the last hop. -NM]
 4. When does link padding get generated?
    [Both active research areas; not for first cut]
 
@@ -301,9 +305,7 @@ message should have a random payload.
 A FWD/IP4 routing type indicates that the message must be
 retransmitted using the TLS/Mixminion transport protocol. The IP field
 represents the IPv4 address.  The KEYID field contains the SHA1 hash
-of the ASN.1 representation of the next node's transport public key.
-(Note that a node's transport key does not need to be the same as the
-key it uses to decrypt subheaders.)
+of the ASN.1 representation of the next node's identity public key.
 
 A SWAP routing type tells the node to exchange headers as described below.
 
@@ -524,6 +526,9 @@ of the key exchange protocol the channel is bi-directional. The
 protocol should be used when the SWAP-FWD/IP4 or FWD/IP4 address type
 is specified in a subheader.
 
+Servers must not connect to themselves over the network when routing
+packets to their own published IP/Port combination.
+
 The Mixminion protocol uses TLS (the IETF standardization of SSL) with
 the ciphersuite "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" (defined in
 tls-ciphersuite-03.txt).  No other ciphersuite is permitted for
@@ -533,18 +538,14 @@ mix-to-mix communications.
 for clients written with older SSL libraries.  However, servers must
 never initiate connections with this suite.]
 
-X.509 certificates need not be signed; instead, they must contain
-a key matching that used in the KEYID portion of the header's routing
-data.  
+The X.509 certificate must be signed by the server's identity
+key, and a certificate containing the server's identity key must be
+included with the certificate chain set to the client.  If the
+identity key doesn't match the KEYID portion of the  header's routing
+data, the client closes the connection.
 
-Messages are sent from client to server.  Session suspension is
-permitted; however, the client must send a ClientHello packet to
-renegotiate session key whenever it is done sending a batch of
-messages.  The server should allow session resumption later only if 1)
-less than 120 seconds have passed, or 2) the client re-keyed
-immediately before suspending.  [This way, no key that has been used
-to send messages can be used after 120 seconds to send messages
-again. -NM]
+Messages are sent from client to server.  Session suspension is not
+permitted.
 
 Protocol outline: (Portions marked with '*' are normative; other
 portions are non-normative descriptions of TLS.)
@@ -554,9 +555,11 @@ portions are non-normative descriptions of TLS.)
   (of at least 1024 bits modulus)
   and makes a certificate signed by her signing key.
   A then initiates the SSL Handshake protocol with B.
-- B invents a DH key and makes a certificate using his signing
-  key.
-* A checks that the Hash of the signing key is the same as
+- B invents a DH key and sends a certificate chain containing:
+   - a certificate with B's transport public key, signed by B's
+     identity key. 
+   - a self-signed certificate containing B's identity key.
+* A checks that the Hash of the identity key is the same as
   the one contained in the routing info of the subheader.
 - The SSL handshake protocol proceeds as normal until a session
   key has been established. All communications are then encrypted
@@ -580,6 +583,12 @@ portions are non-normative descriptions of TLS.)
      * A sends "SEND", CRLF, M, HASH(M|"SEND") (6 + 32k + 20 bytes)
      * B sends "RECEIVED", CRLF, HASH(M|"RECEIVED") (10 + 20 bytes)
 
+    [Note that A does not wait for B's reply before sending further
+     messages; rather, A begins sending its next message immediately.
+     Node A waits until the reply is received, however, before
+     removing the message from its local storage.  Node A pauses,
+     however, if it is waiting for 16 hashes at a time.]
+
 * Padding case:
 
      * A sends "JUNK", CRLF, Junk, HASH(Junk|"JUNK") (6 + 32k + 20 bytes)
@@ -592,11 +601,22 @@ portions are non-normative descriptions of TLS.)
         even to the parties involved after the keys have been
         updated.]
 
-* After sending a batch of messages, A sends an TLS handshake
-  renegotiation message. This updates the session key and
-  overrides the previous session key.
-  [XXXX Clarify: what is a batch?  There's not much need for
-    consistency here, but I need some guidance in the implementation. -NM]
+* Error case:
+
+     * A sends "SEND", CRLF, M, HASH(M|"SEND") (6 + 32k + 20 bytes)
+     * B sends "REJECTED", CRLF, HASH(M|"REJECTED") (10 + 20 bytes)
+    
+       [B must reject a message if their hash is incorrect; if the
+        disk is full, or if for some other reason B cannot accept the
+        message.  Again, implementations should not be distinguishable
+        in their timing in the case where the message is accepted or
+        rejected.  When A receives a "REJECTED" reply, it must behave
+        is if delivery had failed, and retry the message later (up to
+        a reasonable retry interval).]
+
+* If a connection persists for longer than 15 minutes, the client
+  must initiate key renegotiation.  If it has not, the server must
+  close the connection.
 
 \end{verbatim}
 
@@ -611,14 +631,7 @@ number 48099 (until we register a port with www.iana.org)
 
 All possible checks should be performed during the transfer protocol
 and if any fail the connection MUST stop and all state MUST
-be deleted. An error MAY be logged. In particular, if the KEYID
-hash element in the Master Header is nonzero, the certificate of
-the communication partners must be signed using a key that hashes
-appropriately.
-[XXXX Why would we want to allow a zeroed-out KEYID?  Why would
-  somebody know the necessary packet key to generate a meaningful
-  Type III packet for a server, but not know the server's transport
-  key? -NM]
+be deleted. An error MAY be logged. 
 
 \section{Mix Information Exchange format}
 
@@ -706,6 +719,9 @@ the entries:
      'Contact': An email address that may be used to contact the
          administrator of this server. Optional field.  Must be no
          more than 256 characters.
+     'Contact-Fingerprint': Fingerprint of the server administrator's
+         PGP key. Optional field.  Must be no more than 128
+         characters.
      'Comments': Human-readable information about this server.  Must
          be <1024 bytes long.  It *must not* be necessary to read this
          information to use the server properly.
@@ -718,6 +734,9 @@ the entries:
      'Software': A string description of the software this server is
          running.  Optional; for debugging purposes only.  Must be
          less than 256 characters. [Added in Mixminion 0.0.3 -NM]
+     'SecureConfiguration': "yes" or "no".  If true, the server must 
+         not be running in an insecure operating mode. [XXXX list
+         these modes.  Added in Mixminion 0.0.4]
  
 The digest of a descriptor block is computed by removing the contents of the
 digest and signature fields, and computing the SHA-1 digest of the resulting
