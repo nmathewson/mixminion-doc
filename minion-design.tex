@@ -78,12 +78,12 @@ protects against most known attacks.
 
 Chaum first introduced anonymous remailers over 20 years ago
 \cite{chaum-mix}. The research community has since introduced many new
-designs and proofs \cite{abe,babel,flash-mix,kesdogan,shuffle,hybrid-mix},
+designs and proofs \cite{abe}\cite{babel}\cite{flash-mix}\cite{kesdogan}\cite{shuffle}\cite{hybrid-mix},
 and discovered a variety of new attacks
-\cite{back-traffic-analysis,langos02,disad-free-routes,desmedt,mitkuro,raymond00}.
+\cite{back-traffic-analysis}\cite{langos02}\cite{disad-free-routes}\cite{desmedt}\cite{mitkuro}\cite{raymond00}.
 But because many of the newer designs require considerable coordination or
 synchronization, deployed remailers still use Cottrell's Mixmaster
-design from 1994 \cite{mixmaster-attacks,mixmaster-spec}. Here we describe
+design from 1994 \cite{mixmaster-attacks}\cite{mixmaster-spec}. Here we describe
 Mixminion, a protocol for asynchronous loosely federated remailers that
 maintains Mixmaster's flexibility while addressing the following flaws:
 
@@ -184,7 +184,7 @@ inside each MIX.
 
 Recent research on MIX-nets includes stop-and-go MIX-nets
 \cite{kesdogan}, distributed flash MIXes \cite{flash-mix} and their
-weaknesses \cite{desmedt,mitkuro}, and hybrid MIXes \cite{hybrid-mix}.
+weaknesses \cite{desmedt}\cite{mitkuro}, and hybrid MIXes \cite{hybrid-mix}.
 
 One type of MIX hierarchy is a cascade.
 In a cascade network, users choose from a set of fixed paths through
@@ -198,7 +198,7 @@ message \cite{disad-free-routes}. On the other hand, cascades are more
 vulnerable \cite{batching-taxonomy} to trickle attacks, where an attacker
 targeting a specific message going into a MIX can manipulate the batch
 of messages entering that MIX so the only unknown message in the batch
-is the target message \cite{mixmaster-attacks,babel}.
+is the target message \cite{mixmaster-attacks}\cite{babel}.
 MIX cascade research includes real-time MIXes \cite{realtime-mix} and
 web MIXes \cite{web-mix}. Even when not under attack cascades will
 provide smaller anonymity sets than networks since the least
@@ -213,7 +213,7 @@ service \cite{helsingius}, and by theoretical work on MIXes. Hughes wrote
 the first Cypherpunk anonymous remailer \cite{remailer-history}; Finney
 followed closely with a collection of scripts that used Phil Zimmermann's
 PGP to encrypt and decrypt remailed messages. Later, Cottrell implemented
-the Mixmaster system \cite{mixmaster,mixmaster-spec}, or ``Type II'' remailers,
+the Mixmaster system \cite{mixmaster}\cite{mixmaster-spec}, or ``Type II'' remailers,
 which added message padding, message pools, and other MIX features lacking
 in the Cypherpunk remailers. Note that Mixmaster does not include replies,
 so deployed remailer systems still use the less secure
@@ -283,7 +283,7 @@ cipher suite, and we avoid extensions that would help an adversary
 divide the anonymity set.
 
 Mixminion uses the same general MIX-net paradigm as previous work
-\cite{chaum-mix,mixmaster-attacks,babel}. The sender Alice chooses a
+\cite{chaum-mix}\cite{mixmaster-attacks}\cite{babel}. The sender Alice chooses a
 path through the network. She repeatedly ``onion'' encrypts her message,
 starting with the last
 MIX in her path, and sends the onion to the first MIX. Each
@@ -314,7 +314,7 @@ key fingerprint.
 
 While Mixminion protects against known \emph{traffic analysis} attacks
 (where an adversary attempts to learn a given message's sender or
-receiver \cite{rackoff93cryptographic,raymond00}), we do not fully
+receiver \cite{rackoff93cryptographic}\cite{raymond00}), we do not fully
 address \emph{traffic confirmation} attacks. In a traffic confirmation
 attack, the adversary treats the MIX network as a black box and
 observes the behavior of senders and receivers. Over time, he can
