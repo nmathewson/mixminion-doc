@@ -96,9 +96,16 @@ to developers and users.
 % and non-goals
 % threat models, etc
 
+http://archives.seul.org//mixminion/dev/Mar-2002/msg00004.html
+http://archives.seul.org//mixminion/dev/Mar-2002/msg00014.html
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Related Work}
+
+Just a matter of writing it up. Mixes. Mixmaster/Babel. Flash/StopandGo.
+
+I'll get to it later on if others don't. -RRD
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -106,23 +113,36 @@ to developers and users.
 
 \subsection{Packet structure, how packets travel}
 
+This subsection probably should wait until we've got a better plan for
+how to do replies.
+
 \subsection{Why forward and reply messages are secure}
+
+and same with this one.
 
 \subsection{Link-level encryption and what it gets us}
 
+Diffie-Hellman with ephemeral keys. OpenSSL. Some discussion of how
+this makes purely passive adversaries worse off, but really not that
+much worse off because they can still watch the number of characters
+going by on the channel.
+
 \subsection{Message types and delivery modules}
 
-delivery information in header or in payload?
+This one is decided as well. Just needs to be written up.
+
+One issue: delivery information in header or in payload?
+There are tradeoffs to each. Describe both and we'll pick one down the road.
 
 \subsection{Exit policies and abuse}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Looks quite straightforward. More generally, this should be a discussion
+about capabilities for each mix.
 
-\section{Nym management and single-use reply blocks}
-
-\subsection{Nymservers}
-
-\subsection{Long-term nyms: how to choose paths for reply blocks}
+How do clients communicate with a mix to learn its capabilities? Or does
+the mix communicate capabilities to the reputation server and the client
+gets them from there? Or both. Ties in with reputation server section
+below.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -136,13 +156,36 @@ and then do pinging themselves
 
 reliability for paths, nodes, reply blocks
 
+http://archives.seul.org/mixminion/dev/Apr-2002/msg00002.html
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Nym management and single-use reply blocks}
+
+we've got two competing notions for how to do nymservers, and i think
+it's becoming clear that one is better than the other. good to describe
+them both.
+http://archives.seul.org/mixminion/dev/Apr-2002/msg00047.html
+and following thread
+
+\subsection{Nymservers}
+
+\subsection{Long-term nyms: how to choose paths for reply blocks}
+
+This question is hard. We're going to have to argue about it for a
+while more, I think.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Maintaining anonymity sets}
 
 \subsection{Transmitting large files with Mixminion}
 
+http://archives.seul.org/mixminion/dev/Apr-2002/msg00031.html
+
 \subsection{key rotation and anonymity}
+
+http://archives.seul.org/mixminion/dev/Apr-2002/msg00047.html
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -150,9 +193,14 @@ reliability for paths, nodes, reply blocks
 
 some details about how to build it. logging and statistics? etc.
 
+nick?
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Attacks and Defenses}
+
+my aim here is to do something akin to pages 13-15 of
+http://freehaven.net/doc/casc-rep/casc-rep.ps
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
