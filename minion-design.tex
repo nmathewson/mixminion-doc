@@ -1384,6 +1384,7 @@ or when there are the normal number of messages but most of them are
 created by the adversary.
 
 \subsection{Transmitting many messages}
+\label{subsec:many-messages}
 
 When Alice (the owner of a pseudonym) downloads her mail from a
 nymserver, she will likely receive many separate messages. Similarly, if
@@ -1432,57 +1433,81 @@ open problem.
 
 \section{Attacks and Defenses}
 \label{sec:attacks}
-%
-%[Do something akin to pages 13-15 of
-%\url{http://freehaven.net/doc/casc-rep/casc-rep.ps}.]
 
-%XXXX WRITE SOMETHING HERE! -NM
-
-\subsubsection{Passive attacks}
-\label{subsec:passive-attacks}
-
-\begin{description}
-\item \emph{Intersection attack (short-term, long-term)} XXXX
-\item \emph{Textual analysis} XXXX
-\end{description}
+Below we summarize a variety of attacks and how well our design withstands
+them.
 
 \subsubsection{Mix attacks}
 \label{subsec:mix-attacks}
 
 \begin{description}
-\item \emph{Compromise a mix} XXXX
-\item \emph{Compromise a mix's private key} XXXX
-\item \emph{Replay attack.}  Servers remember header checksums in
-  between key rotations; after keys are discarded, old headers can no
-  longer be decrypted.
-\item \emph{Message delaying.}  XXXX
-\item \emph{Message dropping.} XXXX
-\item \emph{Message tagging.}  Header checksums allow servers to
-  detect modified headers.  Using LIONESS on the payload prevents modified
-  payloads from being distinguishable from junk.  Finally, the
-  ``swap'' step renders exit path of a message irretrievable if the
-  payload is modified.
-\item \emph{N$-1$ attack (trickle, flooding)} The `timed dynamic-pool'
-  batching strategy limits the effectiveness of these attacks.
+\item \emph{Compromise a mix} Because messages traverse multiple mixes,
+compromising a single mix, even a crossover point, does not gain much.
+\item \emph{Compromise a mix's private key} Again, owning a single mix
+is of limited use. Further, periodic mix key rotation limits the window
+of time in which to attack the next mix in the target message's path.
+\item \emph{Message replay.}  Mixes remember header checksums of
+previously seen messages; after key rotation these old headers can no
+longer be decrypted.
+\item \emph{Message delay.} The adversary can delay messages and
+release them when certain network parameters (eg traffic volume) are
+different. The efficacy of this attack is poorly understood, but it may
+well be quite damaging \cite{batching-taxonomy}. Imposing a deadline on
+transmission for each hop may help \cite{mix-acc}.
+\item \emph{Message dropping.} The adversary can drop messages with the
+hope that users will notice and resend. If the user must resend, he
+should use the same path, to prevent the adversary from forcing him onto
+an adversary-controlled path (see Section \ref{subsec:many-messages}).
+\item \emph{Message tagging.} Mixes detect modified headers immediately
+using checksums. The payload can still be tagged, but the ``swap'' step
+along with LIONESS encryption from Section \ref{subsec:header-swap}
+provide protection.
+\item \emph{N$-1$ attack (trickle, flooding)} The ``timed dynamic-pool''
+batching strategy from Section \ref{subsec:batching} limits the
+effectiveness of these attacks.
 \end{description}
 
-\subsubsection{Exit-based attacks}
+\subsubsection{Passive attacks}
+\label{subsec:passive-attacks}
+
+\begin{description}
+\item \emph{Intersection attack.} Our dynamic-pool batching strategy
+from Section \ref{subsec:batching} spreads out the set of possible
+senders for a given received message, increasing the cost of an
+intersection attack. However, a complete solution remains an open problem
+\cite{langos02}.
+\item \emph{Textual analysis.} Mixminion provides location anonymity,
+not data anonymity. Users are responsible for making sure their messages
+do not reveal information.
+\end{description}
+
+\subsubsection{Exit attacks}
 \label{subsec:attacks-exitbased}
 
 \begin{description}
-\item \emph{Use delivery method to partition traffic .} XXXX
-\item \emph{Use servers' exit capabilities to partition traffic.} XXXX
+\item \emph{Use delivery method to partition traffic.} We encourage
+recipients to use one of only a few delivery methods, so we can maintain
+sufficient anonymity sets for each.
+\item \emph{Use servers' exit capabilities to partition traffic.}
+Delivery methods should be standardized; users should be suspicious of
+any exit node offering an unusual delivery method.
+\item \emph{Use the mix network to deliver hate mail, etc.} We allow
+recipients to opt out of receiving further mail. Overall, we must assume
+we will have enough nodes that can withstand this abuse that simple
+adversaries cannot monitor all exit nodes in the network.
+% help, please untangle my words
 \end{description}
 
-\subsubsection{Directory-based attacks}
+\subsubsection{Directory attacks}
 \label{subsec:attacks-dirbased}
 
 \begin{description}
 \item \emph{Compromise a directory server.} Identical directory listings
   are served by a large group of servers, and signed by all.
-\item \emph{Lie to a directory server.}  Signed capability blocks, and
-  the fact that a mix's signing key is its identity, prevent this
-  attack.
+\item \emph{Lie to a directory server.}  Signatures on capability
+  blocks prevent others from forging them to the directory
+  servers. Because a mix's signing key is its identity,
+
 \item \emph{Exploit differences in client directory knowledge.}  By
   only updating directory information nightly; by urging client
   software to pull updates as soon as possible after their release;
