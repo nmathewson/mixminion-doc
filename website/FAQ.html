@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
           "http://www.w3.org/TR/html4/strict.dtd">
 <!-- *******************************************************************
-     $Id: FAQ.html,v 1.3 2003/12/16 05:07:37 nickm Exp $
+     $Id: FAQ.html,v 1.4 2004/03/01 06:38:37 nickm Exp $
      This file is maintained in CVS; edit the version in the repository.
      *******************************************************************
   -->
@@ -123,7 +123,7 @@ Back up&mdash;what's a remailer?
 <div class="answer">
 <p>Back in 1981, David Chaum wrote a
 <a href="http://freehaven.net/anonbib/#chaum-mix">paper</a>
-describing an anonymity server called a "mix".  In Chaum's design,
+describing an anonymity server called a "mix."  In Chaum's design,
 users encrypt messages to a mix's public key, and send those messages
 to the mix.  The mix delays and re-orders the messages in order to
 prevent an eavesdropper from correlating messages entering and
@@ -137,7 +137,7 @@ identity, senders route each of their messages through a sequence (or
 "chain") of mixes.  This way, if even a single mix in the sender's
 chain is honest, that mix prevents an attacker from linking the sender
 to the recipient.  The complete set of intercommunicating mixes is
-called a "mix-net".
+called a "mix-net."
 </p>
 <p>
 The term 'remailer' comes with a more application-oriented pedigree.
@@ -425,6 +425,8 @@ protocol.
 <h3>What's a SURB?  Why doesn't Type III have multiple-use reply
 blocks?</h3>
 <div class="answer">
+<p>"SURB" stands for "single-use reply block": In Type III, reply blocks
+  can only be used once.</p>
 <p>All multiple-use reply block designs that we're aware of suffer
   from a common problem:  anybody who gets ahold of a MURB can use it
   to send an arbitrary pattern of traffic to the recipient.  An
@@ -444,7 +446,8 @@ blocks?</h3>
 <ul>
   <li>Email has become complicated.  Misconfigured MTAs, spam filters, and
     virus scanners have been known to block or corrupt Type I/II packets as
-    they between and the next.  Such bugs are often hard to diagnose and
+    they travel between one server and the next.
+    Such bugs are often hard to diagnose and
     address, since the offending systems are typically operated by ISPs out
     of the remops' control.  Even when these systems relay Type I/II packets
     correctly, they often keep logs and backups that can help an adversary
@@ -455,7 +458,7 @@ blocks?</h3>
     Postfix/TLS; for authentication, remops must exchange certificates
     manually; and for forward secrecy, they must configure their MTA's TLS
     module to only use forward-secure ciphersuites.  Not all remops have done
-    these steps, especially the ones required for forward secrecy.  (As of
+    these steps.  (As of
     this writing, it seems that roughly half of the Type I/II remailers have
     TLS support, and that roughly three fourths of those are using
     forward-secure cypersuites.)</li>
@@ -631,7 +634,6 @@ blocks?</h3>
   <ul>
     <li>Distributed directories.  (The current centralized directory
       is a single point of failuure.)</li>
-    <li>Support for servers with dynamic IP addresses.</li>
     <li>Automatic generation of dummy messages</li>
     <li>Built-in network reliability testing ("pinging")</li>
   </ul></li>
