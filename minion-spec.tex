@@ -172,51 +172,10 @@ A DROP routing type indicates a dummy message. It must be discarded.
 
 A FWD/IP4 routing type indicates that the message must be
 retransmitted using the TLS/Mixmaster transport protocol. The IP field
-represents the IPv4 address.  The KEYID field represents the hash of
-the next node's transport public key.
-
-[XXXX Are the TLS keys different from the keys used to encrypt the
-      headers?  I claim they should be. -NM]
-[XXXX YES! They have to be different since they are discarded after
-      the key exchange. The signature/verification key pair can be
-      used for both purposes (signing ephemeral keys, and signing the
-      mix encryption keys). -GD]
-[XXXX That's not what I meant:  Is a server's RSA key that it uses 
-      for decrypting headers, the same RSA key as key it uses for
-      MMTP (as hashed in KeyID.)?  I still say yes... -NM]
-[XXXX The hashed KEY ID is the verification key that is used to sign
-      both the MMTP Ephemeral keys and (if we want) the long term
-      decryption keys of the mix. -GD]
-[XXXX Actually, it would be easier, and a little less paranoia-engendering,
-      if the keys were different.  As I see it, a Mix should have 3
-      public keys:
-              1  A medium-term connection key that it uses for MMTP.
-              2  A medium-term mix key that it uses to decrypt 
-                 its subheaders.
-              3  A long-term ``identity'' key that signs descriptor
-                 blocks containing the first 2.
-         Having '3' be different from '1' or '2' is a clear choice; 
-         IMO '2' should be different from '1' because:
-                a) I may be paranoid, but I don't like the idea of 
-                   using the same key for signing stuff and decrypting
-                   stuff.  It makes me think of adaptive attacks.
-                b) It's easier to implement that way: Keeping non-SSL 
-                   RSA keys separately from SSL RSA keys makes things
-                   more modular.
-                c) It costs us nothing in performance, except when
-                   we generate new keys.
-             -NM]
-
-[XXXX And by the way, how exactly do we compute a hash of a public
-  key? What encoding do we use?  Do we just use the modulus, or must
-  we include 'e' as well? -NM]
-[XXXX We can use the formats in PKCS#1 (ASN.1 format appendix) for
-  RSApublickey. It just appends the binary representations of e and
-  n. We can compute the SHA-1 of this to get a keyID. 
-
-  I think if we argree on all of the above (I do), we can close this
-  thread of comments. Is there any outstanding issue from above? 
-  -GD]
+represents the IPv4 address.  The KEYID field contains the SHA1 hash
+of the ASN.1 representation of the next node's transport public key.
+(Note that a node's transport key does not need to be the same as the
+key it uses to decrypt subheaders.)
 
 A SWAP routing type tells the node to exchange headers as described below.
 
@@ -332,6 +291,16 @@ ok -GD]
          decoding. Therefore the X-Remailer-Tag does not contain any
          secrets. The packet encoded to be sent by SMTP is still a
          valid mixminion packet (see email encoding) -GD]
+[XXXX What is the advantage of this?  It completely kills deniability
+      by requiring recipients to have RSA keys to decrypt the LOCAL
+      subheader.  It eats a subheader needlessly.  It adds
+      complexity to our system by changing SMTP from a delivery
+      mechanism that sends only a (possibly decrypted) payload to a
+      full-blown routing message that sends entire packets.  It
+      expands the software you need in order to receive replies from
+      'decrypt a payload' to full-blown 'decrypt and process a packet'. 
+
+      So what does it get us?  -NM]  
 
 \subsection{The header structure}
 
@@ -631,6 +600,14 @@ The subject line should read: ``Anon. Message: '' + ID
  able to block the service, for the recipient to
  filter out messages arriving from the mix network.]
 
+[XXXX This needs more thought.  First, it violates our earlier
+      assumptions that routing modules never need to look at the
+      headers, but only at their routing info.  Second, it doesn't
+      allow people without special software to receive
+      sender-anonymous messages.  Third, it requires every message
+      recipient to have a full-blown packet processing system when
+      they really only need to decrypt the payload.  -NM]
+
 \subsection{Replay Avoidance}
 
 The nodes MUST implement a mechanism to make sure that messages cannot
@@ -669,6 +646,9 @@ MIX-to-MIX communications.
       side only), so we needn't worry. -NM]  
 [XXXX I think we should choose a suite that is widely supported and
       strong at the same time. -GD]
+[XXXX Does that mean we should support something other than
+      dhe/rsa/aes128, or not?  Keep in mind that without DHE, you
+      don't get forward security. -NM]
 
 X.509 certificates need not be signed; instead, they must contain
 a key matching that used in the KEYIDportion of the header's routing
