@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.25 2003/12/17 00:44:07 nickm Exp $
+$Id: minion-spec.txt,v 1.26 2004/02/20 21:58:50 nickm Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -278,30 +278,30 @@ Table of Contents
 
    Thus, in the notation described below, we encrypt a message M with
    a key K as follows:
-           K1 = K
-           K2 = K ^ [00 ... 01]
-           K2 = K ^ [00 ... 02]
-           K4 = K ^ [00 ... 03]
-           L := M[0:20]
-           R := M[20:Len(M)-20]
-           R := Encrypt( Hash(K1 | L | K1)[0:16], R )
-           L := L ^ Hash(K2 | R | K2)
-           R := Encrypt( Hash(K3 | L | K3)[0:16], R )
-           L := L ^ Hash(K4 | R | K4)
-           SPRP_Encrypt(K, M) = L | R
+       K1 = K
+       K2 = K ^ [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01]
+       K3 = K ^ [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02]
+       K4 = K ^ [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 03]
+       L := M[0:20]
+       R := M[20:Len(M)-20]
+       R := Encrypt( Hash(K1 | L | K1)[0:16], R )
+       L := L ^ Hash(K2 | R | K2)
+       R := Encrypt( Hash(K3 | L | K3)[0:16], R )
+       L := L ^ Hash(K4 | R | K4)
+       SPRP_Encrypt(K, M) = L | R
 
    We decrypt a message M with a key K as follows:
-           K1 = K
-           K2 = K ^ [00 ... 01]
-           K2 = K ^ [00 ... 02]
-           K4 = K ^ [00 ... 03]
-           L := M[0:20]
-           R := M[20:Len(M)-20]
-           L := L ^ Hash(K4 | R | K4)
-           R := Encrypt( Hash(K3 | L | K3)[0:16], R )
-           L := L ^ Hash(K2 | R | K2)
-           R := Encrypt( Hash(K1 | L | K1)[0:16], R )
-           SPRP_Decrypt(K, M) = L | R
+       K1 = K
+       K2 = K ^ [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01]
+       K3 = K ^ [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02]
+       K4 = K ^ [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 03]
+       L := M[0:20]
+       R := M[20:Len(M)-20]
+       L := L ^ Hash(K4 | R | K4)
+       R := Encrypt( Hash(K3 | L | K3)[0:16], R )
+       L := L ^ Hash(K2 | R | K2)
+       R := Encrypt( Hash(K1 | L | K1)[0:16], R )
+       SPRP_Decrypt(K, M) = L | R
 
    K must be 20 octets long; M must be at least 20 octets long.
 

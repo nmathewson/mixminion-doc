@@ -1,4 +1,4 @@
-$Id: nym-spec.txt,v 1.5 2003/10/07 19:56:10 nickm Exp $
+$Id: nym-spec.txt,v 1.6 2004/02/20 21:58:50 nickm Exp $
 
                                Mix3:Nym
     Underhill: A Proposed Type 3 Nymserver Protocol Specification
@@ -497,11 +497,11 @@ Table of Contents
 4.2. Message Encryption
 
    After synopsizing an email, the nymserver encrypts it immediately
-   with the nymholder's private key.
+   with the nymholder's public key.
 
    If a nymserver holds a set of synopses for longer than the
    nymholder-specified length of time, it encrypts those synopses with
-   the nymholder's private key.
+   the nymholder's public key.
 
    To encrypt an octet sequence, the nymserver first compresses the
    octet sequence (as described in E2E-spec.txt).  Next, the nymserver
@@ -521,7 +521,7 @@ Table of Contents
      Let PADDING_LEN = CEIL(LEN(M_C)/P) - LEN(M_C).
      Let M_P = M | Z(PADDING_LEN).
 
-     Let K = R(16).
+     Let K = Rand(16).
      Let M_Enc = SPRP_Encrypt(K, "", M_P)
      Let RSA_LEN = Len(PK_nym) - PK_OVERHEAD_LEN - 16
      Let RSA_PART = PK_Encrypt(PK_nym, K | M_Enc[0:RSA_LEN])
