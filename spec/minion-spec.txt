@@ -1,5 +1,6 @@
-$Id: minion-spec.txt,v 1.6 2003/05/17 05:20:19 nickm Exp $
+$Id: minion-spec.txt,v 1.7 2003/06/26 03:04:03 nickm Exp $
 
+				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
 
                             George Danezis
@@ -17,7 +18,7 @@ Status of this Document
    TeX file in the first place.  When you edit it, try to keep it
    looking like an RFC.
 
-   The organisation of this document loosely follows the structure
+   The organization of this document loosely follows the structure
    of RFC2440.
 
    TODO:
@@ -76,7 +77,7 @@ Table of Contents
    3.2.4.   Constructing a Type III packet
    3.2.4.1. Building a header
    3.2.4.2. Encrypting the payload
-   3.2.4.3. Constructing messages
+   3.2.4.3. Constructing the packet
    3.2.5.   Processing a Type III packet
    3.2.5.1. Replay avoidance
    3.2.5.2. Message delivery.
@@ -122,7 +123,7 @@ Table of Contents
      
      * Type II - an anonymity service originally designed by Lance
        Cottrell to address the flaws of the Type I system, and
-       implemented in the software "mixmaster".
+       implemented in the software "Mixmaster".
 
      * Type III - the anonymity service described in this document.
 
@@ -241,7 +242,7 @@ Table of Contents
 3.1.1. Cryptographic primitives
    
    Implementing a Type III remailer only requires the combination of
-   standardised cryptographic primitives. Most third party
+   standardized cryptographic primitives. Most third party
    cryptographic libraries or providers should support RSA-OAEP (PKCS#1
    Standard [XXXX Ref]), AES, SHA-1 (NIST Standards [XXXX Refs]), and
    ASN.1 notation. Furthermore a source of cryptographic random numbers
@@ -256,7 +257,7 @@ Table of Contents
 
    To generate predictable random padding, and to implement a stream
    cipher, we use AES (Rijndael) in counter mode with a 128-bit
-   blocksize and 128-bit keys, and an all-zero Initial Vector (IV).
+   block size and 128-bit keys, and an all-zero Initial Vector (IV).
 
    Specifically, to generate N octets of a random stream with key K, we
    successively encrypt the following ceil(N/16) blocks (given in
@@ -303,9 +304,6 @@ Table of Contents
            SPRP_Decrypt(K, M) = L | R
 
    K must be 20 octets long; M must be at least 20 octets long.
-
-   [XXXX Should we provide IVs. e.g. Encrypt(Z(16), Z(40)) -GD]
-   [XXXX Lioness doesn't have IVs, nor does counter-mode AES. -NM]
 
 3.1.1.4. Public-key cipher
 
@@ -386,6 +384,9 @@ Table of Contents
      (Len(K) = 16) and an aribrary length ASCII String. 
      (Len(SubKey(K,S)) = 16)
      SubKey(K,S) = Hash(K, S)[0:16]
+
+   - Int(bits, N) - A big-endian, bits-bit representation of the
+     integer N.
 
    To improve the readability of our specification, we use the
    following symbolic constants: 
@@ -485,8 +486,8 @@ Table of Contents
 
    0x0100-0x0FFF: PREDEFINED DELIVERY TYPES.
 
-   0x0100 SMTP   (TAG: 20 octets, EMAIL ADDRESS: variable) Variable octets
-   0x0101 MBOX   (TAG: 20 octets, USER: variable) Variable octets
+   0x0100 SMTP   [See "E2E-spec.txt"]
+   0x0101 MBOX   [See "E2E-spec.txt"]
    0x0102 MIX2   (EMAIL ADDRESS: variable).  Type II remailer support.
 
    0x1000-0xEFFF: UNALLOCATED
@@ -578,13 +579,12 @@ Table of Contents
    specified in section 3.2.5.
 
 3.2.4.1. Building a header
-   [XXXX rewrite to use new terms]
 
    Each type III message has two headers with identical structure. These
    headers are swapped at the crossover point. [XXXX describe crossover]
 
    A header is HEADER_LEN=2048 octets long and contains up to
-   2048/(OAEP_OVERHEAD+MIN_SH)=24. subheaders. Starting with N
+   2048/(OAEP_OVERHEAD+MIN_SH)=24 subheaders. Starting with N
    subheaders SH_0..SH_N containing secrets SK_0..SK_N (and placing
    routing extension blocks directly after their respective
    subheaders), the header is constructed by appending random padding
@@ -596,7 +596,43 @@ Table of Contents
    We construct the subheaders from last to first, so that each can contain
    a digest of the subsequent subheaders and padding data.
 
-   [XXXX We should include a full English description as well.]
+   A single headers are created as follows: First, the header
+   constructor obtains (as input) a list of nodes, the public key and
+   routing information for each node, a randomly generated secret to
+   use in the subheader for each node, and the 'delivery' routing
+   information the last node should use to deliver a packet.
+
+   The constructor then determines the amount of data (SIZE_i) that will
+   be added for each node's subheader.  This amount is equal to
+   MIN_SH, plus OAEP_OVERHEAD, plus the length of the routing
+   information for the following node (or the 'delivery' routing
+   information if this node is last).  The constructor generates a
+   chunk of random padding, equal in length to HEADER_LEN minus the
+   sum of all SIZE_i.
+
+   For each node NODE_i with master secret SK_i, the constructor
+   calculates a header key K_i=SubKey(SK, "HEADER SECRET KEY") and a
+   junk key JUNK_KEY_i=SubKey(SK, "RANDOM JUNK).  It then calculates
+   the node-generating junk J_i that will be generated by each node
+   NODE_i -- this is obtained by starting with no junk (as seen by
+   the first node), and appending to the junk each node sees,
+   SIZE_i bytes, generated with the PRNG key JUNK_KEY_i.  The junk
+   is also encrypted by K_i, starting with the counter offset that
+   NODE_i will use to encrypt the junk it adds.
+
+   Finally, the constructor builds the header itself.  It starts with
+   the random padding, and then proceeds *in reverse order* from the
+   last node to the first node.  For each node, it constructs and
+   encodes a subheader containing appropriate routing and key
+   information.  The 'RSA portion' of the header is taken to be the
+   first PK_MAX_DATA_LEN bytes of the subheader-concatenated-with-the-
+   header; the 'AES portion' of the header is taken to be the rest of
+   the subheader-concatenated-with-the-header.  The constructor
+   encrypts the 'AES portion' with K_i, and sets the digest in the
+   'RSA portion' to the hash of the encrypted 'AES portion'
+   concatenated with the junk J_i seen by node NODE_i.  Finally, the
+   constructor RSA-encrypts the 'RSA portion' with PK_i.
+
 
    PROCEDURE: Create a single header.
 
@@ -612,8 +648,8 @@ Table of Contents
      for i = 1 .. N
         // OAEP Padding plus invariant parts plus routing info.
         SIZE_i = MIN_SH + OAEP_OVERHEAD + Len(RI_i)
-        JUNK_KEY_i = HASH(SK_i | "RANDOM JUNK")[0:16]
-        K_i = HASH(SK_i | "HEADER SECRET KEY")[0:16]
+        JUNK_KEY_i = SubKey(SK_i, "RANDOM JUNK")
+        K_i = SubKey(SK_i, "HEADER SECRET KEY")
      end
 
      PADDING_LEN = 2048-SUM(SIZE_1 ... Size_N)
@@ -632,52 +668,48 @@ Table of Contents
         //           = 2048-256 - SUM(SIZE_1 ... SIZE_(i-1))
         //           = 2048 - 256 - len(J_{i-1})
         OFFSET = PADDING_LEN  + Len(J_i) - 256
-        J_i = J_i XOR Stream_i[OFFSET:Len(J_i)]
+        J_i = J_i ^ Stream_i[OFFSET:Len(J_i)]
      end
 
      // Create the Header, starting with the padding.
      H_(N+1) = Rand(PADDING_LEN)
 
      for i = N .. 1
-        IF i = N (set appropriate routing type and A_i)
-
-        // Decide whether to spill RI out of the RSA-encrypted chunk
-        // (unlikely), or to include some of the rest of the header
-        // in the RSA-encrypted chunk (likely).
-        if Len(RI_(i+1)) > MAX_RSA-MIN_SH then
-             RI_SPILL_LEN = Len(RI) - MAX_RSA + MIN_SH
-             H_INCL_LEN = 0
+        if i = N then
+             Set RT and RI from R.
         else
-             RI_SPILL_LEN = 0
-             H_INCL_LEN = MAX_RSA - MIN_SH - Len(RI_(i+1))
+             Let RT = RT_(i+1), RI = RI(i+1)
         endif
 
-        REST = RI_(i+1)[Len(RI_(i+1)) - RI_SPILL_LEN : RI_SPILL_LEN]
-               | H_(i+1)[H_INCL_LEN : Len(H_(i+1))-H_INCL_LEN]
+        SH0 = SHS(V, SK_i, Z(20), len(RI_(i+1)), RT_(i+1), RI(i+1))
+        SH_LEN = LEN(SH0)
+        H0 = SH0 | H_(i+1)
+        
+        REST = H0[PK_MAX_DATA_LEN : Len(REST) - PK_MAX_DATA_LEN]
 
         EREST = Encrypt(K, REST)
-        DIGEST = HASH(EREST | J_i-1)
+        DIGEST = HASH(EREST | J_i)
 
         SH = SHS(V, SK_i, DIGEST, len(RI_(i+1)), RT_(i+1), RI(i+1))
-        ESH = PK_ENCRYPT(PK_i, 
-                         SH[0:Len(SH)-RI_SPILL_LEN] |
-                         H[0:H_INCL_LEN]) 
+        UNDERFLOW = Min(PK_MAX_DATA_LEN - SH_LEN, 0)
+        RSA_PART = SH | H0[PK_MAX_DATA_LEN - UNDERFLOW : UNDERFLOW]
+
+        ESH = PK_ENCRYPT(PK_i, RSA_PART)
         H_i = ESH | EREST
      end
 
    return H_1
 
-   It is important to note that a user can create a SURB, by following
+   It is important to note that a user can create a SURB by following
    a similar procedure as described above. Since the objective is for
    SURBs to be stateless, in the sense that they do not require any
    secrets to be stored by their creator to be decoded, the full
    procedure is more intricate (see "E2E-spec.txt" for details.)
 
-3.2.4.2. Encrypting the payload
-   [XXXX rewrite to use new terms, move]
+3.2.4.2. Encoding the payload
 
-   The payload of a Mixminion message has a fixed length of 32 kb
-   - 2*16*128 octets = 28kb. Payloads indicate their size.
+   The payload of a Mixminion message has a fixed length of 32 KB
+   - 2*16*128 octets = 28KB. Payloads indicate their size.
 
    (When sending a reply message with a SURB, we use payload encryption
    to prevent the crossover point from seeing an unencrypted payload. See
@@ -685,89 +717,106 @@ Table of Contents
 
    We denote a payload as P.
 
-3.2.4.3. Constructing messages
-   [XXXX rewrite to use new terms; move]
-   [XXXX We should include a full English description as well.]
+3.2.4.3. Constructing the packet
 
-   Given two headers and a payload one can construct a message. The
-   first header must contain a subheader with routing type SWAP.
+   Given two headers and a payload one can construct a packet. The
+   first header must end with a subheader with routing type SWAP.
 
-   PROCEDURE: Construct a message.
+   To construct a Type III packet, the sender applies the SPRP steps
+   for message transmission in reverse order.
+
+   If the sender has a forward message, she first SPRP_Encrypts the
+   payload with the secret keys for the hops in the second header in
+   reverse order.  If she has a SURB, she SPRP_Decrypts the payload
+   with the SURB encryption key.  [We use decryption in the reply case
+   so that the recipient only needs to use SPRP_Encrypt steps to
+   retrieve the message.]
+
+   Next, the sender SPRP_Encrypts the payload with a hash of the
+   second header, then SPRP_Encrypts the header with a hash of the
+   second payload.  This step (which the SWAP operation will reverse)
+   makes the second header and the payload unreconstructable if
+   either is damaged.
+
+   Finally, the sender SPRP_Encrypts the payload and the second header
+   with each of the first header's secret keys, in reverse order.
+   Concatenating the first header, the second header, and the payload
+   yields the final packet.
+
+   PROCEDURE: Construct a packet
 
    Input: H1 (header containing keys SK1_1... SK1_N)
              and H2 (either a header containing keys SK2_1... SK2_N if
              we constructed it, or a header with unknown keys if we're
              using a reply block and a SURB secret key.)
           P (Payload)
-   Output: M (the message)
+   Output: M (the 32KB message)
 
    Process:
         // Phase 1
-        if (H2 is a reply block)
-                P = SPRP_ENC(SURB secret key, "PRIVATE SURB KEY", P)
-        else // (H2 is *not* a reply block)
-                for i = N .. 1
-                        P = SPRP_ENC(SK2_i, "PAYLOAD ENCRYPT", P)
-                end
+        if H2 is a reply block, then
+               Let K_SURB = the end-to-end encryption key in H2
+               P = SRPR_Decrypt(K_SURB, "PAYLOAD ENCRYPT" P)
+        else // H2 is not a reply block
+               for i = N .. 1
+                       P = SPRP_Encrypt(SK2_i, "PAYLOAD ENCRYPT", P)
+               end
         endif
         // Phase 2
-        H2 = SPRP_ENC(SHA1(P), "HIDE HEADER", H2)
-        P = SPRP_ENC(SHA1(H2), "HIDE PAYLOAD", P)
+        H2 = SPRP_Encrypt(SHA1(P), "HIDE HEADER", H2)
+        P = SPRP_Encrypt(SHA1(H2), "HIDE PAYLOAD", P)
 
         for i = N .. 1
-                H2 = SPRP_ENC(SK1_i, "HEADER ENCRYPT",H2)
-                P = SPRP_ENC(SK1_i, "PAYLOAD ENCRYPT",P)
+                H2 = SPRP_Encrypt(SK1_i, "HEADER ENCRYPT",H2)
+                P = SPRP_Encrypt(SK1_i, "PAYLOAD ENCRYPT",P)
         end
-        M = (H1, H2, P)
+        M = H1 | H2 | P
 
 3.2.5. Processing a Type III packet
 
    Messages are transferred from node to node using either the custom
    Type III transport protocol (see below) or email.  A node with
-   private key PK receiving message M = (H1, H2, P) performs the
+   private key PK receiving message M = H1 | H2 | P performs the
    following operations:
 
    PROCEDURE: Process a message M
+
+        H1 = M[0:HEADER_LEN]
+        H2 = M[HEADER_LEN:HEADER_LEN]
+        P = M[2*HEADER_LEN:PAYLOAD_LEN]
+
         PK_PART = PK_Decrypt(PK,H1[0:PK_ENC_LEN])
         If there is any problem with the OAEP padding discard the message.
 
-        If Len(PK_PART) != MAX_RSA, discard the message.
+        If Len(PK_PART) != PK_MAX_ENC_LEN, discard the message.
 
-        SHS(V, SK, D, RS, RT, ..) = <extract from PK_PART[0:MIN_SH]>
-        Check that D = HASH(H1[256:2048-256]), and discard if not.
+        FSHS(V, SK, D, RS, RT) = <extract from PK_PART[0:MIN_SH]>
+        Check that D = Hash(H1[PK_ENC_LEN:HEADER_LEN-PK_END_LEN]), 
+             and discard if not.
 
         Check for replays, as described in 3.2.5.1.
 
-        JUNK_KEY = HASH(SK | "RANDOM JUNK")[0:16]
-        H1 = H1[RSA_LEN : 2048-RSA_LEN] | 
+        JUNK_KEY = SubKey(SK, "RANDOM JUNK")
+        H1 = H1[PK_ENC_LEN : 2048-PK_ENC_LEN] | 
              PRNG(JUNK_KEY, OAEP_OVERHEAD + MIN_SH + RS)
-        HEADER_KEY = HASH(SK | "HEADER SECRET KEY")[0:16]
-        H1 = H1 XOR PRNG(HEADER_KEY, Len(H1))
+        HEADER_KEY = SubKey(SK, "HEADER SECRET KEY")
+        H1 = H1 ^ PRNG(HEADER_KEY, Len(H1))
 
-        If RS > MAX_RSA-MIN_SH then 
-            // RI is incomplete.
-            RI = PK_PART[MIN_SH:MAX_RSA-MIN_SH]
-            MISSING_RI_LEN = RS - (MAX_RSA-MIN_SH)
-            EXTRA_H = ""
-        else
-            RI = PK_PART[MIN_SH:RS]
-            MISSING_RI_LEN = 0
-            EXTRA_H = PK_PART[MIN_SH+RS:Len(PK_PART)-MIN_SH-RS]
-        endif
-
-        RI = RI | H1[0:MISSING_RI_LEN]
-        H1 = EXTRA_H | H1[MISSING_RI_LEN:2048-MISSING_RI_LEN]
-        H2 = SPRP_DEC(SK, "HEADER ENCRYPT",H2)
-        P = SPRP_DEC(SK, "PAYLOAD ENCRYPT",P)
+        FULL_H = PK_PART[MIN_SH:Len(PK_PART)-MIN_SH] | H1
+        RI = FULL_H[0:RS]
+        H1 = FULL_H[RS:Len(FULL_H) - RS]
+         
+        H2 = SPRP_Decrypt(SK, "HEADER ENCRYPT",H2)
+        P = SPRP_Decrypt(SK, "PAYLOAD ENCRYPT",P)
 
         if routing type is DROP:
                 End.
         if routing type is SWAP-FWD:
-                P = SPRP_DEC(SHA1(H2), "HIDE PAYLOAD", P)
-                H2 = SPRP_DEC(SHA1(P), "HIDE HEADER", H2)
+                P = SPRP_Decrypt(Hash(H2), "HIDE PAYLOAD", P)
+                H2 = SPRP_Decrypt(Hash(P), "HIDE HEADER", H2)
                 Swap H1 and H2
         if routing type is SWAP-FWD or FWD:
-                Put (H1, H2, P) in queue to be sent to the address in RI.
+                Put H1 | H2 | P in queue to be sent to the address in RI.
         Otherwise:
                 Give (RT, RI, P) to the delivery subsystem.
 
@@ -786,7 +835,7 @@ Table of Contents
    was encrypted is in use. The Hash should be computed in the
    following way:
 
-   X = HASH(SharedSecret | "REPLAY PREVENTION")
+   X = HASH(SK | "REPLAY PREVENTION")
 
    The value X is not secret, and its secrecy should not be relied
    upon.  The integrity of the list should be secured and the X values
@@ -798,7 +847,7 @@ Table of Contents
 
 3.3. SURB exchange formats.
 
-   [XXXX rewrite to new language]
+   This section describes how to encode messages with 
 
    A SURB can be encoded in a standard binary or ASCII format.
  
@@ -825,34 +874,26 @@ Table of Contents
      should use as an exit point.
 
    * Use-by-Date: indicates the expiry date the SURB should be used
-     by. Can be calculated using the key rotation frequencies of the
-     intermediate nodes.  This field must be given as a number of
-     seconds since midnight GMT on Jan 1, 1970 -- but must be aligned
-     to the start of a day (in other words, it must be divisible by
-     60*60*24).  (Misaligned dates must be rejected as invalid.)
+     by. MUST be no later than the key rotation of any node on the
+     SURB Path.  This field must be given as a number of seconds since
+     midnight GMT on Jan 1, 1970 -- but must be aligned to the start
+     of a day (in other words, it must be divisible by 60*60*24).
+     (Misaligned dates must be rejected as invalid.)
 
-     (Rationale: a seconds-level granularity allows us to move to a
-     tighter schedule later on in order to support a synchronous
-     mixnet.)
+     (To avoid leaking parameters, clients SHOULD pick a use-by date,
+     then pick a path accordingly, rather than leaking their choices
+     in the use-by date.  To avoid distinguishability, clients SHOULD
+     NOT choose use-by dates that are long in the future.)
+
+     [XXXX Should there be a use-after date too? -NM]
 
    * SURB data: Contains the SURB that is created as described above.
-   * Encryption key: used to LIONESS-encrypt the payload before
+   * Encryption key: used to SPRP-encrypt the payload before
      sending it into the network.
 
-   The ASCII Encoding of SURBs.
-
-   The  ASCII compatible format of SURBs is:
-   ======= BEGIN TYPE III REPLY BLOCK ========
-   Version: x.x
-   Base64 encoded binary SURB 
-   ======== END TYPE III REPLY BLOCK =========
-
-   [XXXX move to openpgpish format]
-   [XXXX Specify if the end of line is simply '\n' or CRLF like in
-   MMTP -GD]
-
-   The version number should be in decimal ASCII and is the same as the
-   binary version.
+   To encode a SURB for transport, implementations SHOULD support
+   OpenPGP-style ASCII armor, with the header text "BEGIN TYPE III
+   REPLY BLOCK" and a single armor header, "Version: 1.0".   
 
 4. Transport protocol
 
