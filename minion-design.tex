@@ -1,9 +1,12 @@
 
-\documentclass[final]{ieee}
-
+\documentclass[times,10pt,twocolumn]{article}
+\usepackage{latex8}
+\usepackage{times}
 \usepackage{url}
 \usepackage{graphics}
 \usepackage{amsmath}
+
+\pagestyle{empty}
 
 \renewcommand\url{\begingroup \def\UrlLeft{<}\def\UrlRight{>}\urlstyle{tt}\Url}
 \newcommand\emailaddr{\begingroup \def\UrlLeft{<}\def\UrlRight{>}\urlstyle{tt}\Url}
@@ -32,17 +35,16 @@
 \title{Mixminion: Design of a Type III Anonymous Remailer Protocol}
 
 %\author{George Danezis\inst{1} \and Roger Dingledine\inst{2} \and Nick Mathewson\inst{2}}
-\author{George Danezis \\ University of Cambridge \\ \emailaddr{george.danezis@cl.cam.ac.uk} \and
-Roger Dingledine and Nick Mathewson \\ The Free Haven Project \\ \emailaddr{{arma,nickm}@freehaven.net}}
+\author{George Danezis \\ University of Cambridge \\ george.danezis@cl.cam.ac.uk \and
+Roger Dingledine and Nick Mathewson \\ The Free Haven Project \\ \{arma,nickm\}@freehaven.net}
 %\institute{Cambridge University
 %\email{\emailaddr{george.danezis@cl.cam.ac.uk}}
 %\and
 %The Free Haven Project
 %\email{\emailaddr{{arma,nickm}@freehaven.net}}}
 
-\pagestyle{titlepagestyle}
 \maketitle
-\pagestyle{empty}
+\thispagestyle{empty}
 
 \begin{abstract}
 We present Mixminion, a message-based anonymous remailer protocol with
@@ -60,26 +62,26 @@ protects against known anonymity-breaking attacks as well
 as or better than other systems with similar design parameters.
 \end{abstract}
 
-\begin{center}
-\textbf{Keywords:} anonymity, mix-net, peer-to-peer, remailer, nymserver, reply block
-\end{center}
+%\begin{center}
+%\textbf{Keywords:} anonymity, mix-net, peer-to-peer, remailer, nymserver, reply block
+%\end{center}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Overview}
+\Section{Overview}
 \label{sec:intro}
 
 Chaum first introduced anonymous remailers over 20 years ago
 \cite{chaum-mix}.
 The research community has since introduced many new
 designs and proofs
-\cite{abe}\cite{babel}\cite{flash-mix}\cite{kesdogan}\cite{shuffle}\cite{hybrid-mix}, 
+\cite{abe,babel,flash-mix,kesdogan,shuffle,hybrid-mix}, 
 and discovered a variety of new attacks 
-\cite{back01}\cite{langos02}\cite{disad-free-routes}\cite{desmedt}\cite{mitkuro}\cite{raymond00}.
+\cite{back01,langos02,disad-free-routes,desmedt,mitkuro,raymond00}.
 But because many of the newer designs require considerable coordination,
 synchronization, bandwidth, or processing resources, deployed remailers still use
 Cottrell's Mixmaster design from 1994
-\cite{mixmaster-attacks}\cite{mixmaster-spec}. Here we describe Mixminion, a
+\cite{mixmaster-attacks,mixmaster-spec}. Here we describe Mixminion, a
 protocol for asynchronous, loosely federated remailers that maintains
 Mixmaster's flexibility while addressing the following flaws:
 
@@ -196,7 +198,7 @@ stands up to known attacks, and conclude with a list of open problems.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Background}
+\Section{Background}
 \label{sec:background}
 
 Chaum introduced the concept of using relay servers, or \emph{mixes},
@@ -237,7 +239,7 @@ mix-net. Cascades can provide greater anonymity against an adversary
 who owns many mixes \cite{disad-free-routes}, but they are also more
 vulnerable to blending attacks such as trickle or flooding attacks
 \cite{trickle02}.
-Furthermore, cascade networks arguably have lower maximum anonymity because
+Further, cascade networks arguably have lower maximum anonymity because
 the number of people Alice can hide among (her \emph{anonymity set}) is limited
 to the number of messages the weakest node in her cascade can handle.
 In a free-route network, larger anonymity sets are possible because no
@@ -249,8 +251,8 @@ mixes \cite{realtime-mix} and web mixes \cite{web-mix}.
 More complex designs use zero-knowledge proofs and stronger assumptions
 to guarantee delivery or to detect and exclude misbehaving participants.
 These include flash mixes \cite{flash-mix},
-hybrid mixes \cite{jakobsson-optimally}\cite{hybrid-mix},
-and provable shuffles \cite{PShuffle}\cite{shuffle}. The properties
+hybrid mixes \cite{jakobsson-optimally,hybrid-mix},
+and provable shuffles \cite{PShuffle,shuffle}. The properties
 of these designs are appealing, but they are often impractical since
 they assume fairly strong coordination and synchronization between the mixes
 and impose a heavy computational and communication overhead.
@@ -277,11 +279,11 @@ service \cite{helsingius}, and by theoretical work on mixes. Hughes
 wrote the first Cypherpunk anonymous remailer \cite{remailer-history};
 Finney followed closely with a collection of scripts that used Phil
 Zimmermann's PGP to encrypt and decrypt remailed messages. Later, Cottrell
-implemented the Mixmaster system \cite{mixmaster-attacks}\cite{mixmaster-spec},
+implemented the Mixmaster system \cite{mixmaster-attacks,mixmaster-spec},
 or ``Type II'' remailers, which added message padding, message pools,
 and other mix features lacking in the Cypherpunk remailers.
 
-\subsection{Known attacks against mix-nets}
+\SubSection{Known attacks against mix-nets}
 
 Attacks against mix-nets aim to reduce the anonymity of users by
 linking anonymous senders with the messages they send, by linking
@@ -383,7 +385,7 @@ of the attacks and our defenses against them in Section \ref{sec:attacks}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Design goals and assumptions}
+\Section{Design goals and assumptions}
 \label{sec:assumptions}
 
 Mixminion brings together the current best practical approaches
@@ -399,7 +401,7 @@ the anonymity set. These assumptions lead to the following design goals:
 
 %While Mixminion protects against known \emph{traffic analysis} attacks
 %(where an adversary attempts to learn a given message's sender or receiver
-%\cite{rackoff93cryptographic}\cite{raymond00}), we do not fully address
+%\cite{rackoff93cryptographic,raymond00}), we do not fully address
 %\emph{traffic confirmation} attacks such as intersection attacks.
 %In a traffic confirmation attack, the adversary treats the mix network
 %as a black box and observes the behavior of senders and receivers. Over
@@ -475,7 +477,7 @@ distinguishing between them.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{The Mixminion Mix-net Design}
+\Section{The Mixminion Mix-net Design}
 
 \label{sec:design}
 
@@ -519,7 +521,7 @@ The rest of this section describes the mechanism for secure replies,
 its integration with the normal sender anonymous message delivery, and
 how we defeat tagging-related attacks.  
 
-\subsection{Recipient anonymity and indistinguishable replies}
+\SubSection{Recipient anonymity and indistinguishable replies}
 \label{subsec:replies}
 \label{subsec:header-swap}
 
@@ -556,7 +558,7 @@ is composed of up to 16 subheaders, one for each hop along the path.
 Each subheader contains a hash of the remainder of its header as seen
 by that mix, so we can do integrity-checking of the path (but not the
 payload) within each leg. Each subheader also contains a master secret,
-which is used to derive a symmetric key for decrypting the rest of the
+used to derive a symmetric key for decrypting the rest of the
 message. To make sure that the hash matches even though each hop
 must repad the header to maintain constant message length, we need to
 add predictable padding to the end of the header: the mix appends an
@@ -790,7 +792,7 @@ or a reply, it does gain partial information because crossover points
 are less frequent on forward paths, and therefore a message which is
 crossing-over is more likely to be a reply message.
 
-\subsection{Multiple-message tagging attacks}
+\SubSection{Multiple-message tagging attacks}
 \label{subsec:multi-tagging}
 
 The above design is still vulnerable to a subtle and dangerous
@@ -836,14 +838,14 @@ multiple-message tagging attack seems infeasible.  We leave a security
 analysis of the multiple-paths idea to future work, but see
 Section \ref{sec:maintaining-anonymity}.
 
-\section{Other design decisions}
+\Section{Other design decisions}
 
 %In this section we discuss how we are using
 %link encryption with ephemeral keys to provide forward anonymity,
 %message types and modules to handle different types of messages, and
 %exit policies for advertising what delivery options a node will provide.
 
-\subsection{Forward secure link encryption and its benefits}
+\SubSection{Forward secure link encryption and its benefits}
 \label{subsec:link-encrypt}
 
 Unlike remailer Types I and II that used SMTP \cite{SMTP} (ordinary
@@ -934,7 +936,7 @@ easier to deploy relay-only mixes --- such nodes simply omit SMTP
 support, as the next section discusses.  
 % Credit for the above point goes to Len.
 
-\subsection{Message types and delivery modules}
+\SubSection{Message types and delivery modules}
 \label{subsec:delivery-modules}
 
 %XXXX
@@ -964,7 +966,7 @@ message type and its payload.  The SMTP module, for example, requires
 a mailbox.\footnote{A {\it mailbox} is the canonical form of the
 ``{\tt user@domain}'' part of an e-mail address. Mixminion uses only
 mailboxes in the protocol, because the other parts
-of an e-mail address could potentially differ among senders who
+of an e-mail address could differ among senders who
 obtain an address from different sources, thus leading to smaller
 anonymity sets.}
 This information is placed
@@ -1024,7 +1026,7 @@ We believe these attacks do not provide an argument against
 extensibility \emph{per se}, but rather argue against the proliferation
 of redundant extensions, and against the use of rare extensions.  
 
-\subsection{Exit policies and abuse}
+\SubSection{Exit policies and abuse}
 \label{subsec:exitpolicies}
 
 One important entry in a node's capability block is its \emph{exit
@@ -1087,7 +1089,7 @@ all.  Thus, the
 number of available open exit nodes remains a limiting security parameter
 for the remailer network.
 
-\subsection{Replay prevention, message expiration, and key rotation}
+\SubSection{Replay prevention, message expiration, and key rotation}
 \label{subsec:replay}
 
 Mixmaster offers rudimentary replay prevention by keeping a list of recent
@@ -1163,7 +1165,7 @@ of opportunity for this attack.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Directory Servers}
+\Section{Directory Servers}
 \label{sec:dir-servers}
 
 The Mixmaster protocol does not specify a means for clients to learn the
@@ -1174,7 +1176,6 @@ the same way.  (Omitting directory servers is not an option: without timely
 information, clients cannot respond to changes in the set of mixes, or to
 changes in mix keys.)
 Here
-% XXXX would be nice to cite some more. eg, are there key lists, etc? -RRD
 we describe Mixminion directory servers and examine the anonymity risks
 of such information services.
 
@@ -1256,7 +1257,7 @@ exploiting the directory servers to manipulate client behavior.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Nym management and single-use reply blocks}
+\Section{Nym management and single-use reply blocks}
 \label{sec:nymservers}
 
 Current nymservers, such as {\tt nym.alias.net} \cite{nym-alias-net},
@@ -1343,10 +1344,10 @@ model.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Maintaining anonymity sets}
+\Section{Maintaining anonymity sets}
 \label{sec:maintaining-anonymity}
 
-\subsection{Batching Strategy}
+\SubSection{Batching Strategy}
 \label{subsec:batching}
 
 Low-latency systems like Onion Routing aim to provide anonymity against an
@@ -1403,7 +1404,7 @@ a message could plausibly have been held in a pool for several rounds
 at each mix, the set of possible senders when Bob receives the target
 message is large.
 
-\subsection{Dummy policy}
+\SubSection{Dummy policy}
 
 Dummy traffic (sending extra messages that are not actually meant to
 be read or used, to confuse the adversary) is an old approach to
@@ -1441,7 +1442,7 @@ aim to protect anonymity in times of low traffic --- either when there are
 actually few messages going through the mix, or when most messages are
 created by the adversary.
 
-\subsection{Choosing paths when transmitting many messages}
+\SubSection{Choosing paths when transmitting many messages}
 \label{subsec:many-messages}
 
 When Alice (the owner of a pseudonym) downloads her mail from a
@@ -1490,7 +1491,7 @@ open problem.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Attacks and Defenses}
+\Section{Attacks and Defenses}
 \label{sec:attacks}
 
 Below we summarize a variety of attacks and how well our design withstands
@@ -1583,13 +1584,13 @@ highly reliable mixes to gain traffic for analysis; attack honest mixes
 to encourage users to start using the dishonest ones.}
 Availability and reliability statistics should mitigate some of these
 problems, but they introduce problems of their own. They are an area of
-active research \cite{mix-acc}\cite{casc-rep}.
+active research \cite{mix-acc,casc-rep}.
 \end{itemize}
 \end{enumerate}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Future Directions and Open Problems}
+\Section{Future Directions and Open Problems}
 \label{sec:conclusion}
 
 This design document represents the first step in peer review of the
@@ -1653,7 +1654,7 @@ Mixminion specification \cite{mixminion-spec}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section*{Acknowledgments}
+\Section{Acknowledgments}
 
 This paper incorporates ideas from the Mixmaster development team,
 particularly Len Sassaman, Scott Renfro, Peter Palfrader, Ulf M\"oller,
@@ -1668,8 +1669,7 @@ issues for the past decades.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\bibliographystyle{plain}
-
+\bibliographystyle{latex8}
 \bibliography{minion-design}
 
 \end{document}
