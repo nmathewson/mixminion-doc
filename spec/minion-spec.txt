@@ -1,11 +1,11 @@
-$Id: minion-spec.txt,v 1.1 2003/05/05 01:06:48 nickm Exp $
+$Id: minion-spec.txt,v 1.2 2003/05/06 00:34:01 arma Exp $
 
-	   Type III (Mixminion) Mix Protocol Specifications
-				   
-			    George Danezis
-			   Roger Dingledine
-			    Nick Mathewson
-			     (who else?)
+           Type III (Mixminion) Mix Protocol Specifications
+
+                            George Danezis
+                           Roger Dingledine
+                            Nick Mathewson
+                             (who else?)
 
 Status of this Document
 
@@ -53,7 +53,7 @@ Abstract
 Table of Contents
 
             Status of this Document                                    X
-	    Abstract
+            Abstract
             Table of Contents
    1.       Introduction
    1.1.     Terminology
@@ -251,9 +251,9 @@ Table of Contents
    hexadecimal):
          [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00]
          [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01]
-	 [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02]
-	 [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 03]
-	         ....
+         [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 02]
+         [00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 03]
+                 ....
    We then return the first N bytes of the concatenated result.
 
 3.1.1.3. Super-pseudorandom permutation
@@ -266,29 +266,29 @@ Table of Contents
    Thus, in the notation described below, we encrypt a message M with
    a key K as follows:
            K1 = K
-	   K2 = K ^ [00 ... 01]
-	   K2 = K ^ [00 ... 02]
-	   K4 = K ^ [00 ... 03]
-	   L := M[0:20]
-	   R := M[20:Len(M)-20]
-	   R := Encrypt( Hash(K1 | L | K1)[0:16], R )
-	   L := L ^ Hash(K2 | R | K2)
-	   R := Encrypt( Hash(K3 | L | K3)[0:16], R )
-	   L := L ^ Hash(K4 | R | K4)
-	   SPRP_Encrypt(K, M) = L | R
+           K2 = K ^ [00 ... 01]
+           K2 = K ^ [00 ... 02]
+           K4 = K ^ [00 ... 03]
+           L := M[0:20]
+           R := M[20:Len(M)-20]
+           R := Encrypt( Hash(K1 | L | K1)[0:16], R )
+           L := L ^ Hash(K2 | R | K2)
+           R := Encrypt( Hash(K3 | L | K3)[0:16], R )
+           L := L ^ Hash(K4 | R | K4)
+           SPRP_Encrypt(K, M) = L | R
 
    We decrypt a message M with a key K as follows:
            K1 = K
-	   K2 = K ^ [00 ... 01]
-	   K2 = K ^ [00 ... 02]
-	   K4 = K ^ [00 ... 03]
-	   L := M[0:20]
-	   R := M[20:Len(M)-20]
-	   L := L ^ Hash(K4 | R | K4)
-	   R := Encrypt( Hash(K3 | L | K3)[0:16], R )
-	   L := L ^ Hash(K2 | R | K2)
-	   R := Encrypt( Hash(K1 | L | K1)[0:16], R )
-	   SPRP_Decrypt(K, M) = L | R
+           K2 = K ^ [00 ... 01]
+           K2 = K ^ [00 ... 02]
+           K4 = K ^ [00 ... 03]
+           L := M[0:20]
+           R := M[20:Len(M)-20]
+           L := L ^ Hash(K4 | R | K4)
+           R := Encrypt( Hash(K3 | L | K3)[0:16], R )
+           L := L ^ Hash(K2 | R | K2)
+           R := Encrypt( Hash(K1 | L | K1)[0:16], R )
+           SPRP_Decrypt(K, M) = L | R
 
    K must be 20 octets long; M must be at least 20 octets long.
 
@@ -393,7 +393,7 @@ Table of Contents
       Main header       [2K]
       Secondary header  [2K]
       Payload           [28K]
-                       	[Total: 32K]
+                               [Total: 32K]
 
 3.2.1. Subheader structure
 
@@ -687,7 +687,7 @@ Table of Contents
         SHS(V, SK, D, RS, RT, ..) = <extract from PK_PART[0:MIN_SH]>
         Check that D = HASH(H1[256:2048-256]), and discard if not.
 
-	Check for replays, as described in 3.2.5.1.
+        Check for replays, as described in 3.2.5.1.
 
         JUNK_KEY = HASH(SK | "RANDOM JUNK")[0:16]
         H1 = H1[RSA_LEN : 2048-RSA_LEN] | 
