@@ -99,6 +99,29 @@ have more stuff done.)
 
  These are the reasons why I think it might be a good idea to have automatic 
  on request information from servers. -GD]
+[Hm.  You may have a point.  I'm still going to suggest that we do
+ not do this yet, for a few reasons.
+
+ First, we need a way for servers to publish their descriptors to
+ directory servers.  (Otherwise, a directory server couldn't learn
+ about new servers for the first time.)  In other words, a push
+ mechanism is needed no matter what.  On the other hand, directory
+ servers may or may not need a pull mechanism: we do not yet have a
+ design that requires this.  Let's not build it till we have a use
+ for it.
+
+ Second, it's a bit tricky to specify *which* descriptor a server
+ should return.  Today's?  Tomorrow's?  All the ones it knows about?
+
+ Third, (this is a variant of 'First') because client use of this
+ feature is prone to misuse, we should only provide it to clients
+ wrapped in some safe mechanism.  That safe mechanism has yet to be
+ specified.
+
+ Therefore, I'm going to suggest that we call this feature possibly
+ desirable... but that we should first design directories or whatever
+ other node discovery mechanisms *may* want this feature before we
+ decide that to implement the feature itself. -NM]
 
 \section{Message Format}
 
