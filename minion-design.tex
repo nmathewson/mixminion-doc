@@ -1272,18 +1272,18 @@ known as the \emph{blending attack} because the adversary blends his
 own messages with the batch \cite{batching-taxonomy}. By repeatedly
 attacking each mix in the path, the adversary will link Alice and Bob.
 
-Mixminion nodes use the \emph{timed dynamic-pool} batching strategy as
-outlined in \cite{batching-taxonomy}, and as adapted from Mixmaster. A
+Mixminion nodes use a \emph{timed dynamic-pool} batching strategy adapted
+from Mixmaster \cite{batching-taxonomy}. A
 mix fires every... [insert Cottrell mix description here. Perhaps put
 the algorithm itself from the spec into a side box, or an appendix?]
 
-Timed dynamic-pool mixes offer several benefits. Firstly, they increase
+Timed dynamic-pool mixes increase
 the cost of the blending attack: because the number of messages coming
 out at each flush is always a fraction of the number waiting, it is
 impossible to arrange to completely flush the mix with high probability
 in one flush. Thus an adversary is forced to spend multiple intervals
-(and thus delay other messages for considerable time) both in flushing
-the original honest messages from the mix, and again in flushing the
+(and thus delay other messages for considerable time) both to flush
+the original honest messages from the mix, and again to flush the
 target message from the mix. This delay will be noticed by the other
 mixes, because [nick? clarify here] they talk to each other over tcp so
 they know when something's up.
@@ -1296,15 +1296,38 @@ message is large.
 
 \subsection{Dummy policy}
 
-...will write this soon
-\cite{langos02}.
+Dummy traffic (sending extra messages that are not actually meant to
+be read or used, to confuse the adversary) is a very old approach to
+improving anonymity, but its efficacy is still not well understood.
 
-We could gain stronger protection by letting mixes address dummies
-to actual users. But each mix must know all the users in the system:
-if a mix only delivers dummies to a subset of the users, an adversary
-can distinguish with better than even probability between a dummy and
-a legitimate message.
+One use for dummies is to weaken the intersection attack, perhaps
+by letting mixes address dummies to actual users. But each mix must
+know all the users in the system: if a mix only delivers dummies to a
+subset of the users, an adversary can distinguish with better than even
+probability between a dummy and a legitimate message. While there is
+some early research on the subject \cite{langos02}, we currently know no
+practical way to use dummies to provably help against the intersection
+attack. Thus Mixminion does not use dummies that reach users.
 
+Another use for dummies is to weaken the blending attack. Our timed
+dynamic-pool batching strategy increases the cost of the blending attack
+because the adversary needs to keep flushing the mix until all honest
+messages are out; but once he has done so he can be certain that no
+honest messages remain. In the second phase of the attack, he again
+needs to flush until the target message comes out; but once it does, he
+can be certain of recognizing it. Thus Mixminion employs the following
+dummy policy, as suggested in \cite{andrei-claudia}: each time the mix
+fires, it also sends out a number of dummies chosen from a geometric
+distribution. These dummies travel a number of hops chosen uniformly
+between $1$ and $4$. The blending attack is now harder --- the adversary
+can no longer single out the target message in the outgoing batch, and so
+he must track each of the dummies along with the original target message.
+
+During normal traffic, these dummies affect anonymity very little. They
+aim to protect anonymity in times of low traffic --- whether it is low
+because there are actually few messages going through the mix, or there
+are the normal number of messages but most of them are created by the
+adversary.
 
 \subsection{Transmitting many messages}
 
