@@ -9,6 +9,7 @@
 1.5. Is the 'BAD SHA1' nak in MMTP acceptable?
 
    Proposal: keep them both. -NM
+   Sounds good, until we hear from GD that they're unnecessary. :) -RD
 
 2. Email encryption: what do we do?
 
@@ -19,7 +20,7 @@
    is derived from the seed like the rest of the secrets.] -NM
 
    And for non-anonymous SURB-using senders, the mail gateway they
-   use does it for them when takes the reply block and attaches their
+   use does it for them when it takes the reply block and attaches their
    payload. -RD
 
 2b. Mail gateways. We should specify these.
@@ -41,17 +42,27 @@
    and tagged messages, reply messages, and non-plaintext messages are
    all delivered as junk. -NM
 
+   Sounds good for now. If our assumption that "a random 28kb payload
+   will always contain at least one of these non-printable characters"
+   turns out to not work so well, we can always back off to the "imbed
+   the length with some redundancy" option from earlier. -RD
+
 4. Stateless replies and SMTP (depends on 2 and 3, if I understand correctly)
 
    Proposal: stateless replies put E_recipient_key(nHops | seed) as
    the value of the LOCAL or SMTP Tag field, as suggested in my
    comments below.  (See comments for why.) -NM
 
+   See http://archives.seul.org/mixminion/dev/Jul-2002/msg00003.html
+   for more discussion. Should we pick one, or both? -RD
+
 5. Do we support other SSL modes for MMTP?
 
    Proposal: server-to-server connections must use DHE/RSA/AES128/SHA1, 
    but we allow clients to connect with RSA/AES128/SHA1 and
    RSA/3DES/SHA1.  -NM
+
+   I think this is ok. -RD
    
 6. How often do/must we rehandshake?
 
@@ -93,6 +104,7 @@
 12. Support Diffs for directories?
 
     Proposal: not until later. -NM
+    Agreed. They won't be "too big" anytime soon. -RD
 
 13. Do we change directories to XML?  What about descriptor blocks?
 
@@ -119,6 +131,7 @@
 14. Sensible support for multiple directory servers.
 
     Proposal: save for for later. -NM
+    Agreed. -RD
 
 15. We should write the nymserver spec too. We can keep it pretty much
     separate from this Mixminion spec.
@@ -342,10 +355,6 @@ other variable information. -GD]
 [XXXX 16 bytes = size of a single secret. -NM]
          block, and to reconstruct them later when she receives the 
          message.
-[XXXX should specify an order for reconstruction. looks dangerous
-  without keeping the seed secret? -RD]
-[XXXX I think the seed =is= a secret.  You can't derive it from the
-  SK's, and you can't derive it from the TAG without the password. -NM]
        
          If the client has complete trust in the final hop, she may
          use a null password.  Beware, however: an attacker who recovers 
@@ -366,11 +375,6 @@ ok -GD]
       needs to be remembered. But I guess that takes up a lot of
       space. -RD]
 
-[XXXX Speaking of which, exactly 32 bytes of what? it looks like the
-      above proposed 'tag' format has some recognizable plaintext? So
-      we may need to PK-encrypt it anyway, or otherwise make it always
-      plausible? -RD]
-
 [XXXX I don't think we need to worry about tampering with the tag:
       it's always in the header, so nobody (IIUC) can tag it fruitfully.
 
@@ -385,7 +389,7 @@ ok -GD]
          TAG = PK_ENCRYPT(recipient_pk, nHops|seed) ?  
       This requires
       that the recipient have a private key, and thus breaks
-      deniability and is nott as 'stateless' as the password-only
+      deniability and is not as 'stateless' as the password-only
       approach, but it still works if that's what you want.  -NM]
 [XXXX Wait a second: the TAG field is in the, Routing field that is in the 
       subheader. This subheader is already encrypted under the receipients
@@ -418,8 +422,8 @@ Each type III message has two headers with identical structure. These
 headers are swapped at the crossover point.
 
 A header is 16*128 bytes long and contains up to 16
-subheaders. Starting with N subheaders SH0..SHN containing secrets
-SK0..SKN (and placing routing extension blocks directly after their
+subheaders. Starting with N subheaders SH_0..SH_N containing secrets
+SK_0..SK_N (and placing routing extension blocks directly after their
 respective subheaders), the header is constructed by appending 
 random padding to achieve a total size
 of 128*16 bytes. Then, each subheader key is used to create a key
@@ -427,9 +431,8 @@ Hash(SharedSecret | ``HEADER SECRET KEY'') with which the part of the
 header after the subheader (but including its routing extension) is
 encrypted using counter-mode AES.
 
-(In practice, we must construct the subheaders serially, from last to
-first, so that each can contain a digest of the subsequent subheaders
-and padding data.) 
+We construct the subheaders from last to first, so that each can contain
+a digest of the subsequent subheaders and padding data.
 
 PROCEDURE: Create a single header.
 
