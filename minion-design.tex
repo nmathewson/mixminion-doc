@@ -75,8 +75,7 @@ known attacks.
 
 Chaum first introduced anonymous remailer designs over 20 years ago
 \cite{chaum-mix}. The research community has since introduced many new
-designs and proofs \cite{big-chain-of-cites}, and discovered a variety
-of new attacks \cite{more-cites}, but the
+designs and proofs and discovered a variety of new attacks, but the
 state of deployed remailers has changed remarkably little since Cottrell
 published his Mixmaster software \cite{mixmaster-attacks} in 1994. 
 Part of the difficulty in expanding the deployed remailer base is
@@ -113,7 +112,6 @@ we document and analyze some of these influences to provide more intuition
 to developers and users.
 
 % Mention that Mixminion spec is on track for adoption as Mixmaster v3?
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -159,39 +157,32 @@ followed closely with a collection of scripts which used Phil Zimmermann's
 PGP to encrypt and decrypt remailed messages. Later, Cottrell implemented
 the Mixmaster system \cite{mixmaster}, or ``Type II'' remailers, which
 added message padding, message pools, and other MIX features lacking
-in the cypherpunk remailers. At about the same time, Gulcu and Tsudik
-introduced the Babel system \cite{babel}, which also created a practical
-remailer design (although one that never saw widespread use).
-
-% Mention that Type-I is vulnerable to replays, and Type II has no replies?
-% -Nick
+in the cypherpunk remailers. Note that Mixmaster did not include reply
+functionality, so deployed remailer systems still use the less secure
+long-term cypherpunk reply blocks. At about the same time, Gulcu and
+Tsudik introduced the Babel system \cite{babel}, which also created a
+practical remailer design (although one that never saw widespread use).
 
 \subsection{Robustness}
 
-Some previous work investigates a notion of the \emph{robustness}
-of MIX-nets in the context of a distributed MIX system
-\cite{flash-mix}. A MIX is considered robust if it survives the
-failure of any $k$ of $n$ participating servers, for some threshold
-$k$. This robustness is all or nothing: either $k$ servers are
-good and the MIX works, or they are not good and the MIX likely will
-not work.
+Previous work primarily investigates the \emph{robustness} of MIX-nets
+in the context of a distributed MIX system \cite{flash-mix}. A MIX
+is considered robust if it survives the failure of any $k$ of $n$
+participating servers, for some threshold $k$. This robustness is
+all-or-nothing: either $k$ servers are good and the MIX works, or they are
+not good and the MIX likely will not work.
 
-Robustness has been achieved primarily via the use of zero-knowledge
-proofs of correct computation; participants use such proofs to convince
-each other that they follow the protocol correctly without revealing secret
-information. Done na\"{\a i}vely, this incurs significant
-overhead. 
-Jakobsson showed how to use precomputation to reduce the overhead of
-such a MIX network to about 160 modular multiplications
+Robustness has been achieved primarily via zero-knowledge proofs of
+correct computation.  Jakobsson showed how to use precomputation to reduce
+the overhead of such a MIX network to about 160 modular multiplications
 per message per server \cite{flash-mix}, but the protocol was later
-found to be flawed \cite{mitkuro} by Mitsumo and Kurosawa. They
-proposed a fix for the protocol, but the efficacy of this fix remains
-to be evaluated.  A different approach was taken by Desmedt and
-Kurosawa \cite{desmedt}, but their technique requires many
-participating servers. Other work, such as Abe's MIX \cite{abe},
-provides \emph{universal verifiability} in which any observer can
-determine after the fact whether a MIX cheated or not, but
-the protocol is still computationally expensive.
+found to be flawed \cite{mitkuro} by Mitomo and Kurosawa.  Desmedt and
+Kurosawa's alternate approach \cite{desmedt} requires many participating
+servers. Abe's MIX \cite{abe} provides \emph{universal verifiability} in
+which any observer can determine after the fact whether a MIX cheated,
+but the protocol is still computationally expensive. Neff recently
+made further efficiency improvements to universally verifiable mixing
+\cite{shuffle}.
 
 \subsection{Remailer Statistics}
 
@@ -225,7 +216,7 @@ cipher, and we avoid extensions that would help an adversary divide the
 anonymity set.
 
 Mixminion uses the same general MIX-net paradigm as previous work
-\cite{chaum-mix,mixmaster-attacks,others}. The sender Alice chooses a
+\cite{chaum-mix,mixmaster-attacks,babel}. The sender Alice chooses a
 path through the network. She repeatedly ``onion'' encrypts her message,
 starting with the last
 MIX in her path, and sends the onion to the first MIX in her path. Each
@@ -235,7 +226,8 @@ Section \ref{subsec:delivery-modules}.
 
 While Mixminion protects against known \emph{traffic analysis} attacks
 (where an adversary given a message attempts to learn its sender or
-receiver \cite{rackoff93cryptographic,raymond00}), we do not fully address \emph{traffic
+receiver \cite{rackoff93cryptographic,raymond00}), we do not fully
+address \emph{traffic
 confirmation} attacks. In a traffic confirmation attack, the adversary
 treats the MIX network as a black box and observes the behavior of
 senders and receivers. Over time, he can intersect the set of senders
@@ -249,7 +241,7 @@ remailer systems, in order to provide a simple extensible design. At
 the same time, we provide a new feature: a reply block mechanism that
 is as secure as forward messages.
 
-Reusable reply blocks, such as those in the cipherpunk remailer, are a
+Reusable reply blocks, such as those in the cypherpunk remailer, are a
 security risk --- by their very nature they let people send multiple
 messages to them. These multiple messages can be used to very quickly
 trace the recipient's path: if two incoming batches both include a
@@ -312,6 +304,7 @@ such as those receiving forward messages and those sending direct reply
 messages, do not need to run any new software.
 
 % Do we ever say how to send a reply without software? -Nick
+% Nope. We're just bluffing. Is that ok? -RRD
 
 We divide a message's path into two \emph{legs}; thus the header is
 split into two equal-size subheaders as well. Each hop contains a hash
@@ -338,8 +331,9 @@ the dotted line.  We use a variable block size block cipher named BEAR
 the property that if any bit of the encrypted material is changed the
 decryption will look like random bits. We can use BEAR in a mode where
 decryption and encryption are equivalent, by using the same key for
-both hash steps. See Section \ref{subsec:tagging} for a discussion of
+both its hash steps. See Section \ref{subsec:tagging} for a discussion of
 % ``Both hash steps''?  We never mention Bear's hash steps... -Nick
+% True. Does adding 'its' help? -RRD
 how this all-or-nothing encryption approach helps protect against tagging.
 
 \begin{figure}
@@ -357,6 +351,8 @@ and generates her own path for the first leg.
 \label{subsec:tagging}
 
 % We never define what a tagging attack is. -Nick
+% Yes we do. This following paragraph does, give or take. Should
+% we say more? -RRD
 
 The crossover point is critical to preventing tagging attacks. Without
 it, an adversary could tag the payload of a forward message when it
@@ -513,26 +509,6 @@ be different for senders who have obtained an address from different
 sources, leading to smaller anonymity sets.}
 In our current design, this information is placed
 in a variable-length annex to the final header.
-%\footnote{It must be
-%in the header, since putting delivery information in the payload would
-%prevent people from creating SURBs that can be delivered by SMTP.
-%On the one hand, under the ``header swap'' method described in
-%\ref{subsec:header-swap}, the all-or-nothing property of BEAR prevents
-%the generator of a reply block from putting any information in the
-%payload.  On the other hand, under the ``distinguish replies'' method
-%in \ref{subsec:distinguish-replies}, the delivery information would
-%create a portion of the payload that the final node could
-%distinguish from random garbage, thus allowing a tagging attack
-%against the reply block.}.
-% See my messages of April 9 and 10 titled ``SMTP service'' for a more
-% detailed version of the above argument. -Nick
-%
-% Should we say _why_ it's undesirable to force reply recipients to
-% run local nodes?  [My answer is (A) that some people (such as human
-% rights activists using internet cafes) want to get replies, but
-% don't have persistant net connections, (B) that Mixmaster
-% supports it, and not doing so would be a step backwards, and (C)    
-% that there's not much reason not to.]    -Nick
 
 The types each MIX supports are described in a \emph{capability block},
 which also includes the MIX's address, long-term (signing) public key,
@@ -605,7 +581,7 @@ network's exit nodes and looks for timing or packet correlations). The
 number of available open exit nodes remains a limiting security parameter
 for the remailer network.
 
-\subsection{Message expiration, and replay prevention, and key rotation}
+\subsection{Message expiration, replay prevention, and key rotation}
 
 Mixmaster offers rudimentary replay prevention by keeping a list of recent
 message IDs. To keep the list from getting too large, it expires entries
@@ -625,10 +601,7 @@ message to arrive, messages arriving near their expiration date will be
 rare: an adversary can delay a message until near its expiration date,
 then release it and trace it through the network.
 
-% need to read stop & go mix paper here.
-
-%More generally, these partitioning attacks arise whenever a message can be
-%`very rare' and `valid' at the same time.
+% need to read stop & go mix paper here. -RRD
 
 One way of addressing this partitioning attack is to add dummy traffic
 so that it is less rare for messages to arrive near their expiration date;
