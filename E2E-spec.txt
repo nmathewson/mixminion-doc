@@ -183,6 +183,18 @@ We also define DECOMPRESS as the inverse of COMPRESS: namely, ZLIB
 decompression as described in RFCs 1950 and 1951.  Note that not
 DECOMPRESS is not defined for every sequence of bytes.
 
+[XXXX Allowing message compression creates a DOS opportunity: with
+  highly repetitive messages, zlib can give up to 1000-fold
+  compression.  This could allow an attacker to use a 28KB payload as
+  a mailbomb that uncompressed to 28MB.
+
+  The current code takes the following approach:  when delivering a
+  message, if the uncompressed size is over 20K, and the compression
+  ratio is >20, we do not uncompress the message, but instead deliver
+  it as-is, with a warning that it may be a zlib bomb.
+
+  Does that sound reasonable?  How about the parameters? -NM]
+
 BUILDING BLOCK: ERASURE CORRECTING ENCODING
 
 We define a primitive, FRAGMENT, that breaks a K-packet message into
