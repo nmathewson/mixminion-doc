@@ -5,7 +5,7 @@
 \subsection{Overview}
 
 Type III (Mixminion) MIX messages are composed of a header section and a
-payload.  For technical reasons, each message has a main header and a
+payload.  The header section has a main header and a
 secondary header, both of which have identical structure.  Each
 header is further composed of up to 16 subheaders, which are
 addressed and encrypted to the intermediate nodes (MIXes).  We
@@ -17,6 +17,7 @@ with the smallest building block.
 - if B is a byte array, B[i:j] (j bytes) is sub array starting at 
   byte i with length j.
 - R(n) (n bytes) Generates n random bytes by any secure method.
+[XXXX is R(n) ever used in the rest of the spec? Remove it? -RD]
 - Z(n) (n bytes) Generates n zero bytes.
 - Len(M) (2 bytes) is the length of message M (* bytes).
 - x|y (Len(x)+Len(y) bytes) denotes x concatenated with y.
@@ -24,9 +25,12 @@ with the smallest building block.
 - PAD(M,L) (L bytes) pads the message M (Len(M) <= L) to length L
   using zeroes.
 - H(M) (20 bytes) is the SHA-1 hash of M (* bytes).
+[XXXX dangerous -- later you use H as a header. Perhaps use HASH
+  and KHASH? In any case we need to put the keyed-hash-function
+  from Lioness into this primitives section too. -RD]
 - PK_Encrypt(K,M) (128 bytes) The RSA-encryption of a header M 
   using the public key K.  M is padded using RSA-OAEP, and encoded
-  with PCKS1.
+  with PKCS1.
 - PK_Decrypt(K,M) (up to 86 bytes) Gives the decryption of the
   message M (128 bytes) under the private key corresponding to K.
 - Encrypt(K,M) (Len(M) bytes) Rijndael encryption (in Counter mode,
@@ -54,6 +58,8 @@ with the smallest building block.
             return L | R
 
   For convenience, we write SPRP_ENC(MS,P,M) to denote:
+    [XXXX not clear what MS is. Master secret I presume? Can we pick a
+       better variable? -RD]
        LIONESS_ENCRYPT(K1,K2,K3,K4,M)
        where K=HASH(MS | P)
              K1 = K
@@ -67,6 +73,8 @@ with the smallest building block.
     
 RSA encryption and decryption is used with OAEP padding, using the 
 mask function MGF1 and hash function SHA1.  The security
+[XXXX this is a different P from the other one. Can we call it the
+'OAEP security parameter' (is that accurate?)? -RD]
 parameter P is set to be the hash of the following 84-character ASCII
 string (a quotation from Thomas Paine): 
 
@@ -99,13 +107,13 @@ RS  Routing Size:    2 bytes
 RT  Routing Type:    2 bytes [total 42 bytes]
 RI  Routing Info:    [Routing Size] bytes
 
-* The Version is present to manage concurrent versions of the
+* The Version is used to manage concurrent versions of the
 protocol. If a packet is received with a version that is not supported
-it should be discarded. Nodes must advertise what versions of the
-protocol they support in their status blocks; see below.
+it must be discarded. Nodes must advertise in their status blocks what
+versions of the protocol they support; see below.
 
 * The Shared Secret is the base secret that is used to generate all
-other keys for the operations of the node on the packet. It must be
+other keys for the operations the node performs on the packet. It must be
 kept secret and discarded as soon as the packet has been processed. 
 
 * The Digest contains an integrity check of the remainder of the current
@@ -130,8 +138,8 @@ subheader: modifications to it are detected because of the OAEP padding.
 
 * The address data length is specified by the ``Routing Size'' field
   contained in the subheader.
-* Padding of zeroes is used to make the size of the Routing Extension a
-  multiple of 128 bytes.
+* The final Routing Extension block is padded with zeroes so it is
+  exactly 128 bytes.
 
 The Routing Extension(s) corresponding to a particular subheader are
 appended to the subheader, and encrypted along with the rest of the
@@ -208,8 +216,9 @@ The EMAIL field in the SMTP routing type should be a valid mailbox
 [RFC2821]. A mailbox is the canonical form of the ``user@domain''
 part of an e-mail address. Mixminion uses only mailboxes, because the
 display name and comment parts of an e-mail address could potentially be
-different for senders who have obtained an address from different sources,
-leading to smaller anonymity sets. The EMAIL field must be NUL-terminated.
+different for senders who have obtained an address from different
+sources (leading to smaller anonymity sets). The EMAIL field must be
+NUL-terminated.
 
 The TAG field is appended to the message in an X-Remailer-Tag header.
 
@@ -250,10 +259,14 @@ other variable information. -GD]
          does so by using an SMTP or LOCAL delivery type, and setting
          the TAG field to 
               (nHops | E(seed, sha1(password) | pad up to 32b.
+[XXXX what's E? -RD]
 
-         She uses PRNG(seed, nHops*16) to form the SK_i's in the reply
+         She uses PRNG(seed, nHops*16) to form the SK's in the reply
+[XXXX why *16? What are you trying to do here. -RD]
          block, and to reconstruct them later when she receives the 
          message.
+[XXXX should specify an order for reconstruction. looks dangerous
+  without keeping the seed secret? -RD]
        
          If the client has complete trust in the final hop, she may
          use a null password.  Beware, however: an attacker who recovers 
@@ -286,18 +299,21 @@ Each type III message has two headers with identical structure. These
 headers are swapped at the crossover point.
 
 A header is 16*128 bytes long and contains up to 16
-subheaders. Assuming that we have N subheaders SH0..SHN containing
-secrets SK0..SKN, the header is constructed by appending headers
-SH0..SHN together with some random padding to achieve a total size
+subheaders. Starting with N subheaders SH0..SHN containing secrets
+SK0..SKN (and placing routing extension blocks directly after their
+respective subheaders), the header is constructed by appending 
+random padding to achieve a total size
 of 128*16 bytes. Then, each subheader key is used to create a key
 Hash(SharedSecret, ``HEADER SECRET KEY'') with which the part of the
-header after the subheader (but including its address extension) is
-encrypted with using the stream cipher. 
+header after the subheader (but including its routing extension) is
+encrypted using the stream cipher. 
+[XXXX not a stream cipher. Encrypt()? -RD]
 
 (In practice headers and subheaders are constructed in parallel since
+[XXXX in parallel? i don't get it. -RD]
 the Digest contained in the subheader is a hash of all the other
 encrypted subheaders and the random data they generate as the message
-travels through the network. )
+travels through the network.)
 
 PROCEDURE: Create a single header.
 
@@ -310,7 +326,10 @@ Output: H (The header)
 Process: 
   // Calculate the sizes of the subheaders
   for i = 1 .. N
-	SIZE_i = Len(ESHS(PK_i, V, SK_i, Z(16), Z(1), 0, 0, RT_i))
+	SIZE_i = Len(ESHS(PK_i, V, SK_i, Z(20), Z(1), 0, 0, RT_i))
+[XXXX                                           Z(2)?    RT_i, 0?
+  I'm not sure how to initialize these. Bigger picture, why not just
+  say 128? -RD]
                     + Len(EXT(RI_i))
 
   // Calculate the Junk that will be appended during processing:
@@ -318,16 +337,20 @@ Process:
   for i = 1 .. N
 	J_i = ( J_(i-1) | PRNG(HASH(SK_i, ``RANDOM JUNK'')[0:16], SIZE_i)
 	J_i = J_i XOR PRNG(HASH(SK_i, ``HEADER SECRET KEY''),
-  		Len(128*16))[128*15 -Len(J_i) +Len(header_i):Len(J-i)];
+  		128*16)[128*15 -Len(J_i) + SIZE_i:Len(J_i)];
+[XXXX                       16? -RD]
   end
 
   // Create the Header
   H_(N+1) = J[0: 128*16 - sum(SIZE_1 .. SIZE_N)];
+[XXXX There is no J. J_n? -RD]
   for i = N .. 1
 	K = HASH(SK_i, ``HEADER SECRET KEY'')[0:16];
 	IF i = N (set appropriate routing type and A_i)
 	EH = EXT( RI_i )
   	DIGEST = HASH( Encrypt(K, EH | H_(N+1)) | J_i ) )
+[XXXX                                  H_(i+1)?
+  We've got too many parens here too. -RD]
 	H_i = ESHS(PK_i, V, SK_i, DIGEST, F, len(RI_i), RT_i, RI_i)
                   || Encrypt(K, EH | H_(N+1))
   end
@@ -384,24 +407,25 @@ Data:   (Variable)
 
 We denote a payload as P.
 
-\subsection{Constructing whole messages}
+\subsection{Constructing messages}
 
-Given two headers and a payload one can construct a whole
-message. The first header (main) must always contain a last subheader
+Given two headers and a payload one can construct a
+message. The first header must contain a subheader
 with routing type SWAP.  
 
 PROCEDURE: Construct a message.
 
 Input: H1 (header containing keys SK1_1... SK1_N)
-       and H2 (header containing keys SK2_1... SK2_N.  Keys are unused
-            if we're using a reply block.)
+       and H2 (either a header containing keys SK2_1... SK2_N if
+         we constructed it, or a header with unknown keys if we're
+         using a reply block.)
        P (Payload)
 Output: M (the message)
 
 Process:
 	// Phase 1
 	if (H2 is *not* a reply block)
-		for i = N .. 0
+		for i = N .. 1
 	            P = SPRP_ENC(SK2_i, "PAYLOAD ENCRYPT", P)
 		end
         else
@@ -424,25 +448,25 @@ Process:
 
 \section{Processing of Messages}
 
-Messages are transfered from node to node using the custom Type III
-transport protocol or email.  A node with private key PK receiving
-message M = (H1, H2, P) performs the following operations:
+Messages are transferred from node to node using either the custom Type
+III transport protocol (see below) or email.  A node with private key
+PK receiving message M = (H1, H2, P) performs the following operations:
 
 PROCEDURE: Process a message M
-	SHS(V, SK, D, F, RS, RT, RI) = PK_Decrypt(PK,H1[0:128]);
+	SHS(V, SK, D, RS, RT, RI) = PK_Decrypt(PK,H1[0:128]);
         If there is any problem with the OAEP padding discard the message.
-        Check that D = H(H1[128:15*128])
+        Check that D = H(H1[128:15*128]), and discard if not.
         Let n_extra = number of extended headers = Ceil( (RS-44) / 128 )
                   
         H1 = H1[128:15*128] | PRNG(HASH(SK, "RANDOM 
-                                               JUNK")[0:16])[0:128*n_extra]
-	H1 = H1 XOR PRNG(HASH(SK, "HEADER SECRET KEY"), Len(H1))
-        RI = RI || H[0:28*n_extra]
+                                               JUNK")[0:16],128+128*n_extra)
+	H1 = H1 XOR PRNG(HASH(SK, "HEADER SECRET KEY")[0:16], Len(H1))
+        RI = RI | H[0:128*n_extra]
         H1 = H1[128*n_extra:128*16]
 	H2 = SPRP_DEC(SK, ``HEADER ENCRYPT'',H2);
 	P = SPRP_DEC(SK, ``PAYLOAD ENCRYPT'',P);
 
-	if routing type is is DROP:
+	if routing type is DROP:
                 End.
 	if routing type is SWAP-FWD:
 		H2 = SPRP_DEC(SHA1(P), ``HIDE HEADER'', H2)
@@ -450,7 +474,9 @@ PROCEDURE: Process a message M
         if routing type is SWAP-FWD or FWD:
 	   	Put (H1, H2, P) in queue to be sent to the address in RI.
         Otherwise:
-		Give (RT, RI, H(SK,``APPLICATION KEY''), P) to
+		Give (RT, RI, HASH(SK,``APPLICATION KEY''), P) to
+[XXXX what use could hashing it first be? too dangerous to give SK
+  directly? -RD]
 		Module manager. 
 
 \section{Single Use Reply Block exchange formats}
@@ -459,7 +485,10 @@ PROCEDURE: Process a message M
  SURB block, public key, etc.
  We can also have a short hand notation for SURBS that only
  use part of the header. One only needs to specify the 
- blocks containing the SURB and a key to pad the junk]
+ blocks containing the SURB and a key to pad the junk -GD]
+ [But SURBs should use the whole header, otherwise they're
+  leaking length info? -RD]
+
 
 A SURB can be encoded in a standard binary or ASCII format.
 
@@ -552,14 +581,14 @@ The subject line should read: ``Anon. Message: '' + ID
  we should think more carefully about providing a 
  general SMTP/IMAP service.
  There is a need to provide enough information to be 
- able to block the service, for the recipient and to
+ able to block the service, for the recipient to
  filter out messages arriving from the mix network.]
 
 \subsection{Replay Avoidance}
 
 The nodes MUST implement a mechanism to make sure that messages cannot
 be replayed. To do this a hash of the secret contained in the
-subheader is kept for as long as the as public key under which it was
+subheader is kept for as long as the public key under which it was
 encrypted is in use. The Hash should be computed in the following way:
 
 X = H(SharedSecret, ``REPLAY PREVENTION'')
@@ -583,7 +612,7 @@ the ciphersuite "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" (defined in
 tls-ciphersuite-03.txt).  No other ciphersuite is permitted for
 MIX-to-MIX communications.
 
-X.509 certificates need not be signed; instead, they must only contain
+X.509 certificates need not be signed; instead, they must contain
 a key matching that used in the KEYID portion of the header's routing
 data.  
 
@@ -623,8 +652,8 @@ portions are non-normative descriptions of TLS.)
 
   If A is not willing to support B's choice, A closes the connection.
   
-* A sends "SEND", NL, M, H(M,"SEND") (4 + 32k + 20 bytes)
-* B sends "RECEIVED", NL, H(M,"RECEIVED") (8 + 20 bytes)
+* A sends "SEND", NL, M, H(M,"SEND") (5 + 32k + 20 bytes)
+* B sends "RECEIVED", NL, H(M,"RECEIVED") (9 + 20 bytes)
 
 * A sends an SSL handshake renegotiation message.
   (and MUST not reuse the same key for 
@@ -638,7 +667,7 @@ The old keys must be permanently overwritten. Special care should be
 taken to permanently erase them from the Hard Disk and memory. 
 
 The standard transport mechanism over which the MixMinion Transfer
-Protocol is TCP over IP. The standard listening TCP port should be 
+Protocol talks is TCP over IP. The standard listening TCP port should be 
 number 48099 (until we register a port with www.iana.org)
 
 All possible checks should be performed during the transfer protocol
@@ -653,10 +682,10 @@ appropriately.
 [Need to provide signature + encryption keys, expiry dates, root of
 list of hashes, Address, services and modules, policies, ...]
 
-[A more coprehensive list of things that the Remailer information
+[A more comprehensive list of things that the Remailer information
 needs to provide:
 
-Status: Serial Number, Superceeds, Timesatmp created, timestamp to
+Status: Serial Number, Supercedes, Timestamp created, timestamp to
         refresh, urgency (revokation, routine ...)	  
 Address and names: IP Address, TCP Port, Name of Owner, e-mail of
                    admin, trust domain(s) 
@@ -669,7 +698,7 @@ Network Services: MixMinion Protocols supported.
                   LOCAL Support flag, mailbox restrictions.
 	          IP addresses it will accept and send to.
 Modules: Modules supported, configurations.
-Trust Managment: Hash of the State of the world as the mix knows it at
+Trust Management: Hash of the State of the world as the mix knows it at
         that point. This can be the hash of a whole tree:
 
 		           H
