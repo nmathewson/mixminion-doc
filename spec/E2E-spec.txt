@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.9 2003/08/21 21:08:05 nickm Exp $
+$Id: E2E-spec.txt,v 1.10 2003/09/12 15:32:28 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -763,7 +763,8 @@ Table of Contents
    nodes SHOULD include preconfigured one, such as "Type III Anonymous
    Message".
 
-   The "From" line is generated as follows:
+   If the server is configured to allow user-supplied From addresses,
+   the "From" line is generated as follows:
       Let F be the contents of the "FROM" header in the message.
       Remove all leading or trailing whitespace from F.
       Replace all sequences of 2 or more space characters in F with a
@@ -776,6 +777,17 @@ Table of Contents
       (Thus, if the sender specifies a "FROM" header of 'Lance
       Cottrell', an implementation could generate a 'From' header of
       the form:  "From: "[ANON] Lance Cottrell" <nobody@___.org>".)
+   Otherwise (if the server is not configured to allow user-supplied
+   From addresses) the "From" line is set to  a preconfigured value.
+
+      [Rationale: Previously, I'd argued for having only a single
+      supported "From" policy, as a measure to prevent linkability
+      based on client option preferences.  Adam Back correctly pointed
+      out that this is silly.  Consider that _any_ use or non-use of
+      From addresses makes messages linkable *in itself*.  In other
+      words, Eve can already tell which messages set their from
+      addresses; she gains nothing by learning that those messages
+      have chosen an exit node with From support to do so. -NM]
  
    The "Date" line should be the current date.
 
@@ -800,7 +812,8 @@ Table of Contents
    maximum permitted message size in KB (before compression).  Note
    that because of base64-encoding, actual delivered messages may be
    longer than this by a factor of ~1.33.  The value must be at least
-   "32".
+   "32".  It MUST contain a "Allow-From" line, containing 'yes' if the
+   server allows user-supplied from addresses and 'no' if it does not.
    
 3.3. SMTP
 
@@ -829,6 +842,8 @@ Table of Contents
    Additionally a HOSTPART MUST NOT be an IP address -- it would make
    blacklisting hard, and encourage senders to resolve target hosts.
 
+   [XXXX I suspect the above should be "SHOULD NOT." -NM]
+
 3.3.2. Formatting: Message body
        
    The message body format is exactly as the MBOX format, as
@@ -855,7 +870,9 @@ Table of Contents
    that because of base64-encoding, actual delivered messages may be
    longer than this by a factor of ~1.33. The value must be at least
    "32".  A server MAY drop any message that uncompresses to be
-   longer than this type.
+   longer than this type. It MUST contain a "Allow-From"
+   line, containing 'yes' if the server allows user-supplied from
+   addresses and 'no' if it does not.
    
 3.4. Fragments
 
@@ -868,7 +885,7 @@ Table of Contents
    The section, if present, MUST contain a 'Version' entry, with the
    value "1.0".  It also MUST contain a "Maximum-Fragments" line,
    containing the maximum size (in fragments) of a message that the
-   server is willing to reconstruct.
+   server is willing to reconstruct. 
 
 A.1. Apendix: versioning and alphas
 
