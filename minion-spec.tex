@@ -483,6 +483,48 @@ PROCEDURE: Process a message M
  use part of the header. One only needs to specify the 
  blocks containing the SURB and a key to pad the junk]
 
+A SURB can be encoded in a standard binary or ASCII format.
+
+Binary Format:
+
+Begin Marker: 4 bytes
+Address Size: 2 bytes
+Address: (Address Size) bytes
+Use-by-Date: 4 bytes
+SURB size: 2 bytes
+SURB data: (SURB size) bytes
+Filler Key: 20 bytes
+Linked Data Size: 2 bytes
+Linked Data: (Linked Data Size) bytes
+Digest: 20 bytes
+
+Total: 54 bytes + Address Size + SURB size + Linked Data Size
+
+* The magic marker contains the ASCII 4-byte string 'SURB'.
+* Address: Contains the address of the first hop to which the message
+  encoded using this SURB should be sent to.
+* Use-by-Date: indicated the expiry date the SURB should be used by. Can
+  be calculated using the key rotation frequencies of the intermediate
+  nodes.
+* SURB data: Containst the SURB that is created as described
+  above. The Junk at the end can be ommited (although it is not wise
+  to reduce it more than hoaf the size of a full SURB). When the SURB
+  is created some data can be bound to it to ensure that they cannot
+  be replaced by any malicious third party. To do this instead of 
+  including junk at the end of the SURB one can include a hash of the
+  data: 
+	H(Address, Use-by-Date, Linked Data)
+  That hash is contained in the last 20 bytes of the SURB data.
+* Filler: Used to prinme the stream cipher to pad the SURB data up to
+  128*16 bytes.
+* Linked Data: Additional data that might have to be linked with the 
+  SURB.
+* The Digest is a Hash of all the other fields.
+
+The ASCII Encoding of SURBs.
+
+[XXXX Any ideas?]
+
 \section{Email Transport exchange format}
 
 [Need to specify how we are going to wrap the message
