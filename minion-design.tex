@@ -666,7 +666,7 @@ how this approach helps protect against tagging.
 
 \begin{figure}
 \begin{center}
-\resizebox{10cm}{!}{\includegraphics{SWAP}}
+\resizebox{13cm}{!}{\includegraphics{SWAP}}
 \caption{Operations performed by the ``swap'' method} 
 \end{center}
 \end{figure}
@@ -1505,10 +1505,11 @@ open problem.
 Below we summarize a variety of attacks and how well our design withstands
 them.
 
-\subsubsection{Mix attacks}
-\label{subsec:mix-attacks}
+\begin{enumerate}
+\item \textbf{Mix attacks}
+%\label{subsec:mix-attacks}
 
-\begin{description}
+\begin{itemize}
 \item \emph{Compromise a mix.} Messages traverse multiple mixes, so
 compromising a single mix, even a crossover point, does not gain much.
 \item \emph{Compromise a mix's private key.} Again, owning a single mix
@@ -1533,12 +1534,12 @@ provide protection.
 \item \emph{N$-1$ attack (trickle, flooding)} The ``timed dynamic-pool''
 batching strategy from Section \ref{subsec:batching}, along with our dummy
 policy, limits the effectiveness of these blending attacks.
-\end{description}
+\end{itemize}
 
-\subsubsection{Passive attacks}
-\label{subsec:passive-attacks}
+\item \textbf{Passive attacks}
+%\label{subsec:passive-attacks}
 
-\begin{description}
+\begin{itemize}
 \item \emph{Intersection attack.} Our dynamic-pool batching strategy
 from Section \ref{subsec:batching} spreads out the messages over time,
 increasing the set of possible senders for a given received message and
@@ -1547,12 +1548,12 @@ solution remains an open problem \cite{langos02}.
 \item \emph{Textual analysis.} Mixminion provides location anonymity,
 not data anonymity. Users are responsible for making sure their messages
 do not reveal identifying information.
-\end{description}
+\end{itemize}
 
-\subsubsection{Exit attacks}
-\label{subsec:attacks-exitbased}
+\item \textbf{Exit attacks}
+%\label{subsec:attacks-exitbased}
 
-\begin{description}
+\begin{itemize}
 \item \emph{Partition traffic by delivery method.} We encourage recipients
 to use one of only a few delivery methods, so we can maintain sufficient
 anonymity sets for each.
@@ -1563,13 +1564,13 @@ exit nodes offering an unusual delivery method.
 recipients to opt out of receiving further mail. Overall, we must assume
 we will have enough nodes that can withstand this abuse that simple
 adversaries cannot monitor all exit nodes in the network.
-% help, please untangle my words
-\end{description}
+% XXXX help, please untangle my words
+\end{itemize}
 
-\subsubsection{Directory attacks}
-\label{subsec:attacks-dirbased}
+\item \textbf{Directory attacks}
+%\label{subsec:attacks-dirbased}
 
-\begin{description}
+\begin{itemize}
 \item \emph{Compromise a directory server.} Identical directory listings
 are served by a small group of servers and signed by all. We assume
 that a threshold of these directory servers will remain honest.
@@ -1590,7 +1591,8 @@ to encourage users to start using the dishonest ones.}
 Availability and reliability statistics should mitigate some of these
 problems, but they introduce problems of their own. They are an area of
 active research \cite{mix-acc}\cite{casc-rep}.
-\end{description}
+\end{itemize}
+\end{enumerate}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
