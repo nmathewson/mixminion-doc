@@ -63,13 +63,14 @@ learn public keys and performance statistics of participating remailers,
 and we describe nymservers that provide long-term
 pseudonyms using single-use reply blocks as a primitive. Our design
 integrates link encryption between remailers to provide
-forward anonymity. Mixminion works in a real-world Internet environment,
-requires little synchronization and coordination between nodes, and
-protects against almost all known attacks.
+forward anonymity. Mixminion works in a real-world Internet environment and
+requires little synchronization or coordination between nodes.
+%, and protects against almost all known attacks.
 % ???? Can we say something stronger than 'against almost all known
 %      attacks?'  Maybe we can note that we protect against all known
 %      attacks at least as well as any other known system with our
 %      design parameters. -NM
+% we could. suggested phrasing? (how's that? :)
 \end{abstract}
 
 \begin{center}
@@ -85,6 +86,7 @@ Chaum first introduced anonymous remailers over 20 years ago
 \cite{chaum-mix}.
 % ???? Did Chaum introduce anonymous remailers?  Weren't there
 %      penet-style things before mix-nets? -NM
+% no. penet was from the 90's. mix-nets were *way* early. -RD
 The research community has since introduced many new
 designs and proofs
 \cite{abe}\cite{babel}\cite{flash-mix}\cite{kesdogan}\cite{shuffle}\cite{hybrid-mix}, 
@@ -126,9 +128,13 @@ corrupt nodes for most attacks.
 
 \item \textbf{Exit policies:} Exit abuse is a serious barrier to wide-scale
 remailer deployment: most ISPs do not tolerate users who potentially
-deliver hate mail, etc. While the original Mixmaster design assumed all
-nodes have identical capabilities and roles (and thus messages can exit
-from any node), Mixminion allows each node to specify an exit policy. We
+deliver hate mail, etc. While the original Mixmaster design provided no
+way for mixes to advertise their capabilities and roles (so in practice nodes
+either allowed all outgoing messages or none), 
+%assumed all
+%nodes have identical capabilities and roles (and thus messages can exit
+%from any node),
+Mixminion allows each node to specify and advertise an exit policy. We
 describe a protocol which allows recipients to opt out of receiving mail
 from remailers, but at the same time makes it difficult for an adversary
 to deny service to interested recipients.
@@ -194,6 +200,9 @@ research community currently has no answer).
 
 % XXXX Mention that we're type-III, and that Mixmaster v4 'will'
 %      support type-III? -NM
+% i don't think it's a big deal to the academic folk. they certainly
+% don't care what some version of some piece of software intends to
+% do. let's leave it subtle. -RD
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
