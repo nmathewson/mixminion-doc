@@ -1,0 +1,488 @@
+
+           Mixminion directory agreement protocol -- draft
+                            Nick Mathewson
+                            13 August 2003
+
+Status
+
+   This is a draft document describing a directory agreement protocol
+   for Type III remailers.  If people like it, we'll merge in into
+   Mix3:3 "dir-spec.txt". 
+
+   It's substantially identical to what Nick was blathering about at
+   Defcon.
+
+   It doesn't have as much detail as a final specification should.  In
+   particular, it doesn't describe data formats.
+
+   It isn't perfect, but it's better than Type II. :)
+
+0. Motivation and design goals
+
+   Currently, we have specifications for most of the type III
+   directory system, including: server descriptor structure, directory
+   structure, publishing to directories, building directories, 
+   downloading directories, and using directories.  One critical
+   piece remains: directory agreement.
+
+   In today's Type II and Type III code, each directory server
+   publishes an independent description of the network's state.  This
+   enables the following attacks:
+
+      (1) An attacker who controls a directory server can redirect
+          that server's clients toward a restricted set of mixes with
+          little risk of detection.
+
+      (2) An attacker who controls a directory server can feed target
+          users a modified directory that would make those users
+          highly distinguishable.  Since directories are signed, this
+          attack leaves a trail--if its victims notice it's happening.
+
+      (3) An attacker who eavesdrops on a user or a directory can tell
+          who is using a particular directory.  Knowing who is using
+          which directory helps the attacker mount statistical
+          partitioning attacks on the network based on client
+          knowledge.
+          
+          (If users try to avoid this attack by using multiple
+          directories, they only make their situation worse: Instead
+          of dividing themselves into D possible states of knowledge,
+          they divide themselves into (2^D-1) possible states
+          depending on which directories they trust.)
+
+      (4) An attacker who wants to DOS a user can do so by knocking
+          down that user's favorite directory server.
+
+   Below, I describe a synchronization protocol that allows multiple
+   directory servers to arrive at a single directory, signed by all
+   the directory servers.  My requirements are as possible:
+
+      - Central coordination between directory servers should not be
+        an absolute requirement.  In particular, the protocol should
+        succeed even when the directory servers do not agree on who is
+        a directory server.
+  
+      - The protocol should allow old directory servers to shut down,
+        and new directory servers to join, but should not allow
+      
+      - When the protocol succeeds, it should create a directory
+        signed by a large quorum of directory servers.  If at least
+        half of the quorum has signed a directory, clients should be
+        able to trust that directory.
+
+      - If an attacker controls less than half of the directory
+        servers in a quorum, the attacker should not be able to sign
+        up an arbitrary number of nodes.
+
+      - If at least half of the directory servers in a quorum are
+        running, cooperative, and able to communicate, then they
+        should produce a signed directory.
+        
+      - The protocol should discourage social engineering attacks
+        aiming to fragment a quorum of directory servers.  Although
+        it is impossible to *force* only a single directory to exist
+        (because people can always modify the software), it would be
+        best to minimize the number of fragmented directories.
+
+      - If a directory server do not obey the protocol, other servers
+        should be able to prove it.
+
+      - Parties other than directory servers should be able to tell
+        whether the directory servers are obeying the protocol.
+
+   Broadly, the protocol works like this:
+
+      - Every mix periodically uploads its server descriptors to all
+        of the directory servers it knows about.
+
+      - Every directory server continuously publishes its knowledge of
+        the network (for consumption by other directory servers).
+
+      - Every directory server periodically downloads from other
+        directories it knows about their knowledge of the network,
+        and updates the list of mixes it knows about.
+
+      - Once a day, directory servers produce a signed directory as
+        follows:
+
+             - Every directory server publishes a signed statement
+               describing its current view of the network state, and
+               the list of other directory servers it would like to
+               vote with.
+
+             - The directory servers retrieve each others' signed
+               statements.
+
+             - Based on these signed statements, each directory server
+               finds a quorum to vote with.  All cooperative servers
+               will agree about who should be in the same quorum with
+               them.
+
+             - Based on the signed statements of the other directory
+               servers in the quorum, each directory server computes a
+               reconciled directory.  This process is deterministic,
+               so that all cooperative directory servers in the same
+               quorum will compute the same reconciled directory.
+
+             - Each directory server signs its reconciled directory,
+               and exchanges these signatures with the other members
+               of its quorum.
+
+             - At this point, every quorum has computed a uniform
+               directory signed by every cooperative member of the
+               quorum.  The directory servers publish this signed
+               directory.
+
+   Below, I discuss this protocol in more detail.
+                  
+
+1. Terminology
+
+   Mix -- a Type III remailer server.
+
+   Reliable mix -- A mix is 'reliable' if it implements the Type III
+      remailer protocol correctly, by correctly processing and
+      delivering the messages it receives.
+
+   Honest mix -- A mix is 'honest' if it tries to be reliable, and it
+      does not attempt to attack the network or break users'
+      anonymity.
+
+   Pinger -- a source of liveness and reliability information about
+      mixes.
+
+   Directory server -- a host that follows the protocol described in
+      this document.
+
+   Cooperative server -- A directory server is 'cooperative' if it
+      follows the agreement protocol correctly.  (It may still be
+      attempting to subvert the _contents_ of the final directory by
+      lying about network state.)
+
+   Honest server -- A directory server is 'honest' if it is
+      cooperative, and it attempts to make accurate statements about
+      network state.
+
+   Publication -- In order to 'publish' a file, a directory server
+      makes that file available at a well-known HTTP URL.
+
+   Network view -- A directory server's knowledge and opinions about
+      mixes and other directory servers.  (More information is in 2.2
+      below.)
+
+2. The protocol in more detail
+
+2.1. Uploading server descriptors to directories
+
+   Mixes upload their server descriptors to directory servers as
+   before.  The only change is that every Mix now knows about a
+   number of directory servers, and uploads every descriptor it
+   generates to each one of them.
+
+2.2. Pinging
+
+   Pinging is outside the scope of this document, except as follows:
+   Every directory server acts as a pinger in order to obtain
+   reliability information about all the mixes it can.  Additionally,
+   the directory administrator may decide to incorporate liveness
+   information from other pingers.  The directory distills this
+   information down to a single "is-reliable" bit for each mix.
+
+2.3. What directory servers know
+
+   Every directory tracks the following information about every mix:
+
+      - The mix's identity key.
+
+      - A list of all valid, non-superseded server descriptors it
+        knows for the mix.
+
+      - Whether it considers the mix reliable (based on pinging).
+
+      - Whether it considers the mix 'credible'.  (A mix is 'credible'
+        if the directory server thinks it is honest.  Different
+        directory servers may have different criteria here: Some
+        directory servers will consider new mixes as automatically
+        'credible' unless they have evidence of their dishonesty;
+        others will consider new mixes as 'non-credible' at first,
+        and list them as 'credible' after a probationary period.)
+
+        Directory servers should publish the criteria they use to
+        judge credibility.
+
+        [Rationale: we add 'credibility' for two reasons:
+
+           1) Adding a manual step before we include a new mix in the
+              directory prevents pseudospoofing attacks.  (If an
+              attacker could sign up a hundred reliable mixes and have
+              them all included in the directory automatically, the
+              attacker would trivially be able to break user
+              anonymity.
+
+           2) This protocol does not provide a way for directory
+              server to 'unlist' dishonest mixes---if any server knows
+              about a mix, the final signed directory will include it.
+              In this protocol, instead of flushing a bad mix down the
+              memory hole, you just mark it as 'noncredible'.]
+
+   Every directory tracks the following information about every other
+   directory server:
+
+      - The directory server's identity key and URLs.
+
+      - Whether it uses that directory server's pinging results in
+        determining mix reliability.
+
+      - Whether it believes that directory server should be part of
+        a voting quorum.
+
+   All of the above information, taken together, forms a directory's
+   "Network View".
+
+2.3. Directory agreement protocol
+
+   (All times in this section are completely arbitrary, and given in
+   GMT.  This protocol assumes loosely synchronized clocks.)
+
+   Phase 0: Propagation
+
+      Every hour or so, every directory server publishes a signed,
+      non-binding statement of its Network View (as defined in 2.2
+      above).
+
+      Directory servers periodically retrieve one another's Network
+      Views in order to learn about new mixes, new directory servers,
+      and new server descriptors.
+
+   Phase 1: Declarations  (22:00)
+ 
+      Once a day, at 21:00, every directory server publishes (at some
+      well known URL) a signed Declaration.  A Declaration includes:
+
+         1) The date
+         2) The directory's current World View.
+
+   Phase 2: Declarations are collected (22:00-22:50)
+
+      Between 21:00 and 22:00, every directory server retrieves every
+      other directory server's Declaration.  The directory server then
+      re-publishes those declarations at local URLs, along with signed
+      statements averring that the directory server has received them.
+
+      Even after retrieving one another's declarations, directory
+      servers continue to retrieve the re-published declarations, in
+      order to assure no directory server has given different
+      declarations to different servers.
+
+   Phase 3: Agreement (23:00)
+
+      At 22:00, every directory server calculates what quorum it is
+      in, calculates how that quorum will vote, and signs the result
+      of the vote.  This predicted-vote-result is called a
+      'pre-directory'.  Because this process is deterministic, every
+      cooperative directory in the same quorum will reach the same
+      result.
+
+      (The details of this process are described in 2.4 and 2.5
+      below.)
+
+      For auditing purposes: Along with their pre-directories,
+      directory servers also publish a signed copy of the declarations
+      they have used to compute the pre-directory.
+  
+   Phase 4: Pre-directories are collected (23:00-23:50)
+
+      Directories collect one another's signed pre-directories as in
+      Phase 2.
+ 
+   Phase 5: A directory is published (00:00)
+
+      Every directory collects the pre-directories from step 4 from
+      the members of its quorum.  If they have cooperated, every
+      directory server in the quorum will have signed the same
+      pre-directory.  This pre-directory, plus the signatures of each
+      member of the quorum, forms the final directory.
+
+   Phase 6: Clients download the directory (00:01--00:00)
+
+     The first time in any day that a client originates a message, it
+     downloads the most recent directory from some source that it
+     trusts.  If it signed by over half of the expected directory
+     servers, it uses that directory.  Otherwise, it alerts the user.
+     (See section 3 below.)
+
+2.4. How to compute quorums
+
+   In phase 3 of the directory agreement protocol, directory servers
+   need to compute which quorum they will vote with.  This process
+   needs to be deterministic, so that every cooperating directory
+   server in a quorum arrives at the same quorum.
+
+   [Remember: the end goal is for there to be a single most
+   trustworthy quorum that all clients use.  This quorum-building
+   algorithm is only designed to minimize the number of competing
+   quorums when we can't come up with a single most trustworthy one;
+   and to discourage directory severs from fragmenting the quorum.]
+
+   To choose a quorum, directory servers iteratively calculate the
+   "best" quorum of directory servers, and see if they belong to it.
+   If they do, they use that quorum.  Otherwise, they remove the
+   servers in that quorum from consideration, and iterate.
+
+   (Below, we use "A trusts B" to mean "A believes B should be a part
+   of a voting quorum" in the interest of brevity.)
+
+   To find the "best" quorum from a set of directory servers, we
+   use the following algorithm:
+
+       1. Find the largest set of mutually trusting directory servers.
+          (A set of servers is 'mutually trusting' if every server in
+          that set trusts every other server in that set.)  If there
+          is a unique largest set of mutually trusting directory
+          servers, that set is best.  Otherwise, if we have a tie,
+          proceed to step 2.
+
+       2. Let N be the size of the tied sets under consideration.  If
+          N>=5, and any two of the tied sets have at least N/2 common
+          elements, we compute the 'friendlier' set as follows: Set A
+          is friendlier than set B if the number of <A_i,B_j> pairs
+          such that A_i trust B_j is greater than the number of
+          <B_i,A_j> pairs such B_i trusts A_j.
+
+          (Note that 'friendliness' can be cyclical.)
+
+          We then compute the 'index' of each set by taking the SHA1
+          hash of the sorted public keys of all the directory servers
+          in the hash.
+
+          We compute a 'transitive friendliness' relationship as
+          follows: First, we break cycles in the friendliness graph,
+          from largest cycle to smallest, by removing the
+          'is-friendlier-than' relation from the smallest-indexed set
+          in the friendliness graph.  Secondly, we take the transitive
+          closure of the resulting graph.
+
+          Finally, compute the best set as follows: start with "S_0",
+          the set with the highest index.  If there are one or more
+          sets that are "transitively friendlier" than S_0, choose the
+          one of those sets with the highest index.
+
+   [Discussion: The graph theory here is kinda funky.  The idea behind
+     'friendliness' is to prefer quorum-builders to quorum-breakers,
+     so that if we start with a quorum containing Dirserv-1 through
+     Dirserv-N, and then Dirserv-1 stops trusting Dirserv-2, Dirserv-1
+     is booted from the next day's quorum.
+
+     Also note that the idea is not to ensure that the "best" quorum
+     is the most trustworthy, but that the "best" quorum to which an
+     honest server belongs is the most trustworthy.]
+
+2.5 How to compute a pre-directory
+
+   A 'pre-directory' is the signed portion of a signed directory.  It
+   contains:
+      - a list of server descriptors for all known mixes
+      - a list of directory servers in a voting quorum
+      - and a list of which mixes are recommended
+
+   To compute a pre-directory, a directory server first determines
+   what quorum it will vote with, as described in 2.4 above.  It then
+   takes the Declarations from those directories, and its own
+   Declaration, and computes the pre-directory as follows:
+
+      - It chooses the most recently published live non-superseded
+        server descriptors for each mix (as in "dir-spec.txt").
+
+      - It lists mixes as "recommended" iff they are considered
+        reliable by enough members of the quorum and they are
+        considered credible by enough members of the quorum.
+        
+        [If the quorum has an odd number N members, "enough" is
+        FLOOR(N/2)+1.]
+
+3. Client behavior
+
+   Every client comes pre-installed with a list of directory servers.
+   This list should be identical with the servers in whatever
+   long-standing quorum the software maintainer judges the most
+   trustworthy and reliable.  If any user Alice trusts a different set
+   of directory servers, she can configure her client manually to use
+   those directory servers instead.
+
+   If the client can retrieve a single directory signed by a majority
+   of its trusted directory servers, it uses that directory.
+   Otherwise, the client software alerts the user, and has the user
+   choose.
+
+4. If stuff goes wrong
+
+   Here we examine opportunities for the protocol to go wrong, and see
+   how bad stuff gets.  Below, for "an attacker", read "an attacker, a
+   malfunctioning directory server, a network outage, or Murphy's
+   Law."
+
+   Phase 1. Declarations
+      - An attacker might publish a dishonest declaration.
+
+        [If an attacker controls less than half of the quorum to which
+        it belongs, it cannot force mixes on to or off of the final
+        list.  If the attacker tries to break the quorum building
+        process, it cannot force honest servers to join a mostly
+        dishonest quorum, unless the honest servers trust enough
+        dishonest directory servers.]
+
+      - An attacker might not publish a declaration.
+
+        [If the attacker does this, it will not be part of any
+        quorum.]
+
+   Phase 2. Declarations are collected
+      - An attacker might give different declarations to different
+        directory servers.
+
+        [Since all declarations include a date and are signed, any two
+        cooperative servers will have proof that they have received
+        different declarations as soon as one has received the other's
+        re-published version of the uncooperative directory's
+        declaration.]
+
+      - An attacker might not give its declarations to some servers.
+
+        [So long as any cooperative directory server receives a copy,
+        the other directory servers will eventually retrieve a copy
+        from that server.]
+
+      - An attacker might not give its declaration to any servers.
+
+        [If the attacker does this, it will not be part of any
+        quorum.]
+
+   Phase 3. Agreement
+      - An attacker might pretend not to have received certain
+        declarations.
+
+        [If most directory servers have received and re-published a
+        server's declarations, any attacker who does this may not be
+        believed.  If the attacker is included in a quorum, the other
+        members of the quorum will all sign the same pre-directory,
+        but will not include the attacker's signature.]
+
+      - An attacker might compute the pre-directory incorrectly.
+
+        [If the attacker does this, the cooperative members of the
+        quorum will all sign the same pre-directory, while the
+        attacker's signature of a different pre-directory will not be
+        included.]
+
+      - An attacker might not publish a pre-directory.
+
+        [If the attacker does this, the cooperative members of the
+        quorum will all sign the same pre-directory, while the
+        attacker's non-formed signature will not be included.]
+
+   Phase 4. Pre-directories are collected
+      - As in phase 2 above
+
+   Phase 5. A directory is published
+      - As in phase 3 above
+
