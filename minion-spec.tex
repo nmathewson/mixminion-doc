@@ -339,6 +339,9 @@ Inputs: A_1 .. A_N (addresses of intermediate nodes),
         R Routing type and information of last header (FWD, DROP, SWAP, etc.)
 Output: H (The header)
 
+[XXXX We need to define RI_i and RT_i above; A_i is never really
+   used. -NM]
+
 Process: 
   // Calculate the sizes of the subheaders
   for i = 1 .. N
@@ -349,7 +352,7 @@ Process:
   for i = 1 .. N
 	J_i = J_(i-1) | PRNG(HASH(SK_i | ``RANDOM JUNK'')[0:16], SIZE_i)
 
-        Stream_i = PRNG(HASH(SK_i | ``HEADER SECRET KEY''), 128*16);
+        Stream_i = PRNG(HASH(SK_i | ``HEADER SECRET KEY''), 128*15 + SIZE_i);
 
 	J_i = J_i XOR Stream_i[128*15 -Len(J_i) + SIZE_i:Len(J_i)];
   end
@@ -362,8 +365,8 @@ Process:
 	IF i = N (set appropriate routing type and A_i)
 	EH = EXT( RI_i )
         REST = Encrypt(K, (EH | H_(i+1)))
-  	DIGEST = HASH(REST | J_i)
-	H_i = ESHS(PK_i, V, SK_i, DIGEST, len(RI_i), RT_i, RI_i) | REST
+  	DIGEST = HASH(REST | J_(i+1))
+	H_i = ESHS(PK_i, V, SK_i, DIGEST, len(RI_(i+1)), RT_(i+1), RI_(i+1)) | REST
   end
 
 return H_1;
