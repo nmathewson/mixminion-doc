@@ -27,19 +27,26 @@
 %\fi
 
 \title{Mixminion: Design of a Type III Anonymous Remailer}
-\author{George Danezis\inst{1} \and Roger Dingledine\inst{2} \and David Hopwood\inst{3}
-        \and Nick Mathewson\inst{4}}
-\institute{Cambridge
-\email{\emailaddr{george.danezis@cambridge}}
-\and
-The Free Haven Project
-\email{\emailaddr{arma@mit.edu}}
-\and
-Independent consultant
-\email{\emailaddr{david.hopwood@zetnet.co.uk}}
-\and
-The Free Haven Project
-\email{\emailaddr{nickm@alum.mit.edu}}}
+
+% Removed for anonymous review
+% 
+% \author{George Danezis\inst{1} \and Roger Dingledine\inst{2} \and David Hopwood\inst{3}
+%         \and Nick Mathewson\inst{4}}
+% \institute{Cambridge University
+% \email{\emailaddr{george.danezis@cl.cam.ac.uk}}
+% \and
+% The Free Haven Project
+% \email{\emailaddr{arma@mit.edu}}
+% \and
+% Independent consultant
+% \email{\emailaddr{david.hopwood@zetnet.co.uk}}
+% \and
+% The Free Haven Project
+% \email{\emailaddr{nickm@alum.mit.edu}}}
+\author{Name of Author(s)}
+\institute{Name of Institute(s)}
+
+
 \maketitle
 \pagestyle{empty} 
   
@@ -233,6 +240,17 @@ MIX unwraps a single layer of the onion, and passes the result to the
 next MIX. We describe the behavior of the last MIX in
 Section \ref{subsec:delivery-modules}.
 
+% A bit more detail about waht is contained in the header: -George
+
+Headers addressed to each intermediate mix are encrypted using RSA-OAEP
+ \cite{PKCS1} and are of 128kb each. They contain a secret addressed
+to the node that can be used to generate padding and decrypt the rest
+of the message. They also contain the address of the next node to 
+which to message should be forwarded along with its expected signature 
+key fingerprint. In order to frustrate tagging attacks (as described later
+in the paper) the sub-header also contains a hash of the header that
+should be checked. 
+
 % This last paragraph assumes that the audience already knows the
 % material well enough to know that Alice encrypts each layer with the
 % appropriate MIX's public key. Is this assumption safe -Nick
@@ -367,10 +385,14 @@ analysed security properties than less constrained approaches.
 \label{subsec:replies}
 
 The rest of this section describes the mechanism for secure replies,
-including some new attacks and how we defeat them. We also discuss using
-link-level encryption with ephemeral keys to provide forward anonymity,
-message types and modules to handle different types of messages, and
-exit policies for advertising what delivery options a node will provide.
+including some new attacks and how we defeat them. The model that 
+Mixminion follows in order to implement replies is inspired by 
+BABEL \cite{babel}, as it requires the receiver of a reply block to
+keep no other state than it private keys, in order to read the reply.
+All the secrets that are required in order to strip the layers of
+encryption are derived from a master secret contained in the last
+header of the single use reply block that the creator of the block
+addresses to themselves and encrypt under their own public key.
 
 \subsection{Indistinguishable replies}
 \label{subsec:header-swap}
@@ -414,6 +436,9 @@ messages, do not need to run new software.
 % Nope. We're just bluffing. Is that ok? -RRD
 % We're not bluffing.  George used to have a way, but we haven't
 %   mentioned it here.  Should we?  -Nick
+% The trick is to use the nym servers: you send a normal email to
+% the nym server which takes care of the messsage packaging and
+% injects it in the remailer network. -George
 
 We divide a message's path into two \emph{legs}, and split the header
 into two equal-size subheaders, each corresponding to a single leg.
@@ -593,6 +618,11 @@ analysis of this multiple-paths approach to future work.
 % reference section \ref{sec:choosing-paths} when/if we write it -RRD
 
 \section{Related design decisions}
+
+In this section we discuss how we are using
+link-level encryption with ephemeral keys to provide forward anonymity,
+message types and modules to handle different types of messages, and
+exit policies for advertising what delivery options a node will provide.
 
 \subsection{Link-level encryption and what it gets us}
 \label{subsec:link-encrypt}
@@ -1091,7 +1121,7 @@ to implementation and deployment of the Mixminion design.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section*{Acknowledgements}
+\section*{Acknowledgments} Removed for anonymous review.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

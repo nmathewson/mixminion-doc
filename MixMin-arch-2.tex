@@ -301,16 +301,19 @@ of cover traffic and packet reconstruction. The values from 256 to
 32767 should be registered and well known. Values greater than 32767
 can be used freely but could result in clashes.
 
-The \emph{reuse level} allows an intermediary mix to let through the same
-headers many times. It is important to observe that multiple use
-return blocks offer much weaker anonymity than one use return
-blocks. They allow the server to know that the address is reused and
-link messages together. Server can know where it is on the path. They
-also allow servers to perform message tagging in order to detect the
-message later on the path if it goes through another corrupt
-server. Multiple use reply blocks should be avoided is the
-functionality can be implemented in another way. The Reuse level is
-set to zero if the message is not a multiple use return address.
+% Removed by GD
+% (Since we have not found a way of securing MURBS it is not useful)
+% 
+% The \emph{reuse level} allows an intermediary mix to let through the same
+% headers many times. It is important to observe that multiple use
+% return blocks offer much weaker anonymity than one use return
+% blocks. They allow the server to know that the address is reused and
+% link messages together. Server can know where it is on the path. They
+% also allow servers to perform message tagging in order to detect the
+% message later on the path if it goes through another corrupt
+% server. Multiple use reply blocks should be avoided is the
+% functionality can be implemented in another way. The Reuse level is
+% set to zero if the message is not a multiple use return address.
 
 The \emph{return level} field SHOULD be used on the last header of a
 return block (usually addressed to the creator of the block) to remind
