@@ -1,4 +1,4 @@
-$Id: spec-issues.txt,v 1.5 2003/08/22 01:18:00 nickm Exp $
+$Id: spec-issues.txt,v 1.6 2003/09/04 16:14:02 nickm Exp $
 
 				MIX3:X
     Open Issues in Type III (Mixminion) Mix Protocol Specifications
@@ -24,10 +24,10 @@ Table of Contents
             Status of this Document                                    X
    0.       Meta-issues
    1.       Issues in MIX3:1: 'minion-spec.txt'
-   1.1.     Disposition of 'DROP' messages -- RESOLVED
+   1.1.     Disposition of 'DROP' messages -- CLOSED
    1.2.     Generation of dummy messages and link padding
    1.3.     Recommended pooling rule -- RESOLVED
-   1.4.     Hostnames versus IPs -- RESOLVED, NEED SPEC
+   1.4.     Hostnames versus IPs -- CLOSED
    1.5.     IPv6 -- RESOLVED, NEED SPEC
    1.6.     Denial-of-service prevention -- DEFERRED
    1.7.     Bursty MMTP
@@ -40,6 +40,7 @@ Table of Contents
    2.6.     News -- RESOLVED, NEED SPEC
    2.7.     PKI bootstrapping 
    2.8.     Multiple recipients
+   2.9.     Plaintext payload versioning
    3.       Issues in MIX3:3: 'dir-spec.txt'
    3.1.     Directory agreement
    3.2.     Integrated pinging
@@ -61,19 +62,7 @@ Table of Contents
 
 1. Issues in Mix3:1: 'minion-spec.txt'
 
-1.1. Disposition of 'DROP' messages -- RESOLVED
-
-   We need to specify: are 'DROP' messages dropped before they go
-   into the mix pool, or after they're pulled from the pool?
-
-   [Before. -NM]
- 
-   [My feeling is After, but I should think about it... -GD]
- 
-   [Roger seemed pretty sure that it should be 'before', but I don't
-      remember why.  Roger? -NM]
-
-   [RESOLVED 3Aug: "Before".  Roger will tell us why.]
+1.1. Disposition of 'DROP' messages -- CLOSED
 
 1.2. Generation of dummy messages and link padding
 
@@ -105,51 +94,7 @@ Table of Contents
    [RESOLVED 3AUG: Stick with binomial timed dynamic pool until we
      get something better.]
 
-1.4. Hostnames versus IPs -- RESOLVED, NEED SPEC
-
-   In the current specification, we address servers only by IP.  While
-   this approach prevents DNS-related attacks against the mixnet, it
-   wreaks havoc with any attempt to run a server with a dynamic IP.
-
-   Although it is possible to incorporate dynamic-IP servers in the
-   current scheme (for example, nodes could re-address messages to a
-   server's new IP upon learning of the new IP via a fresh directory
-   publication), such approaches basically amount to reinventing a
-   broken, high-latency DNS clone.
-
-   Thus, I think that instead of using an IP address in FWD and
-   SWAP-FWD subheaders, we should use a hostname instead.  Nodes should
-   cache the result of the lookup until a connection fails, in order to
-   prevent spoofing attacks.
-
-   [Peter says we should use TTLs instead so you can move a server
-   without shutting down the old one.  Sounds good.]
-
-   Pro:
-      - Servers with dynamically assigned IP become viable.
-      - Changing a server's IP no longer delays traffic until the
-        change propagates to the directory.
-
-   Con:
-      - The server codebase must become more complicated in order to 
-        efficiently perform and cache DNS lookups while resisting
-        DNS-related lockups.  (But note that any other solution to
-        the dynamic-IP problems would also require a significant amount
-        of server code.)
-      - An attacker who can compromise a node's DNS could block some of
-        the traffic intended for that node until the DNS was restored.
-
-   Nonissues:
-      - We don't need to worry about attackers stealing or destroying
-        traffic by compromising DNS, since MMTP is authenticated.
-  
-                                      -- Nick
-
-   [3Aug: We decided to allow administrators to provide either
-     hostname or IP at their discretion.  I need to come up with a
-     migration plan and modify minion-spec.txt to say the right
-     thing. -NM]
-    
+1.4. Hostnames versus IPs -- CLOSED
 
 1.5. IPv6 -- RESOLVED, NEED SPEC
 
@@ -302,6 +247,17 @@ Table of Contents
 
    [3Aug: <=8 addresses.  If client gets more than 8, divides into N/8
      messages.  Eliminate dups at client; dups at server are error.]
+
+2.9. Plaintext payload versioning
+
+   We should burn a byte or two for a version number on plaintext
+   payloads.  This way, we have some hope of changing to a better 
+   fragmentation algorithm in the future, or what have you.
+   
+   Doing this doesn't break the key property that forward payloads
+   can be recognized as okay, but that corrupt payloads, reply
+   payloads, and encrypted payloads are indistinguishable except to
+   their recipients.
 
 3. Issues in MIX3:3: 'dir-spec.txt'
 

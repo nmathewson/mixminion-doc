@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.13 2003/09/03 16:01:43 nickm Exp $
+$Id: dir-spec.txt,v 1.14 2003/09/04 16:14:02 nickm Exp $
 
 				Mix3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -319,7 +319,15 @@ Table of Contents
    
         'Version': The string '1.0'
 
-        'IP': An IPv4 address, in dotted-quad format.
+        'IP': An IPv4 address, in dotted-quad format.  [Deprecated but
+        necessary as of Mixminion 0.0.6; will be removed in favor of
+        'Hostname' in Mixminion 0.0.7.]
+
+        'Hostname': A fully qualified hostname, or an IPv4 address in
+        dotted-quad format.  [New in Mixminion 0.0.6.  As a temporary
+        hack, clients SHOULD assume that servers with hostnames can send
+        *FWD/HOST messages, and that servers with IPs can send
+        *FWD/IPv4 messages.]
 
         'Port': A port at which IP accepts incoming MMTP connections.
 

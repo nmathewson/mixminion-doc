@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.11 2003/08/22 01:17:59 nickm Exp $
+$Id: minion-spec.txt,v 1.12 2003/09/04 16:14:02 nickm Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -481,8 +481,8 @@ Table of Contents
    0x0000 DROP    (0 octets of routing information)
    0x0001 FWD/IP4 (IP: 4 octets, PORT: 2 octets, KEYID: 20 octets): 26 octets
    0x0002 SWAP-FWD/IPV4 (same info as FWD/IP4)
-   0x0003 FWD/IP6 (IP: 16 octets, PORT: 2 octets, KEYID: 20 octets): 38 octets
-   0x0004 SWAP-FWD/IPV6 (same info as FWD/IP6)
+   0x0003 FWD/HOST (PORT: 2 octets, KEYID: 20 octets, NAME: variable width)
+   0x0004 SWAP-FWD/HOST (same info as FWD/HOST)
 
    0x0100-0x0FFF: PREDEFINED DELIVERY TYPES.
 
@@ -506,12 +506,19 @@ Table of Contents
    field contains the SHA1 hash of the ASN.1 representation of the
    next node's identity public key.
 
-   A SWAP routing type tells the node to exchange headers as described below.
+   A SWAP routing type tells the node to exchange headers as described
+   below.
 
-   The FWD/IP6 and SWAP-FWD/IP6 routing types are analogous to FWD/IP4
-   and SWAP-FWD/IP4, except that they use IPv6 addresses rather than
-   IP4 addressed.  Path generation in this case is an open issue.
-
+   The FWD/HOST and SWAP-FWD/HOST routing type are analogous to
+   FWD/IPV4 and SWAP-FWD/IPV4, except that they expect fully qualified
+   hostnames rather than IPv4 addresses.  Servers SHOULD not block
+   while resolving the hostnames.  [The *FWD/HOST family first appears
+   in Mixminion 0.0.6, and is meant to replace *FWD/IPV4.  Mixminion
+   0.0.7 and later will not generate or accept *FWD/IPV4 messages.  If
+   a server is addressed via a static IPs, it should use a dotted quad
+   as their hostname.  As of Mixminion 0.0.7, the types formerly
+   associated with *FWD/IPv4 will become unallocated.]
+   
    See 'E2E-spec.txt' for more information about SMTP and MBOX delivery.
 
 3.2.2. Header Structure
@@ -983,12 +990,12 @@ Table of Contents
      * B sends "RECEIVED", CRLF, HASH(M|"RECEIVED") (10 + 20 octets)
 
        [Note that A SHOULD NOT wait for B's reply before sending
-        further packets; rather, A SHOULD sending its next packet
-        immediately.  Node B SHOULD NOT send a reply until it has
-        committed the packet to local storage, and Node A SHOULD NOT
-        remove the packet from local storage before it has it has
+        further packets; rather, A SHOULD start sending its next
+        packet immediately.  Node B SHOULD NOT send a reply until it
+        has committed the packet to local storage, and Node A SHOULD
+        NOT remove the packet from local storage before it has it has
         received B's reply.  Node A MAY pause if it is waiting for 16
-        hashes at a time.]
+        or more hashes at a time.]
 
   * Padding case:
 
