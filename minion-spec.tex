@@ -49,6 +49,12 @@ with the smallest building block.
                        HASH(K|P|" (SECOND SUBKEY)")[0:16],
  	               HASH(K|P|" (THIRD SUBKEY)"),
  	               HASH(K|P|" (FOURTH SUBKEY)")[0:16], P)
+[ XXXX That is really overkill! The keys k1 to k4 are going to go into
+       hash functions anyway so there is no need to protect the key
+       schedule using 4 hashes. It would be eough to do the following:
+	- K_(x+1) := K << (x*32 bytes) XOR H(x) for x=0 to 3
+ I do not understand why we use P in the LIONESS at all.]
+
 - SPRP_DECRYPT(K1,K2,K3,K4,M) (Len(M) bytes) Inverts SPRP_ENCRYPT.
 
   We also define SPRP_DEC(K,P,M) as the inverse of SPRP_ENC.
@@ -130,13 +136,11 @@ of headers when the node receives the message.
  
   Routing Extension:
 
-    Magic number:     4 bytes
     Address Data:     Variable
     Padding:          Variable
 
   [XXXX I removed the number of blocks; it's redundant with respect to
   routing size. -NM]
-
   [XXXX What purpose does the magic number serve? -NM]
   [XXXX It was originally there to make sure that the decryption was
   correct. It is not releven any more because:
@@ -144,9 +148,11 @@ of headers when the node receives the message.
 	  (could modify bits inside without modufying first 4 bytes)
 	- the integrity of the additional block is protected by the
   	  message digest in the header (this should be made clear!).
+	- I have removed it now.
 	-GD]
 
-* The magic number is set to be four zero bytes.
+* The address data length is specified by the ``Routing Size'' field
+  contained in the subheader.
 * Padding of zeroes is used to make the size of the Address Extension a
 multiple of 128 bytes.  
 
@@ -279,6 +285,14 @@ The payload of a Mixminion message has a fixed length of 32 kb
      reply block. So the reply block would be (SURB, encryption key,
      first hop, deadline). That would make us waste another 128 bytes
      of payload. -GD]
+  [Example body encryption: Apply LIONESS on the whole body of the
+     message using a predefined key (K = 0x00...00). Encrypt the first
+     128 bytes of the payload using an RSA encryption key contained in
+     the reply block information. That way the payload looks random
+     and only the final receipient can decrypt it (need to include a
+     nonce and a digest in the body of the payload as well). BUT we
+     have the problem that the key can be changed by the adversary in
+     the reply block ...]
 
 Size:   2 bytes
 Data:   (Variable)
@@ -479,6 +493,42 @@ appropriately.
 
 [Need to provide signature + encryption keys, expiry dates, root of
 list of hashes, Address, services and modules, policies, ...]
+
+[A more coprehensive list of things that the Remailer information
+needs to provide:
+
+Status: Serial Number, Superceeds, Timesatmp created, timestamp to
+        refresh, urgency (revokation, routine ...)	  
+Address and names: IP Address, TCP Port, Name of Owner, e-mail of
+                   admin, trust domain(s) 
+RSA Long Term Verification Public Key of server: e, n, timestamp,
+                   hash(e, n, IP, Port). (next key hash)
+RSA Short Term Encryption Public Key: e, n, timestamp, Hash(...)
+Network Services: SMTP Support flag, address restrictions.
+                  LOCAL Support flag, mailbox restrictions.
+	          IP addresses it will accept and send to.
+Modules: Modules supported, configurations.
+Trust Managment: Hash of the State of the world as the mix knows it at
+        that point. This can be the hash of a whole tree:
+
+		           H
+             / =           |                   = \
+	Internal                               External
+ /=                  =\                     /=        =\
+Logs of           Previous keys          Other Mix    ...
+Seen messages     and config +stats       Per Day
+|   |    |   |    |   |   |  ...          |   |   |
+Day Day ...  Day  ...
+1   2        x
+
+
+Assuming that mixes talk to each ther every day and some know, and
+trust, each others verification keys we create a ``headless''
+certification infrastructure. Since not all the mixes are going to
+revoke their verification keys in the same day it is possible to 
+check that the historic information (and stats) across the network has
+not been modified. (there is only the need to reveal the hashes from a
+node to the head of the tree to check the validity of the information).
 
 \section{Statistics Information Exchange formats}
 
