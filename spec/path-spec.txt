@@ -1,0 +1,192 @@
+From owner-mixminion-dev@freehaven.net Sun Oct 19 12:15:42 2003
+Return-Path: <owner-mixminion-dev-outgoing@seul.org>
+Delivered-To: nickm@[24.62.130.57]
+Received: from alum-2.mit.edu (ALUM-2.MIT.EDU [18.7.21.145]) by
+	totoro.wangafu.net (Postfix) with ESMTP id E79EAADED for
+	<nickm@[24.62.130.57]>; Sun, 19 Oct 2003 12:15:42 -0400 (EDT)
+Received: from moria.seul.org (MORIA.MIT.EDU [18.244.0.188]) by
+	alum-2.mit.edu (8.12.8p2/8.12.8) with ESMTP id h9JGIECe000579; Sun, 19 Oct
+	2003 12:18:14 -0400 (EDT)
+Received: by moria.seul.org (Postfix) id A044933E31; Sun, 19 Oct 2003
+	12:18:13 -0400 (EDT)
+Delivered-To: mixminion-dev-outgoing@seul.org
+Received: by moria.seul.org (Postfix, from userid 99) id 0B1DF33E58; Sun,
+	19 Oct 2003 12:18:13 -0400 (EDT)
+X-Original-To: mixminion-dev@freehaven.net
+Delivered-To: mixminion-dev@seul.org
+Received: from nautilus.3node.com (nautilus.3node.com [62.245.184.18]) by
+	moria.seul.org (Postfix) with ESMTP id 80A5633E31 for
+	<mixminion-dev@freehaven.net>; Sun, 19 Oct 2003 12:18:11 -0400 (EDT)
+Received: by nautilus.3node.com (Postfix, from userid 10) id 6824F122DF4;
+	Sun, 19 Oct 2003 18:18:09 +0200 (CEST)
+Received: from valiant.palfrader.org (valiant.sbg.palfrader.org
+	[172.22.118.2]) (using TLSv1 with cipher EDH-RSA-DES-CBC3-SHA (168/168
+	bits)) (Client CN "valiant.palfrader.org", Issuer "Peter Palfrader"
+	(verified OK)) by marvin.palfrader.org (Postfix) with ESMTP id 3E47D130FB;
+	Sun, 19 Oct 2003 18:17:21 +0200 (CEST)
+Received: by valiant.palfrader.org (Postfix, from userid 1000) id
+	754BCFBD8; Sun, 19 Oct 2003 18:17:19 +0200 (CEST)
+Date: Sun, 19 Oct 2003 18:17:18 +0200
+From: Peter Palfrader <mixminion-dev=seul.org@lists.palfrader.org>
+To: mixminion-dev@freehaven.net
+Subject: path spec
+Message-ID: <20031019161718.GC8755@valiant.sbg.palfrader.org>
+Mail-Followup-To: Peter Palfrader
+	<mixminion-dev=seul.org@lists.palfrader.org>, mixminion-dev@freehaven.net
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="hOcCNbCCxyk/YU74"
+Content-Disposition: inline
+X-PGP: 1024D/94C09C7F 5B00 C96D 5D54 AEE1 206B  AF84 DE7A AF6E 94C0 9C7F
+X-Request-PGP: http://www.palfrader.org/keys/94C09C7F.asc
+X-Accept-Language: de, en
+User-Agent: Mutt/1.5.4i
+Sender: owner-mixminion-dev@freehaven.net
+Precedence: list
+Reply-To: mixminion-dev@freehaven.net
+X-To-Get-Off-This-List: mail majordomo@seul.org, body unsubscribe
+	mixminion-dev
+X-Spam-Status: No, hits=-3.7 required=5.0
+	tests=AWL,PGP_SIGNATURE_2,SPAM_PHRASE_00_01,USER_AGENT,
+	USER_AGENT_MUTT,X_ACCEPT_LANG version=2.44
+X-Spam-Level: 
+
+
+--hOcCNbCCxyk/YU74
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+this is a first go at a path spec.  Please let me know if it's useful at
+all or what should be changed.
+
+
+$Id: path-spec.txt,v 1.3 2003/10/22 17:10:59 nickm Exp $
+
+                            MIX3:path-spec
+                Type III (Mixminion) Path Specification
+
+Status of this Document
+
+   This draft describes a proposed format of path specifications
+   for Type III (Mixminion) paths.  It is not a final version.
+   It has not yet been submitted to any standards body.
+
+Abstract
+
+   This document describes a way to specify paths that a packet should
+   take through the Type III network.  It defines both the syntactical
+   format of path specifications as well as how implementations should
+   interpret them.
+
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+
+Table of Contents
+
+            Status of this Document
+            Abstract
+            Table of Contents
+   1.       Introduction
+   2.       Format
+   3.       Interpretation
+
+
+1. Introduction
+
+   A path specification defines a path that packets travel through the
+   Type III network.
+
+2. Format
+
+   A path specification is string consisting of one or two leg
+   specifications, separated by a single colon.  A leg specification is
+   a list of of one or more path components, separated by commas.  Each
+   path component specifies either a node by nickname, a given number of
+   random hops, or a normal distributed number of random nodes.
+   Whitespace before and after separators is ignored.
+
+   The format of nicknames is defined in dir-spec.  To specify a number
+   of random nodes "*n" is used, where n is the number of random hops.
+   To specify a normal distributed number of random nodes "~n" is used.
+
+   Here is a grammar:
+
+      PathSpec ::=3D LegSpec | LegSpec OptSpace ":" OptSpace LegSpec
+      LegSpec ::=3D PathComponent | LegSpec OptSpace "," OptSpace PathCompo=
+nent
+      PathComponent ::=3D ByNickname | RandomHops | GaussianHops
+      ByNickname ::=3D <a nickname as defined in dir-spec>
+      RandomHops ::=3D "*" [0-9]+
+      GaussianHops ::=3D "~" [0-9]+
+
+      Space ::=3D " " | "\t"
+      OptSpace ::=3D | OptSpace Space
+
+3. Interpretation
+
+   To build a path from a given path specification we build a list of
+   hops from the single path components.  In case of a GaussianHops path
+   component, we pick a number from the random distribution with the
+   specified mean and standard deviation 1.5.
+
+   If there are random hops in the path, they should be filled in using
+   this algorithm:  First, the last hop is chosen from the servers
+   recommended by the directory that support delivery of the payload
+   (SMTP, From headers, Fragmentation, etc.).  Note that the same last
+   hop needs to be used for all packets of a fragmented message.
+
+   Then we go through the other hops, starting at the second to last
+   going to the first, choosing random servers from the recommended
+   servers' list.  Care must be taken to ensure that pairs of adjacent
+   hops can talk to each other.  A hop A can talk to another hop B if A
+   has an Outgoing/MMTP section, B has an Incoming/MMTP section and they
+   support a common MMTP protocol version.  Implementations should avoid
+   selecting the same server twice in a row.
+
+      [XXX: what about Allow/Deny ACLs?  - PP]
+      [XXX: I think that Allow Deny lines should also allow
+            giving host names since we now have FWD_HOST routing types.
+            Clients should not have to lookup the ip addresses of nodes,
+            in fact I think they SHOULD NOT do a lookup if they don't
+            deliver directly to it. - PP]
+
+   Because users may be behind fascist firewalls or be limited by other
+   constraints, clients may limit their choice of first hop to hops they
+   can talk to.  Such limit must not influence the choice of any other
+   hops.
+
+      [XXX: I don't think that checking if a client can talk to a hop
+            leaks any info.  An adversary can always learn that we want
+            to send a message once we actually send it.  However an
+            active adversary can easily limit our choice of first hops,
+            so this should receive some consideration. - PP ]
+
+   If we need two legs in case of a simple forward anonymous messages
+   and no crossover point is specified, it is placed in the middle of
+   the path, rounding up the first leg and rounding down the second.
+
+
+Peter
+--=20
+ PGP signed and encrypted  |  .''`.  ** Debian GNU/Linux **
+    messages preferred.    | : :' :      The  universal
+                           | `. `'      Operating System
+ http://www.palfrader.org/ |   `-    http://www.debian.org/
+
+--hOcCNbCCxyk/YU74
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.3 (GNU/Linux)
+
+iD8DBQE/krkOz/ccs6+kS90RAp5gAJ4ivqfibpY9yFF1BeoAmGIhpnH6HwCePqwO
+9pNSDkYiH+4jout9A4X8gns=
+=SmP6
+-----END PGP SIGNATURE-----
+
+--hOcCNbCCxyk/YU74--
