@@ -8,10 +8,12 @@ October 11 2002.
 
 This is a minor revision of the second design.  It should be folded
 into the main spec.
+[XXXX Or, we should aggressively compartmentalize the main spec. This
+  part is only needed if you're writing a client or an exit module for
+  a server.  Relay-only servers don't need this. -NM]
 
 [1] http://archives.seul.org/mixminion/dev/msg000013.html
 [2] http://archives.seul.org/mixminion/dev/Oct-2002/msg00000.html
-
 
 === Introduction ===
 
@@ -65,7 +67,7 @@ My last message addressed 1, 2, 3, and 6.  This document simplifies
 that design, and adds 4 and 5.
 
 The following requirements complicate the design:
-    1) Exit indistinguishablity between message types.  (If the exit
+    1) Exit indistinguishability between message types.  (If the exit
        node is not operated by the recipient, it should learn as
        little as possible about the messages it relays.  Obviously, it
        can distinguish plaintext forward messages from all other
@@ -417,7 +419,8 @@ D) The exit node behaves as follows:
 
 E) SURB generators behave as follows:
 
-       If generating a stateful SURB: [XXXX No longer supported -NM]
+       If generating a stateful SURB: 
+            [XXXX No longer supported -NM]
             Generate encryption keys at random.
             Choose a random 159 bit tag.
             Store the keys, indexed by the tag.
@@ -548,3 +551,148 @@ OPEN ISSUES:
    1. Addresses.  (See message of Sep 20.)
    2. Preventing DOS attacks on K-of-N reconstruction.
    3. Encoding for keys for encrypted-forward messages.
+
+%%%%%% FOR REFERENCE, HERE ARE SOME SECTIONS FROM minion-spec.tex
+%%%%%% THAT ARE NOW SUPERSEDED BY THIS DOCUMENT.  SOME OF THE
+%%%%%% COMMENTS ARE STILL APROPOS. 
+
+\section{Decoding of messages}
+
+Messages that are received by a client can either be sent using the
+forward path, or a SURB. They might either arrive in a mixminion
+format, that includes all the headers, or stripped of the two headers
+with only the a TAG field attached to them.
+
+A client that receives a message that is ultimately destined to them
+should perform the following operations to decode it:
+
+[XXXX A note about the philosophical significance of the ``KEY'':
+	Here (and in the E2E document) the KEY that is used to test 
+	whether a message can be decoded is really attached to a 
+	particular pseudonym of the recipient. This, I think, must 
+	be made more explicit than it is otherwise people implementing 
+	protocols on top of MixMinion will get things wrong.
+
+	Maybe it would even be a good strategy if we use something like
+	NYMLOGINNAME|KEY(or PASSWORD) just to stress that after this step 
+	any operation on the data is linkable to this pseudonym, 
+	and no operation should be performed that link two different 
+	pseudonyms together. 
+	
+	In fact a test as described below allows a particular pseudonym 
+	to check if a message if for it. It is WRONG to give it a sequence 
+	of KEYs and just get back a set of messages that is not annotated 
+	with the identity of the decoder. -GD]
+
+
+PROCEDURE: Decode a message.
+
+Input:  KEY is the long term key of one of the identities of the receipient.
+	TAG field of sub-header or header where 
+        TAG = ( Encrypt(KEY, nHops | seed) | padding up to 44b).
+        M the body of the message.
+Output: P, the plaintext of the message.
+
+	If the message was sent using the forward-path then 
+		P = M; exit;
+	Otherwise, we regenerate all keys used to encrypt the payload:
+		(seed, nHops) = Decrypt(KEY,TAG)[0:17]
+		SK_1..SK_16 = PRNG(seed, nHops*16)[0:16*nhops]
+		For i = nHops to 0
+			M = SPRP_DEC(SK_i, ``PAYLOAD ENCRYPT'',M);
+		end
+
+		// We need here a convention for creating the
+		//   Encryption key in the SURB.
+		M = SPRP_DEC(seed, "PRIVATE SURB KEY",M);
+		
+		P = M; exit;
+
+[XXXX We do not actually specify how the TAG field and the BODY are
+found, prior to be given to this function. So the above works for
+delivery via SMTP but not if the final hop is reached via FWD/IP4. The
+options are the following: 
+	- We require the final recipient to have a public/private key
+	  and decode the header to extract the TAG/BODY messages.
+	- We use symmetric encryption for the final header and extract
+	  the TAG field using a secret key.
+Any of the two can be used, and it does not have to be standardized
+since this operation only affects the final client, but we can give
+some advice. -GD]
+
+[I am a bit uneasy that we have not defined any redundancy, or marker,
+that would allow the final recipient to decide if this is a forward
+path message or a SURBed message. Also the size of valid bytes has
+been scrapped, which does not help in extracting the valid bits from
+the junk. -GD I guess this comment is now covered by the E2E document -GD]
+
+%%%%%%
+
+  [XXXX This prevents the crossover point from seeing an
+    unencrypted payload.  However, using symmetric crypto requires the
+    SURB generator to keep SURBs confidential from everyone but their
+    users.  George has suggested that we use PK instead, but generating
+    a fresh RSA key for each SURB slows SURB generation down by a factor
+    of 30-70.   Perhaps a two-mode system is in order.  Hmm. -NM]
+  [XXXX A bit more discussion on this topic: In fact there is, from an
+    anonymity point of view, very little to gain from using asymetric
+    crypto. The original point I had in mind had to do with
+    observability. If the key is symetric then crooked nodes can do
+    the following:
+	- observe all users noting which SURB's they are receiving.
+	  They can then note down the keys used.
+	- When a message is seen at a cross over point, all keys are
+    	  tried on it, making the forward path useless, since it can
+          be linked to a SURB received by someone specific.
+
+    My original idea was to use a key-private cryptosystem, to hide
+    which key was used to encrypt the payload.
+    I just realised that the above is rubish. If the SURB is not
+    delivered to receipient anonymously and privately, then it cannot
+    be used by the recipient anonymously, since it appears as it is in
+    the header of the packet at the crossover point. Therefore
+    symetric cryptography is as good as asymetric, key-privat in that
+    scenario. But this is a point we need to emphasise, that is
+    obvious when mentioned:
+
+	``Do not use SURB's that have been delivered non anonymously
+	for establishing sender-anonymous communications with others.''
+								-GD]
+
+%%%%%%%%%%
+\subsection{'Stateless' reply blocks}
+
+4. Stateless replies and SMTP (depends on 2 and 3, if I understand correctly)
+
+If a client does not wish to remember all of her outstanding
+reply blocks, she may generate them in 'stateless' mode.  She  
+does so by using an SMTP or MBOX delivery type, and setting
+the TAG field to 
+
+           ( Encrypt(KEY, nHops | seed) | padding up to 44b)
+           [nHops: 1 byte; seed: 16 bytes.]
+
+She uses PRNG(seed, nHops*16) to form the up-to-16 SK's for the reply.
+She also uses the seed to create the symetric key present in the SURB
+as KEYX = HASH(seed| ``PRIVATE SURB KEY'')[0:16];
+
+To understand a message later, the client need only remember (or be
+able to reconstruct) KEY.  
+
+[Note 1: It would be best for deniability if KEY were the SHA1 hash of
+some secure password.  On the other hand, since an adversary could
+then mount an off-line passing attack on KEY, and since most people
+can't construct or remember a good password, it would probably be
+safest to store KEY on disk, password-encrypted.  All implementations
+of stateless replies must support at least this latter mode.]
+
+[Note 2: 'Encrypt' here is not AES in counter mode; that would be
+madness.  Instead, we use AES in CBC mode.]
+[ XXXX if we use CBC mode we will need to use a different IV everytime -GD]
+[ XXXX we now use a hash and therefore this is not relevent any more -GD]
+
+[ XXXX It seems that the TAG generated takes up all the space that the TAG 
+	is allowed to use. Would it be a good idea if we allow the constructor
+	of the SURB to embed more (even propriatery) information in the TAG?
+	That would require us to use ENCRYPTION instead of H(.) as in the new
+	E2E document. -GD]

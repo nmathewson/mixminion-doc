@@ -6,6 +6,8 @@
 
 1. Mail gateways. We should specify these.
    [Should go into appendix]
+   [Agreed.  We should make an actual list of appendices that we
+    need, and start writing them all.-NM]
 
 4. Description of mixing algorithm should go in descriptor blocks. -NM
    [XXXX Unless the mixing method requires special packaging of the message 
@@ -18,12 +20,16 @@
 
   [Before. -NM]
   [My feeling is After, but I should think about it... -GD]
+  [Roger seemed pretty sure that it should be 'before', but I don't
+   remember why.  Roger? -NM
+   
 
 7. We should specify: what happens when a message is undeliverable?
 
   [We retry for a while, then drop it. -NM]
-
-8. Specification for incoming SMTP interface.
+  [Specifically: we retry the message with subsequent message pools
+   until it is delivered, or until a certain amount of time has
+   passed. -NM]
 
 9. ``End-to-end'' issues
 
@@ -32,9 +38,16 @@
    the main specs to be in conformance with it. I quite like the fact that 
    they are separate documents, since the one can be used to implement a
    ``pure'' server and the other a client or an ``impure server'' -GD]
+  [If by 'pure' you mean 'relay', yes.  But implementing things like
+   SMTP exit nodes requires that a server be able to decode messages
+   properly. -NM]
 
 10. K-of-N delivery or fragments.
     [I believe this is covered by the E2E spec -GD]
+    [Yes, but we don't actually specify the erasure algorithm.  I'm
+     currently leaning towards the one using Vandermonde matrices with
+     values from GF(2^n), but it isn't actually specified at a byte
+    level anywhere but its own source code. -NM]
 
 \section{FUTURE ISSUES}
 (These are unresolved issues that we don't want to think about till we
@@ -44,6 +57,8 @@ have more stuff done.)
    [Not for first cut]
 2. Specify: verification for directories.
 	[not for first cut]
+   [Actually, we may need these first two pieces for Mixminion 1.0;
+    else we won't be deployable. -NM]
 3. When do dummy messages get generated?
 4. When does link padding get generated?
    [Both active research areas; not for first cut]
@@ -51,6 +66,11 @@ have more stuff done.)
 5. Automatic retrieval of Server Information
 [XXXX I think it is important to have a standard way to query a server given 
       an IP and a port. -GD]
+[Why? What's wrong with having the server upload its information to a
+ directory server? (Not that I disagree, but I want to know the
+ application for this.  Clients can't use it without leaking which
+ servers they're interested in, and giving servers the opportunity to
+ lie to clients.  What's the upside?) -NM]
 
 \section{Message Format}
 
@@ -83,8 +103,7 @@ with the smallest building block.
   message M (128 bytes) under the private key corresponding to K.
 - Encrypt(K,M) (Len(M) bytes) Rijndael encryption (in Counter mode,
   with 128-bit blocksize) of message M using key K.  (All Rijndael
-  operations use 128-bit blocks.)
-  [XXXX Initial Vector (IV) is Z(16)]
+  operations use 128-bit blocks.)  The Initial Vector (IV) is Z(16).
 - Decrypt(K,M,i,j) (j-i bytes) Rijndael counter mode decryption 
   using the key material byte i to j.
 - PRNG(K, n) (n bytes) Uses Rijndael in counter mode to produce N
@@ -92,14 +111,13 @@ with the smallest building block.
   PRNG(K, n) = Encrypt(K, Z(n))
 - SPRP_ENCRYPT(K1,K2,K3,K4,M) (Len(M) bytes) Uses a super-pseudorandom
   permutation to encrypt M with keys K1-K4.  Specifically, we use LIONESS,
-  as described in XXXXCITE, with PRNG(K,n) as our stream generator,
+  as described in XXXXCITE, with ENCRYPT(K,m) as our stream cipher,
   and the keyed-SHA1 construction specified in the LIONESS paper.
 
-  [XXXX We say above that we use PRNG(K,n) but below we describe the 
-	algorithm using ENRYPT. This has already confused Marc and could
-	confuse others. -GD]
   [XXXX I think we can get away with BEAR instead.  See my email of
     September 6. -NM I agree -GD]
+  [XXXX Okay.  Whose approval were we waiting for to get final
+    verification of this?  Was it David Hopwood? -NM]
 
   K1 through K4 are 160 bits long.
 
@@ -212,10 +230,12 @@ There are 5 predefined routing types:
 0x0000 DROP    (0 bytes of routing information)
 0x0001 FWD/IP4 (IP: 4 bytes, PORT: 2 bytes, KEYID: 20 bytes): 26 bytes
 0x0002 SWAP-FWD/IPV4 (same info as FWD/IP4)
+0x0003 FWD/IP6 (IP: 16 bytes, PORT: 2 bytes, KEYID: 20 bytes): 38 bytes
+0x0004 SWAP-FWD/IPV6 (same info as FWD/IP6)
 
 0x0100-0x0FFF: PREDEFINED DELIVERY TYPES.
 
-0x0100 SMTP   (TAG: 20 bytes, EMAIL ADDRESS: variable, TAG: variable) Variable bytes
+0x0100 SMTP   (TAG: 20 bytes, EMAIL ADDRESS: variable) Variable bytes
 0x0101 MBOX   (TAG: 20 bytes, USER: variable) Variable bytes
 0x0102 MIX2   (EMAIL ADDRESS: variable).  Type II remailer support.
 
@@ -224,6 +244,8 @@ There are 5 predefined routing types:
 0xF000-0xFFFF: FOR EXPERIMENTAL USE
 
 A DROP routing type indicates a dummy message. It must be discarded.
+To prevent servers from distinguishing among clients, every DROP
+message should have a random payload.
 
 A FWD/IP4 routing type indicates that the message must be
 retransmitted using the TLS/Mixmaster transport protocol. The IP field
@@ -233,6 +255,10 @@ of the ASN.1 representation of the next node's transport public key.
 key it uses to decrypt subheaders.)
 
 A SWAP routing type tells the node to exchange headers as described below.
+
+The FWD/IP6 and SWAP-FWD/IP6 routing types are analogous to FWD/IP4
+and SWAP-FWD/IP4, except that they use IPv6 addresses rather than IP4
+addressed.  [Path generation in this case is an open issue. -NM]
 
 See appendices for more information about SMTP and MBOX delivery.
 
@@ -298,7 +324,7 @@ The payload of a Mixminion message has a fixed length of 32 kb
 
 (When sending a reply message with a SURB, we use payload encryption
 to prevent the crossover point from seeing an unencrypted payload. See
-'SURB binary format' for more information.)
+the 'end-to-end encoding' spec for more information.)
 
 We denote a payload as P.
 
@@ -368,84 +394,12 @@ PROCEDURE: Process a message M
 		Give (RT, RI, HASH(SK,``APPLICATION KEY''), P) to
 		Module manager. 
 
-[XXXX Marc prompted me to clarify where the ``Application Key'' is 
-	needed. -GD]
- 
-The Application Key that is provided to the module is a shared secret 
-between the construtor of the header and the module that is going to be 
-incharge of processing it. It is transformed in such a way that it cannot 
-use the secret Sk in any way that could compromise its other functions 
-(such as the decryption of the unlinkability of the message).
-
-\section{Decoding of messages}
-
-Messages that are received by a client can either be sent using the
-forward path, or a SURB. They might either arrive in a mixminion
-format, that includes all the headers, or stripped of the two headers
-with only the a TAG field attached to them.
-
-A client that receives a message that is ultimately destined to them
-should perform the following operations to decode it:
-
-[XXXX A note about the philosophical significance of the ``KEY'':
-	Here (and in the E2E document) the KEY that is used to test 
-	whether a message can be decoded is really attached to a 
-	particular pseudonym of the recipient. This, I think, must 
-	be made more explicit than it is otherwise people implementing 
-	protocols on top of MixMinion will get things wrong.
-
-	Maybe it would even be a good strategy if we use something like
-	NYMLOGINNAME|KEY(or PASSWORD) just to stress that after this step 
-	any operation on the data is linkable to this pseudonym, 
-	and no operation should be performed that link two different 
-	pseudonyms together. 
-	
-	In fact a test as described below allows a particular pseudonym 
-	to check if a message if for it. It is WRONG to give it a sequence 
-	of KEYs and just get back a set of messages that is not annotated 
-	with the identity of the decoder. -GD]
-
-
-PROCEDURE: Decode a message.
-
-Input:  KEY is the long term key of one of the identities of the receipient.
-	TAG field of sub-header or header where 
-        TAG = ( Encrypt(KEY, nHops | seed) | padding up to 44b).
-        M the body of the message.
-Output: P, the plaintext of the message.
-
-	If the message was sent using the forward-path then 
-		P = M; exit;
-	Otherwise, we regenerate all keys used to encrypt the payload:
-		(seed, nHops) = Decrypt(KEY,TAG)[0:17]
-		SK_1..SK_16 = PRNG(seed, nHops*16)[0:16*nhops]
-		For i = nHops to 0
-			M = SPRP_DEC(SK_i, ``PAYLOAD ENCRYPT'',M);
-		end
-
-		// We need here a convention for creating the
-		//   Encryption key in the SURB.
-		M = SPRP_DEC(seed, "PRIVATE SURB KEY",M);
-		
-		P = M; exit;
-
-[XXXX We do not actually specify how the TAG field and the BODY are
-found, prior to be given to this function. So the above works for
-delivery via SMTP but not if the final hop is reached via FWD/IP4. The
-options are the following: 
-	- We require the final recipient to have a public/private key
-	  and decode the header to extract the TAG/BODY messages.
-	- We use symmetric encryption for the final header and extract
-	  the TAG field using a secret key.
-Any of the two can be used, and it does not have to be standardized
-since this operation only affects the final client, but we can give
-some advice. -GD]
-
-[I am a bit uneasy that we have not defined any redundancy, or marker,
-that would allow the final recipient to decide if this is a forward
-path message or a SURBed message. Also the size of valid bytes has
-been scrapped, which does not help in extracting the valid bits from
-the junk. -GD I guess this comment is now covered by the E2E document -GD]
+The ``Application Key'' is provided to the module as a shared secret
+between the constructor of the header and the module that is in charge
+of processing it.  The hash step above prevents the module from using
+the master secret Sk in any way that could inadvertently compromise
+its other functions (such as the decryption of the unlinkability of
+the message).
 
 \section{Single Use Reply Block exchange formats}
 
@@ -485,37 +439,6 @@ Binary Format:
 * Encryption key: used to LIONESS-encrypt the payload before sending it
   into the network.  
 
-  [XXXX This prevents the crossover point from seeing an
-    unencrypted payload.  However, using symmetric crypto requires the
-    SURB generator to keep SURBs confidential from everyone but their
-    users.  George has suggested that we use PK instead, but generating
-    a fresh RSA key for each SURB slows SURB generation down by a factor
-    of 30-70.   Perhaps a two-mode system is in order.  Hmm. -NM]
-  [XXXX A bit more discussion on this topic: In fact there is, from an
-    anonymity point of view, very little to gain from using asymetric
-    crypto. The original point I had in mind had to do with
-    observability. If the key is symetric then crooked nodes can do
-    the following:
-	- observe all users noting which SURB's they are receiving.
-	  They can then note down the keys used.
-	- When a message is seen at a cross over point, all keys are
-    	  tried on it, making the forward path useless, since it can
-          be linked to a SURB received by someone specific.
-
-    My original idea was to use a key-private cryptosystem, to hide
-    which key was used to encrypt the payload.
-    I just realised that the above is rubish. If the SURB is not
-    delivered to receipient anonymously and privately, then it cannot
-    be used by the recipient anonymously, since it appears as it is in
-    the header of the packet at the crossover point. Therefore
-    symetric cryptography is as good as asymetric, key-privat in that
-    scenario. But this is a point we need to emphasise, that is
-    obvious when mentioned:
-
-	``Do not use SURB's that have been delivered non anonymously
-	for establishing sender-anonymous communications with others.''
-								-GD]
-
 The ASCII Encoding of SURBs.
 
 The  ASCII compatible format of SURBs is:
@@ -526,43 +449,6 @@ Base64 encoded binary SURB
 
 The version number should be in decimal ASCII and is the same as the
 binary version.
-
-\subsection{'Stateless' reply blocks}
-
-4. Stateless replies and SMTP (depends on 2 and 3, if I understand correctly)
-
-If a client does not wish to remember all of her outstanding
-reply blocks, she may generate them in 'stateless' mode.  She  
-does so by using an SMTP or MBOX delivery type, and setting
-the TAG field to 
-
-           ( Encrypt(KEY, nHops | seed) | padding up to 44b)
-           [nHops: 1 byte; seed: 16 bytes.]
-
-She uses PRNG(seed, nHops*16) to form the up-to-16 SK's for the reply.
-She also uses the seed to create the symetric key present in the SURB
-as KEYX = HASH(seed| ``PRIVATE SURB KEY'')[0:16];
-
-To understand a message later, the client need only remember (or be
-able to reconstruct) KEY.  
-
-[Note 1: It would be best for deniability if KEY were the SHA1 hash of
-some secure password.  On the other hand, since an adversary could
-then mount an off-line passing attack on KEY, and since most people
-can't construct or remember a good password, it would probably be
-safest to store KEY on disk, password-encrypted.  All implementations
-of stateless replies must support at least this latter mode.]
-
-[Note 2: 'Encrypt' here is not AES in counter mode; that would be
-madness.  Instead, we use AES in CBC mode.]
-[ XXXX if we use CBC mode we will need to use a different IV everytime -GD]
-[ XXXX we now use a hash and therefore this is not relevent any more -GD]
-
-[ XXXX It seems that the TAG generated takes up all the space that the TAG 
-	is allowed to use. Would it be a good idea if we allow the constructor
-	of the SURB to embed more (even propriatery) information in the TAG?
-	That would require us to use ENCRYPTION instead of H(.) as in the new
-	E2E document. -GD]
 
 \section{Replay Avoidance}
 
@@ -597,7 +483,7 @@ for clients written with older SSL libraries.  However, servers must
 never initiate connections with this suite.]
 
 X.509 certificates need not be signed; instead, they must contain
-a key matching that used in the KEYIDportion of the header's routing
+a key matching that used in the KEYID portion of the header's routing
 data.  
 
 Messages are sent from client to server.  Session suspension is
@@ -646,17 +532,20 @@ portions are non-normative descriptions of TLS.)
 * Padding case:
 
      * A sends "JUNK", CRLF, Junk, HASH(M|"JUNK") (6 + 32k + 20 bytes)
-       (where Junk is an arbitrary 32k sequence."
+       (where Junk is an arbitrary 32k sequence.)
      * B sends "RECEIVED", CRLF, HASH(M|"RECEIVED JUNK") (10 +20 bytes)
 
        [Note that both cases require the same number of bytes and 
         processing time. Implementations must make sure the real message 
-	and the padding cases are undistinguishables to a third party, or 
-	even to the parties involved after the keys have been updated.]
+	and the padding cases are indistinguishable to a third party, or 
+	even to the parties involved after the keys have been
+        updated.]
 
 * After sending a batch of messages, A sends an TLS handshake
   renegotiation message. This updates the session key and
-  overrides the old ones.
+  overrides the previous session key.
+  [XXXX Clarify: what is a batch?  There's not much need for
+    consistency here, but I need some guidance in the implementation. -NM]
 
 \end{verbatim}
 
@@ -671,10 +560,14 @@ number 48099 (until we register a port with www.iana.org)
 
 All possible checks should be performed during the transfer protocol
 and if any fail the connection MUST stop and all state MUST
-be deleted. An error MAY be logged. In particular, if the address
+be deleted. An error MAY be logged. In particular, if the KEYID
 hash element in the Master Header is nonzero, the certificate of
 the communication partners must be signed using a key that hashes
 appropriately.
+[XXXX Why would we want to allow a zeroed-out KEYID?  Why would
+  somebody know the necessary packet key to generate a meaningful
+  Type III packet for a server, but not know the server's transport
+  key? -NM]
 
 \section{MIX Information Exchange format}
 
@@ -963,6 +856,7 @@ free-form.
 
 \section{Appendix: SMTP delivery}
 
+[XXXX This paragraph is no longer accurate. -NM]
 At the final hop, when the delivery mechanism is SMTP, we proceed as
 follows.  If the message is a series of printable characters followed
 by some number of NULs, assume we're delivering in ASCII an ISO-XXXX
@@ -989,11 +883,20 @@ display name and comment parts of an e-mail address could potentially be
 different for senders who have obtained an address from different
 sources (leading to smaller anonymity sets). The EMAIL field must be
 NUL-terminated.
+[XXXX Be more specific about which mailboxes we allow -- e.g., forbid
+  supremor@"whitehouse".gov and friends. -NM]
 
 The TAG field is appended to the message in an X-Remailer-Tag header.
+[XXXX Not now it isn't.  I need to rewrite this section to reference
+the E2E spec. -NM]
 
 [XXXX Until we have better answers about abuse prevention, nobody should
   actually implement an SMTP module. :) -NM]
+[XXXX Actually, I already did.  Oops!  Let's say that an SMTP module
+  should support, at least, the ability for the server operator to
+  blacklist specific hosts, domains, usernames, and addresses. -NM]
+[XXXX We need to reference the E2E spec here to explain how to
+  encapsulate nonprinting messages consistently. -NM]
 
 \section{Appendix: Backward compatibility with Type II remailers}
 
