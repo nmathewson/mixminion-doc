@@ -102,6 +102,9 @@ with the smallest building block.
   as described in XXXXCITE, with PRNG(K,n) as our stream generator,
   and the keyed-SHA1 construction specified in the LIONESS paper.
 
+  [XXXX I think we can get away with BEAR instead.  See my email of
+    September 6. -NM]
+
   K1 through K4 are 160 bits long.
 
   Thus, SPRP_ENCRYPT(K1,K2,K3,K4,M) is computed as follows:
@@ -848,20 +851,37 @@ Inputs: Q (a queue of messages)
         N (the number of messages in the queue).
 	MIX_INTERVAL (algorithm parameter; time to wait between
                       batches of messages.  Should be around XXXXX.)
-        THRESHOLD (algorithm parameter; minimum size of pool to send. 
-                   Same as Cottrell's ``min''.  Must be at least XXXXXXXX)
-        RETAIN_RATE (algorithm parameter; fraction of messages to be
-                   kept in pool.  Same as Cottrell's ``frac''.
-                   Should be between XXXX and XXXX.)
+        POOL_SIZE (algorithm parameter; minimum size of pool.  Should
+                   be at least XXXXXXXX)
+        MAX_REPLACEMENT_RATE (algorithm parameter; largest allowable
+                   rate for messages to be removed from the
+                   pool. Should be between XXXX and XXXX.)
+
 Outputs: (A set of messages sent to the network).
 
 1. Wait for MIX_INTERVAL seconds.
 
-2. If N > THRESHOLD, then choose N * (1 - RETAIN_RATE) messages from
-    Q.  Transmit the selected messages.
+2. If N > POOL_SIZE, then choose Min(N-POOL_SIZE, N*MAX_REPLACEMENT_RATE)
+   messages from Q.  Transmit the selected messages.
 
 3. Repeat indefinitely.
 
+[XXXX Erg.  I'm changing this back again.  If I understand correctly,
+   there's a paper that describes another batching algorithm and calls
+   it "mixmaster".  Andrei, Paul, and Roger copied this description, and
+   I copied them. 
+
+   Paul and/or Andrei describe a variant that checks N>=POOL_SIZE+THRESHOLD, 
+   with THRESHOLD>= 1.  Roger claims (verbally) that he isn't sure whether
+   this would buy us anything, since (he says) adding 1 to POOL_SIZE would
+   always increase anonymity more than adding 1 to THRESHOLD.  Once they've
+   come to some agreement, maybe we should do that instead.
+
+   Then there are binomial mixes, where instead of sending b messages,
+   you send each message with probability=b/POOLSIZE.  Roger/Paul/Andrei
+   seem to like those, but I don't have a clear sense of how sure they are,
+   and how much everyone agrees with them. -NM]
+  
 \section{Appendix: MBOX delivery}
 
 Servers that want to support MBOX delivery have an internal list of
@@ -946,9 +966,40 @@ signature are correctly computed.
 
 Upon receiving a type-II message via SMTP, a bridging node checks
 whether the destination node is also a type-III node, by looking for a
-type-III node whose KeyID matches the KeyID for the packet (the first
-16 bytes).  If it finds one, the bridging node unbase64's the type-II
-message's contents, and uses them (plus random padding) as the payload
+type-III node whose KeyID matches the KeyID for the packet. [See below]
+If it finds one, the bridging node unbase64's the type-II message's 
+contents, and uses them (plus random padding) as the payload
 of a type-III message for that node.  The routing type must be 'MIX2'
 (0x0102); the routing info must be equal to the destination mix's
 type-II address.
+
+\subsection{Non-normative note: extracting KeyID and message contents}
+
+(This information is included in the Type-II remailer spec; it is included
+here only for reference.)
+
+A type-II message follows the format:
+
+"-----BEGIN REMAILER MESSAGE-----" NL
+PacketLength NL
+Checksum NL
+Packet NL
+"-----END REMAILER MESSAGE-----" NL
+
+PacketLength is the length of the packet in bytes, encoded as a
+decimal integer."Checksum" is equal to the MD5 hash of the packet,
+encoded in Base 64.  The packet is also encoded in base 64; The first
+16 bytes of the packet are the KeyID of the recipient.
+
+The KeyID of a type-II node is calculated by taking the public key
+<n,e>, expressing n and e as zero-padded, big-endian integers,
+concatenating them, and taking the MD5 hash of the result.
+
+When encoding a type-II message for transmission in a type-III payload,
+a type-III node should include:
+
+S   [2 bytes] (Size, big-endian)
+CHK [16 bytes] (MD5 checksum as given in type-II packet, base-64 decoded)
+PKT [S bytes] (Packet as given in in type-II packet, base-64 decoded)
+PAD [28KB-16-2-S bytes] (Random padding)
+
