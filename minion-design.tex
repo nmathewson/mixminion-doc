@@ -67,9 +67,9 @@ attacks, and providing a research base for experimental features. We
 describe our overall design in Section \ref{sec:design}, including two
 designs for a new primitive called a \emph{single-use reply block}
 (SURB).  Mixmaster provides no support for replies, instead relying
-on the older and less secure cypherpunk type 1 remailer design
+on the older and less secure cypherpunk type I remailer design
 \cite{cypherpunk-remailer}. By integrating reply capabilities into
-Mixminion, we can finally retire the type 1 remailer network.
+Mixminion, we can finally retire the type I remailer network.
 
 We go on in Section \ref{sec:rep-servers} to describe a design for
 Reputation Servers to track and distribute remailer availability,
@@ -125,27 +125,84 @@ remailer design (although one that never saw widespread use).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Goals and Assumptions}
+%\section{Goals and Assumptions}
+% covered below, at least in part.
 
 % and non-goals
 % threat models, etc
 
-http://archives.seul.org//mixminion/dev/Mar-2002/msg00004.html
-http://archives.seul.org//mixminion/dev/Mar-2002/msg00014.html
+%http://archives.seul.org//mixminion/dev/Mar-2002/msg00004.html
+%http://archives.seul.org//mixminion/dev/Mar-2002/msg00014.html
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Design Overview}
-\label{sec:replies}
+\label{sec:design}
 
-\subsection{Packet structure, how packets travel}
+Mixminion aims to bring together the current best approaches for providing
+anonymity in a batching message-based MIX environment. We don't aim
+to provide low-latency connection-oriented services like Freedom
+\cite{freedom} or Onion Routing \cite{onion-routing} --- while those
+designs are more effective for common activities like anonymous web
+browsing, it seems they cannot provide the level of strong anonymity of
+slower message-based services [Do we, uh, want to cite that?]. Indeed, we
+further intentionally restrict the set of options for users: we provide
+only one cipher, and we avoid extensions that would help an adversary
+divide the anonymity set.
 
-This subsection probably should wait until we've got a better plan for
-how to do replies.
+We chose to drop backward-compatibility with Mixmaster and the cypherpunk
+remailer systems, in order to provide a simple extensible design. At
+the same time, we provide a new feature: a reply block mechanism which
+is as secure as forward messages.
 
-\subsection{Why forward and reply messages are secure}
+Reusable reply blocks are security risks --- by their very nature they
+let people send multiple messages to them. These multiple messages can be
+used to very quickly trace the recipient's path: if two incoming batches
+both include a message to the same reply block, then the next hop must
+be in the intersection of both outgoing batches.
 
-and same with this one.
+%Mixmaster solves the problem by not providing reply functionality,
+%and instead falling back on the less secure multiple-use reply blocks
+%provided by the type I remailer network.
+
+The rest of this section describes the header structure and the
+protocol for building and processing messages. In particular, we
+focus on two competing ways of providing secure reply functionality,
+and the tradeoffs and design decisions surrounding each approach. In
+the first approach, we provide a mechanism for doing replies where a
+reply message is indistinguishable from a forward message. Because this
+approach introduces some attacks which we cannot adequately address, we
+then propose a second approach which allows forward and reply messages
+to be distinguished but provides better overall security.
+
+
+\subsection{Approach one: the `header swap' method}
+
+Making forwards and replies indistinguishable prevents an adversary from
+dividing the message anonymity sets into two classes. In particular, if
+there are very few replies during a given period relative to the total
+number of messages, an adversary controlling some of the MIXes in the
+network can more easily trace the path of each reply --- even though
+the batches may be large, the number of replies in each batch will be
+quite small.
+
+At the same time, protocols like Mixmaster include hashes of the entire
+message in each header. Each hop in the path checks the integrity of
+the header and payload, and drops the message immediately if it's been
+altered. But since the author of the reply block is not the one writing
+the payload, these hashes can no longer be used. Indeed, since we choose
+to make forward message and replies indistinguishable, we cannot provide
+hashes for forward messages either. This choice introduces a new class
+of attacks known as \emph{tagging attacks}.
+
+
+
+
+
+
+\subsection{Approach two: the `distinguish replies' method}
+
+%David? :)
 
 \subsection{Link-level encryption and what it gets us}
 
