@@ -1,192 +1,420 @@
-From owner-mixminion-dev@freehaven.net Sun Oct 19 12:15:42 2003
-Return-Path: <owner-mixminion-dev-outgoing@seul.org>
-Delivered-To: nickm@[24.62.130.57]
-Received: from alum-2.mit.edu (ALUM-2.MIT.EDU [18.7.21.145]) by
-	totoro.wangafu.net (Postfix) with ESMTP id E79EAADED for
-	<nickm@[24.62.130.57]>; Sun, 19 Oct 2003 12:15:42 -0400 (EDT)
-Received: from moria.seul.org (MORIA.MIT.EDU [18.244.0.188]) by
-	alum-2.mit.edu (8.12.8p2/8.12.8) with ESMTP id h9JGIECe000579; Sun, 19 Oct
-	2003 12:18:14 -0400 (EDT)
-Received: by moria.seul.org (Postfix) id A044933E31; Sun, 19 Oct 2003
-	12:18:13 -0400 (EDT)
-Delivered-To: mixminion-dev-outgoing@seul.org
-Received: by moria.seul.org (Postfix, from userid 99) id 0B1DF33E58; Sun,
-	19 Oct 2003 12:18:13 -0400 (EDT)
-X-Original-To: mixminion-dev@freehaven.net
-Delivered-To: mixminion-dev@seul.org
-Received: from nautilus.3node.com (nautilus.3node.com [62.245.184.18]) by
-	moria.seul.org (Postfix) with ESMTP id 80A5633E31 for
-	<mixminion-dev@freehaven.net>; Sun, 19 Oct 2003 12:18:11 -0400 (EDT)
-Received: by nautilus.3node.com (Postfix, from userid 10) id 6824F122DF4;
-	Sun, 19 Oct 2003 18:18:09 +0200 (CEST)
-Received: from valiant.palfrader.org (valiant.sbg.palfrader.org
-	[172.22.118.2]) (using TLSv1 with cipher EDH-RSA-DES-CBC3-SHA (168/168
-	bits)) (Client CN "valiant.palfrader.org", Issuer "Peter Palfrader"
-	(verified OK)) by marvin.palfrader.org (Postfix) with ESMTP id 3E47D130FB;
-	Sun, 19 Oct 2003 18:17:21 +0200 (CEST)
-Received: by valiant.palfrader.org (Postfix, from userid 1000) id
-	754BCFBD8; Sun, 19 Oct 2003 18:17:19 +0200 (CEST)
-Date: Sun, 19 Oct 2003 18:17:18 +0200
-From: Peter Palfrader <mixminion-dev=seul.org@lists.palfrader.org>
-To: mixminion-dev@freehaven.net
-Subject: path spec
-Message-ID: <20031019161718.GC8755@valiant.sbg.palfrader.org>
-Mail-Followup-To: Peter Palfrader
-	<mixminion-dev=seul.org@lists.palfrader.org>, mixminion-dev@freehaven.net
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1; protocol="application/pgp-signature"; boundary="hOcCNbCCxyk/YU74"
-Content-Disposition: inline
-X-PGP: 1024D/94C09C7F 5B00 C96D 5D54 AEE1 206B  AF84 DE7A AF6E 94C0 9C7F
-X-Request-PGP: http://www.palfrader.org/keys/94C09C7F.asc
-X-Accept-Language: de, en
-User-Agent: Mutt/1.5.4i
-Sender: owner-mixminion-dev@freehaven.net
-Precedence: list
-Reply-To: mixminion-dev@freehaven.net
-X-To-Get-Off-This-List: mail majordomo@seul.org, body unsubscribe
-	mixminion-dev
-X-Spam-Status: No, hits=-3.7 required=5.0
-	tests=AWL,PGP_SIGNATURE_2,SPAM_PHRASE_00_01,USER_AGENT,
-	USER_AGENT_MUTT,X_ACCEPT_LANG version=2.44
-X-Spam-Level: 
+$Id: path-spec.txt,v 1.4 2003/11/07 06:44:08 nickm Exp $
 
+                              MIX3:path
+                 Type III (Mixminion) Path Generation
 
---hOcCNbCCxyk/YU74
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-this is a first go at a path spec.  Please let me know if it's useful at
-all or what should be changed.
-
-
-$Id: path-spec.txt,v 1.3 2003/10/22 17:10:59 nickm Exp $
-
-                            MIX3:path-spec
-                Type III (Mixminion) Path Specification
+                            Nick Mathewson
+                           Peter Palfrader
 
 Status of this Document
 
-   This draft describes a proposed format of path specifications
-   for Type III (Mixminion) paths.  It is not a final version.
-   It has not yet been submitted to any standards body.
+   This draft describes a proposed system for path generation and
+   specification for Type III (Mixminion) clients.  It is not a final
+   version.  It has not yet been submitted to any standards body.
+
+   This document supersedes the older "path-spec.txt" document, and
+   also replaces the old Appendix A.2 from "dir-spec.txt".
+
+   This document refers to concepts introduced in minion-spec.txt and
+   dir-spec.txt; you may want to re-read those before proceeding.
 
 Abstract
 
-   This document describes a way to specify paths that a packet should
-   take through the Type III network.  It defines both the syntactical
-   format of path specifications as well as how implementations should
-   interpret them.
-
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+   This document describes criteria for path validity, a way to
+   specify paths, and a way to generate paths through the the Type III
+   network.
 
 Table of Contents
 
             Status of this Document
             Abstract
-            Table of Contents
+            Table of contents
    1.       Introduction
-   2.       Format
-   3.       Interpretation
-
+   2.       Path validity
+   2.1.     Terminology
+   2.2.     Determining validity
+   2.3.     Relay compatibility
+   2.4.     Exit compatibility
+   3.       A standard path specification format
+   3.1.     Syntax
+   3.2.     Semantics
+   3.3.     Specification validity
+   3.4.     Generating recommended valid paths
 
 1. Introduction
 
-   A path specification defines a path that packets travel through the
-   Type III network.
+   When a Type III client generates a packet or a SURB, it must choose
+   a sequence of Mixes (or "path") through which the packet will
+   travel.  While dir-spec.txt describes a mechanism for clients to
+   learn about reliable and trustworthy mixes, it does not provide a
+   mechanism for clients to choose mixes, or to build paths using
+   those mixes.
 
-2. Format
+   This document contains two parts: first, a description of which
+   paths a client should use; second, a particular user interface and
+   path selection algorithm to generate good paths.  The algorithm is
+   the same one implemented in the reference implementation.  All
+   software that generates paths SHOULD generate paths that are
+   "valid" and "recommended" as described in section 2 below, unless
+   the user specifically requests otherwise; and SHOULD warn the user
+   whenever an invalid path is requested.
+
+   Implementations MAY allow users to specify paths of their own.  If
+   they do, implementations SHOULD at least warn users who generate
+   paths that would not be generated by the standard algorithm.
+   Implementations that allow path selection SHOULD allow partial path
+   selection as well.
+
+2. Path validity
+
+2.1. Terminology
+
+   A "path" is a sequence of Type III server descriptors.  A path may
+   be either a single undivided sequence (in the case of SURB and
+   reply packet paths); or a sequence divided into two legs (in the
+   case of forward packet paths).
+
+   A path is "valid" if the following holds: All messages send along a
+   valid path _will_ be delivered if all the mix on the path are
+   running and have capabilities and features as advertised in the
+   most recently downloaded directory.  [For example, paths that route
+   messages between incompatible mixes, or that exit via an
+   inappropriate method, are _NOT_ valid.]
+
+   Validity can be time-dependent: because server descriptors and
+   packet keys have a limited lifetime, every path has a time before
+   which it will not work, and a time after which it will not work.
+
+   Validity can also depend on exit address and exit message size:
+   some paths are suitable for delivering SMTP messages; others are
+   suitable for delivering large fragmented SMTP messages with
+   server-side reconstruction, and so on.
+
+   A path is "recommended" if:
+      - It is valid.
+      - Every mix on the path is recommended.
+      - No pair of adjacent mixes on that path is listed as a broken
+        link in the directory. [XXX add this to directories]
+      - No pair of adjacent mixes on that path has the same nickname.
+
+   Below we describe in more detail how to determine whether a path is
+   "valid" as described above.
+
+2.2. Determining validity
+
+   For a path to be valid, all of the following must hold:
+
+      - If the path has two legs, neither leg is empty.
+
+      - For every pair of adjacent server descriptors on the path
+        (<S1,S2>), S1 must describe a mix that can relay packets to
+        S2.  [Discussed in 2.3 below.]
+
+      - The client can relay a packet to the mix described by the
+        first server descriptor on the path.
+
+      - [XXX describe a maximum length requirement.  This will be
+        ugly, since the maximum length of a path depends on the size
+        of the routing info fields along the path.]
+
+   For a path to be valid from time START through time END, all of the
+   following must hold:
+
+      - Every server descriptor on the path has a Valid-After date no
+        later than START, and a Valid-After date no later than END.
+
+   For a path to be valid for delivering packets to a SURB or exit
+   address TARGET, all of the following must hold:
+
+      - If TARGET is a SURB, then the last server descriptor on the
+        path must describe a server that can relay packets to the
+        first hop of SURB.
+
+      - Otherwise, the last server descriptor on the path must
+        describe a server that can deliver packets to the exit
+        address.  [Discussed in 2.4 below.]
+
+2.3. Relay compatibility
+
+   In order to determine whether a path is valid, we need to know
+   whether the mixes on that path can relay to one another.  We
+   determine this as follows.
+
+   Given server descriptors SD1 and SD2 for two mixes M1 and M2
+   respectively, M1 can relay packets to M2 iff all of the following
+   hold:
+
+      - SD1 has an Outgoing/MMTP section with a recognized version
+        number.
+
+      - SD2 has an Incoming/MMTP section with a recognized version
+        number.
+
+      - One of the protocols listed in SD1's Outgoing/MMTP "Protocols"
+        entry is also listed in SD2's Incoming/MMTP "Protocols" entry.
+
+      [XXX Disregard Allow and Deny? I'm not sure how to make them
+      work now that we use hostname-based delivery. Anyway, they're
+      not implemented yet. -NM]
+
+      - If SD1's Incoming/MMTP section has an "IP" entry and no
+        "Hostname" entry, then SD2's Incoming/MMTP section has an "IP"
+        entry.  [XXX This rule is deprecated, and will go away after
+        0.0.7, when nobody has an "IP" entry and everybody has a
+        "Hostname" entry. -NM]
+
+2.4. Exit compatibility
+
+   In order to determine whether a non-reply path is valid, we need
+   to know whether the last mix on the path can deliver to the target
+   address, and whether last mix on the path is willing to deliver
+   messages as large as we intend to send.
+
+   We determine address compatibility depending on the exit type of
+   the address:
+
+      - If the message is intended for SMTP delivery, then the
+        descriptor must have a "Delivery/SMTP" section with a
+        recognized version.  Furthermore, if the user has specified a
+        "From:" header, the descriptor must have an "Allow-From"
+        entry of "yes".
+
+      - [XXX note also that if we're using any user-specified headers
+        at all, the exit server must have Version at least 0.0.5.
+        This requirement will go away once there are no more mixes
+        without exit header support. -NM]
+
+      - If the message is intended for MBOX delivery, then the
+        descriptor must have a "Delivery/MBOX" section with a
+        recognized version.  Furthermore, if the user has specified a
+        "From:" header, the descriptor must have an "Allow-From"
+        entry of "yes".
+
+      - If we are sending a dummy packet with DROP exit type, any
+        exit server is valid.
+
+      - If there is a different exit type, there may be additional
+        restrictions on allowable exit servers.
+
+   We determine size-compatibility as follows:
+
+      - If the message is to be fragmented and reassembled by the
+        server, then exit server descriptor must have a
+        "Delivery/Fragmented" section with a recognized version, and a
+        "Maximum-Fragments" entry no larger than the number of
+        fragments in the message.
+
+      - If the message is intended for forward delivery via SMTP or
+        MBOX, then the corresponding Delivery/SMTP or Delivery/MBOX
+        section of the descriptor must contain a "Maximum-Size" entry
+        no smaller than the size of the message (in kilobytes, before
+        compression.)
+
+3. A standard path specification format
+
+3.1. Syntax
 
    A path specification is string consisting of one or two leg
-   specifications, separated by a single colon.  A leg specification is
-   a list of of one or more path components, separated by commas.  Each
-   path component specifies either a node by nickname, a given number of
-   random hops, or a normal distributed number of random nodes.
-   Whitespace before and after separators is ignored.
+   specifications, separated by a single colon.  A leg specification
+   is a list of of one or more path components, separated by commas.
+   Each path component specifies either a node by nickname, a single
+   random hop, a given number of random hops, or a normal distributed
+   number of random nodes.  Whitespace before and after separators is
+   ignored.
 
-   The format of nicknames is defined in dir-spec.  To specify a number
-   of random nodes "*n" is used, where n is the number of random hops.
-   To specify a normal distributed number of random nodes "~n" is used.
+   The format of nicknames is defined in dir-spec.  To specify a
+   single random hop, "?" is used. To specify a number of random nodes
+   "*n" is used, where n is the number of random hops.  To specify a
+   normal distributed number of random nodes "~n" is used.
 
    Here is a grammar:
 
-      PathSpec ::=3D LegSpec | LegSpec OptSpace ":" OptSpace LegSpec
-      LegSpec ::=3D PathComponent | LegSpec OptSpace "," OptSpace PathCompo=
-nent
-      PathComponent ::=3D ByNickname | RandomHops | GaussianHops
-      ByNickname ::=3D <a nickname as defined in dir-spec>
-      RandomHops ::=3D "*" [0-9]+
-      GaussianHops ::=3D "~" [0-9]+
+      PathSpec ::= LegSpec | LegSpec OptSpace ":" OptSpace LegSpec
+      LegSpec ::= PathComponent | LegSpec OptSpace "," OptSpace PathComponent
+      PathComponent ::= ByNickname | RandomHop | RandomHops | GaussianHops
+      ByNickname ::= <a nickname as defined in dir-spec>
+      RandomHop ::= "?"
+      RandomHops ::= "*" [0-9]+
+      GaussianHops ::= "~" [0-9]+
 
-      Space ::=3D " " | "\t"
-      OptSpace ::=3D | OptSpace Space
+      Space ::= " " | "\t"
+      OptSpace ::= | OptSpace Space
 
-3. Interpretation
+3.2. Semantics
 
-   To build a path from a given path specification we build a list of
-   hops from the single path components.  In case of a GaussianHops path
-   component, we pick a number from the random distribution with the
-   specified mean and standard deviation 1.5.
+   A path specification may be "satisfied" by zero, one, or more
+   paths.  A path satisfies a path specification iff all the following
+   hold:
 
-   If there are random hops in the path, they should be filled in using
-   this algorithm:  First, the last hop is chosen from the servers
-   recommended by the directory that support delivery of the payload
-   (SMTP, From headers, Fragmentation, etc.).  Note that the same last
-   hop needs to be used for all packets of a fragmented message.
+      - If the PathSpec has two legs, then:
+          - The path has two legs.
+          - The first leg of the path satisfies the first leg of the
+            PathSpec.
+          - The second leg of the path satisfies the second leg of
+            the PathSpec.
+      
+      - If the PathSpec has one leg, then:
+          - The path has one leg.
+          - The path's leg satisfies the PathSpec's leg.
 
-   Then we go through the other hops, starting at the second to last
-   going to the first, choosing random servers from the recommended
-   servers' list.  Care must be taken to ensure that pairs of adjacent
-   hops can talk to each other.  A hop A can talk to another hop B if A
-   has an Outgoing/MMTP section, B has an Incoming/MMTP section and they
-   support a common MMTP protocol version.  Implementations should avoid
-   selecting the same server twice in a row.
+      - If the PathSpec has N PathComponents, then the path can
+        partitioned into N subsequences of server descriptors, such
+        that the Nth PathComponent is satisfied by the Nth subsequence
+        of server descriptors.
 
-      [XXX: what about Allow/Deny ACLs?  - PP]
+   PathComponents are satisfied by sequences of server descriptors as
+   follows:
+
+      - A ByNickname component is satisfied by a sequence containing a
+        single server descriptor whose nickname is equal to the
+        specified nickname, ignoring case.
+
+      - A RandomHop component is satisfied by any sequence containing
+        a single server descriptor.
+
+      - A RandomHops component is satisfied by any N-element sequence
+        of server descriptors, where N is the decimal integer in the
+        RandomHops component.
+
+      - A GaussianHops component is satisfied by any sequence of
+        server descriptors.
+
+3.3. Specification validity
+
+   [This section is helpful information for implementors; it can be
+   inferred from the other sections.
+
+   Implementations often need to check whether a path specification
+   can be satisfied at all--for example, when validating a user's
+   configuration options.  That is to say, they need to know whether
+   there is any valid path that satisfies the PathSpec.
+
+   In general, a PathSpec is satisfiable by a valid path if:
+      - For every ByNickname component, a server is known with that
+        nickname.
+      - No pair of adjacent ByNickname components are the nicknames of
+        two mixes M1 and M2 such that M1 cannot relay to M2.
+      - If the last component is a ByNickname component, then the Mix
+        with that nickname can indeed deliver messages to the
+        selected exit address.
+      - [XXX Not too long.]
+
+   [XXX there are additional ways that a PathSpec may be
+   unsatisfiable.  For example, we might not know about any
+   descriptors at all.  Or we might have "A,?,B" where no server can
+   receive from A and deliver to B.  Ignoring that for now.]
+
+   [XXX Also, mention time constraint.]
+
+3.3. Generating recommended valid paths
+
+   Clients SHOULD proceed as follows when generating paths.  It
+   generates valid paths that satisfy the provided PathSpec.
+   It tries to generate a recommended path if possible.
+
+   Note that this procedure generates a _set_ of paths.  This is
+   necessary for server-side message reassembly, which requires that
+   all of the paths used for a fragmented message have the same exit
+   hop.
+
+   PROCEDURE: Generate a set of paths
+
+   Inputs: DIR    (The most recent Type III directory)
+           SPEC   (A PathSpec)
+           START  (The start of the interval over which the path must
+                   be valid.)
+           END    (The end of the interval over which the path must
+                   be valid.)
+           ADDR   (The exit address)
+           MSG    (The message to deliver)
+           N      (The number of paths to generate)
+
+   Outputs: A valid path.
+
+      1. If the last component of PATH is a ByNickname component, then
+         verify that the corresponding server:
+
+           - Has a descriptor that is valid at least from START to END.
+           - Can deliver messages to ADDR.
+           - Is willing to deliver a message as long as MSG (if the
+             message is forward).
+           - Is willing to de-fragment a message with as many
+             fragments as MSG (if using server-side reassembly).
+
+      2. If the last component of SPEC is not a ByNickname component,
+         then pick a last hop at random from among those satisfying
+         the criteria of step 1 above that are also Recommended.
+
+         (If the second-to-last component of PATH is a ByNickname
+         component, restrict the candidates to those to which the
+         second-to-last server can relay.)
+
+      3. Repeat N times, in order to generate N paths:
+
+           4. Expand SPEC so that every component is a RandomHop or a
+              ByNickname.  We do this as follows:
+
+                - Expand each "*K" RandomHops component into a sequence
+                  of K RandomHop components.
+
+                - Expand each "~K" GaussianHops component into a
+                  sequence of _approximately_ K RandomHop components,
+                  choosing from a Gaussian distribution with mean K
+                  and standard deviation 1.5.
+
+                - If the last component in the resulting path is a
+                  RandomHop component, and we selected a random exit
+                  hop in step 2 above, then remove the last component.
+                  If the last component in the resulting path is a
+                  ByNickname component, remove the last component.
+
+               Call the resulting expanded path specifier "ESPEC".
+
+            5. Let the last hop in the path be the server descriptor
+               chosen in step 1 or step 2 above.
+
+            6. From last to first, choose a server descriptor to satisfy each
+               component in ESPEC.
+
+                - For ByNickname components, choose a server
+                  descriptor that has corresponding nickname, and that
+                  is valid from START to END.
+
+                - For RandomHop components, choose a server
+                  descriptor at random from those that are valid from
+                  START to end, that can relay to the next hop in the
+                  sequence (which will already have been selected),
+                  and to which the previous hop in the sequence (if
+                  it will be selected by a ByNickname) can route.
+
+               If there are restrictions on which hops the client can
+               relay packets to, the first hop is additionally
+               restricted to such paths.
+
+            7. If a two-legged forward path is needed, and SPEC is
+               not two-legged, divide the path into two legs at the
+               middle, rounding up the first leg and rounding down
+               the second.
+
+======
+
       [XXX: I think that Allow Deny lines should also allow
             giving host names since we now have FWD_HOST routing types.
             Clients should not have to lookup the ip addresses of nodes,
             in fact I think they SHOULD NOT do a lookup if they don't
-            deliver directly to it. - PP]
-
-   Because users may be behind fascist firewalls or be limited by other
-   constraints, clients may limit their choice of first hop to hops they
-   can talk to.  Such limit must not influence the choice of any other
-   hops.
+            deliver directly to it. -PP]
+      [XXX: Agreed.  But I'd like to call the new ones AllowHost and
+            DenyHost.  Or maybe they should take server nicknames
+            instead of hostnames. -NM]
 
       [XXX: I don't think that checking if a client can talk to a hop
             leaks any info.  An adversary can always learn that we want
             to send a message once we actually send it.  However an
             active adversary can easily limit our choice of first hops,
-            so this should receive some consideration. - PP ]
-
-   If we need two legs in case of a simple forward anonymous messages
-   and no crossover point is specified, it is placed in the middle of
-   the path, rounding up the first leg and rounding down the second.
-
-
-Peter
---=20
- PGP signed and encrypted  |  .''`.  ** Debian GNU/Linux **
-    messages preferred.    | : :' :      The  universal
-                           | `. `'      Operating System
- http://www.palfrader.org/ |   `-    http://www.debian.org/
-
---hOcCNbCCxyk/YU74
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.2.3 (GNU/Linux)
-
-iD8DBQE/krkOz/ccs6+kS90RAp5gAJ4ivqfibpY9yFF1BeoAmGIhpnH6HwCePqwO
-9pNSDkYiH+4jout9A4X8gns=
-=SmP6
------END PGP SIGNATURE-----
-
---hOcCNbCCxyk/YU74--
+            so this should receive some consideration. -PP]
+      [XXX: Checking offline is harmless.  Checking online is, as you
+            say, potentially unsafe.  Right now, Mixminion tries to
+            send the packets it generates -- and when it cannot do
+            so, it queues them and tries them later.  The only way to
+            lose packets this way is if the directory says you ought
+            to be able to use server FOO but really you can't. -NM]
