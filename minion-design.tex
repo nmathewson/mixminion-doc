@@ -284,22 +284,62 @@ http://archives.seul.org/mixminion/dev/Apr-2002/msg00002.html
 \section{Nym management and single-use reply blocks}
 \label{sec:nymservers}
 
-we've got two competing notions for how to do nymservers, and i think
-it's becoming clear that one is better than the other. good to describe
-them both.
-http://archives.seul.org/mixminion/dev/Apr-2002/msg00047.html
-and following thread
+Current nymservers, such as {\tt nym.alias.net} \cite{nym-alias-net},
+maintain a set of \{email address, reply block\} pairs to allow users to
+receive mail without revealing their identities. When mail arrives to {\tt
+bob@nym.alias.net}, the nymserver attaches the payload to the associated
+reply block and sends it off into the mix-net. Because these nymservers
+use the type I remailer network, these reply blocks are \emph{persistent}
+or \emph{long-lived} nyms --- the mix network does not drop replayed
+messages, so the reply blocks can be used again and again. Reply block
+management is much simpler in this model because users only need to
+replace a reply block when one of the nodes it uses stops working.
 
-\subsection{Nymservers}
+The Mixminion design protects against replay attacks by dropping
+messages with repeated headers --- so its reply blocks are necessarily
+single-use. There are a number of approaches for building nymservers
+when reply blocks are single-use.
+
+The approach most similar to currently deployed nymservers involves
+keeping a set of reply blocks around and using one for each incoming
+message. As long as the owner of the pseudonym keeps the nymserver
+well-stocked, no messages will be lost. But it's hard to know at what
+rate to supply the nymserver with new nyms; indeed, this approach is
+vulnerable to a DoS attack to use up all the available reply blocks and
+block further messages from getting delivered.
+
+A more robust design uses an imap-like protocol: messages arrive and queue
+at the nymserver, and the user periodically checks the status of his mail
+and sends a sufficient batch of reply blocks so the nymserver can deliver
+that mail. The above flooding attack still works, but now it's exactly
+like flooding a normal imap mailbox, and the usual techniques (e.g.,
+allowing the user to delete mails at the server or specify which mails to
+download and let the others expire) work fine. The user can send a set
+of hashes or other indices to the server after successfully receiving
+some messages, to indicate that those messages can now be deleted.
+
+Of course, there are different legal and security implications for the two
+designs. In the first case, no mail is stored on the server, but it's also
+keeping valid reply blocks on hand. The second case is in some sense more
+secure but also creates more liability --- the server has no valid reply
+blocks on hand in general, but it has to keep mail for each recipient
+until it's retrieved. The owner of the pseudonym could provide a public
+key which the nymserver uses to immediately encrypt all incoming messages,
+to limit the amount of time the nymserver keeps plaintext messages.
+
+Which point on the spectrum is best depends on the situations and
+preferences of the volunteers running the nymservers. Hopefully there
+will be enough volunteers that users can choose the set-up that makes
+them most comfortable.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Maintaining anonymity sets}
 
 \subsection{Long-term nyms: how to choose paths for reply blocks}
 
 This question is hard. We're going to have to argue about it for a
 while more, I think.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Maintaining anonymity sets}
 
 \subsection{Transmitting large files with Mixminion}
 
