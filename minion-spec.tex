@@ -351,9 +351,7 @@ Process:
   J_0 = ``'';
   for i = 1 .. N
 	J_i = J_(i-1) | PRNG(HASH(SK_i | ``RANDOM JUNK'')[0:16], SIZE_i)
-
         Stream_i = PRNG(HASH(SK_i | ``HEADER SECRET KEY''), 128*15 + SIZE_i);
-
 	J_i = J_i XOR Stream_i[128*15 -Len(J_i) + SIZE_i:Len(J_i)];
   end
 
@@ -363,10 +361,10 @@ Process:
   for i = N .. 1
 	K = HASH(SK_i | ``HEADER SECRET KEY'')[0:16];
 	IF i = N (set appropriate routing type and A_i)
-	EH = EXT( RI_i )
+	EH = EXT( RI_i+1 )
         REST = Encrypt(K, (EH | H_(i+1)))
-  	DIGEST = HASH(REST | J_(i+1))
-	H_i = ESHS(PK_i, V, SK_i, DIGEST, len(RI_(i+1)), RT_(i+1), RI_(i+1)) | REST
+  	DIGEST = HASH(REST | J_i-1)
+	H_i = ESHS(PK_i, V, SK_i, DIGEST, len(RI_i+1), RT_i+1, RI_i+1) | REST
   end
 
 return H_1;
