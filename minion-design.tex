@@ -1,5 +1,7 @@
+% XXX remember to mention bodo moeller's crypto paper
+
 % \documentclass[10pt, twocolumn]{IEEEtran}
-\documentclass[11pt]{IEEEtran}
+\documentclass[final,inpress,inline]{ieee}
 % \documentclass{llncs}
 
 \usepackage{url}
@@ -230,8 +232,8 @@ called a \emph{free-route} network. Another approach is a \emph{cascade}
 network, where senders choose from a set of fixed paths through the
 mix-net. Cascades can provide greater anonymity against an adversary
 who owns many mixes \cite{disad-free-routes}, but they are also more
-vulnerable to blending attacks \cite{batching-taxonomy} (see Section
-\ref{subsec:batching}).
+vulnerable to blending attacks such as trickle or flooding attacks
+\cite{batching-taxonomy}.
 Furthermore, cascade networks arguably have lower maximum anonymity because
 the number of people Alice can hide among (her \emph{anonymity set}) is limited
 to the number of messages the weakest node in her cascade can handle.
@@ -402,7 +404,7 @@ the anonymity set. These assumptions lead to the following design goals:
 %\cite{langos02}.
 
 % Server requirements
-First of all, the system must be relatively \emph{simple to deploy}. 
+First of all, the system must be \emph{simple to deploy}. 
 Past systems have never found it easy to get a reliable group of mix
 operators to run long-lived servers. Mixminion must add as few
 technical barriers as possible.  Thus our protocol uses clock
@@ -437,7 +439,7 @@ Cypherpunk remailer systems in order to provide a simple extensible
 design. We can retain minimal backwards compatibility by ``remixing'' Type II
 (Mixmaster) messages inside Type III (Mixminion) messages, thus increasing
 anonymity sets in the Type III network. (A Type II message traveling between
-backward-compatible Type III remailers is treated as plaintext, encrypted to
+backward-compatible Type III remailers is encrypted to
 the next remailer in the chain using its Type III key, and sent as a Type III
 encrypted message.  The recipient decrypts it to reveal the Type II
 message.)
@@ -474,7 +476,7 @@ distinguishing between them.
 \label{sec:design}
 
 Mixminion uses a free-route mix-net just like Mixmaster \cite{mixmaster-spec}
-and Babel \cite{babel} (see Section \ref{sec:background} above). 
+and Babel \cite{babel}.
 Mixminion's principal difference from earlier mix-net
 designs is the mechanism it uses to support reply messages with the
 same processing machinery as forward messages, while at the same time
@@ -522,11 +524,12 @@ Alice. (The subscript $i$ makes explicit the fact that a SURB can only
 be used once and a new one has to be used for every communication.)
 
 Mixminion's reply model is in part inspired by Babel \cite{babel}, as it
-requires the creator of a reply block to keep no other state than its secret
-keys in order to read the reply.  All the secrets that an anonymous recipient
+requires the creator of a reply block to keep no other state than its public
+key in order to read the reply.  All the secrets that an anonymous recipient
 needs to strip the layers of encryption from a reply message are derived from
 a master secret contained in the last header of the single-use reply block,
 encrypted with the recipient's public key.
+% XXX this is no longer true.
 
 \begin{figure}
 \begin{center}
@@ -571,8 +574,8 @@ is composed of up to 16 subheaders, one for each hop along the path.
 Each subheader contains a hash of the remainder of its header as
 seen by that mix, so we can do
 integrity-checking of the path (but not the payload) within each leg.
-Each subheader also contains a symmetric key, which is used to derive a
-decryption key for decrypting the rest of the message. The mix also
+Each subheader also contains a master secret, which is used to derive a
+symmetric key for decrypting the rest of the message. The mix also
 derives a padding seed from this master key. It uses this padding seed
 to place predictable padding at the end of the header, so the hash will
 match even though each hop must repad the header to maintain constant
@@ -778,10 +781,10 @@ either provides sufficient anonymity or destroys the information about
 the second leg, the second leg in a forward message can be very short.
 At the extreme, the first hop in the second header could directly
 specify the message recipient. However, the choice of crossover point
-can still reveal information about the intended recipient,\footnote{For instance,
-some mixes may only allow outgoing mail to local addresses; if such a
+can still reveal information about the intended recipient (imagine that
+some mixes only allow outgoing mail to local addresses; if such a
 node gets a crossover message that has been trashed, it might guess
-that the recipient is one of the local addresses.} and so we recommend
+that the recipient is one of the local addresses), and so we recommend
 that the second leg be at least a few hops long.
 We use a path length of 4 hops per leg, but with only 2 hops in the
 second leg of a forward message.
@@ -1015,7 +1018,7 @@ in a variable-length annex to the final subheader.
 
 The types each mix supports are described in a \emph{capability block},
 which also includes the mix's address, long-term (signing) public key,
-short-term public key (for use in header encryption), remixing capability,
+short-term (message decryption) public key, remixing capability,
 and batching strategy. Mixes sign these capability blocks
 and publish them on directory servers (see Section \ref{sec:dir-servers}).
 Clients download this information from the directory servers.
@@ -1656,7 +1659,11 @@ Mixminion specification \cite{mixminion-spec}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%\section*{Acknowledgments} Removed for anonymous review.
+\section*{Acknowledgments}
+
+We thank Susan Born, Lucky Green, David Hopwood, David Mazieres, Peter
+Palfrader, Len Sassaman, Andrei Serjantov, Robyn Wagner, and Bryce
+Wilcox-O'Hearn for helpful design discussions, editing, and suggestions.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
