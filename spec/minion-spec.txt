@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.23 2003/10/15 17:14:02 weasel Exp $
+$Id: minion-spec.txt,v 1.24 2003/10/21 17:51:56 nickm Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -515,13 +515,14 @@ Table of Contents
 
    The FWD/HOST and SWAP-FWD/HOST routing type are analogous to
    FWD/IPV4 and SWAP-FWD/IPV4, except that they expect fully qualified
-   hostnames rather than IPv4 addresses.  Servers SHOULD not block
-   while resolving the hostnames.  [The *FWD/HOST family first appears
-   in Mixminion 0.0.6, and is meant to replace *FWD/IPV4.  Mixminion
-   0.0.7 and later will not generate or accept *FWD/IPV4 messages.  If
-   a server is addressed via a static IPs, it should use a dotted quad
-   as their hostname.  As of Mixminion 0.0.7, the types formerly
-   associated with *FWD/IPv4 will become unallocated.]
+   hostnames rather than IPv4 addresses.  Hostnames SHOULD be in
+   lowercase. Servers SHOULD not block while resolving the hostnames.
+   [The *FWD/HOST family first appears in Mixminion 0.0.6, and is
+   meant to replace *FWD/IPV4.  Mixminion 0.0.7 and later will not
+   generate or accept *FWD/IPV4 messages.  If a server is addressed
+   via a static IPs, it should use a dotted quad as their hostname.
+   As of Mixminion 0.0.7, the types formerly associated with *FWD/IPv4
+   will become unallocated.]
 
    See 'E2E-spec.txt' for more information about SMTP and MBOX delivery.
 
