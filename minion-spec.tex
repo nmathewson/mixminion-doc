@@ -611,12 +611,13 @@ the entries:
      'Nickname': A human-readable identifier for this server.  If it
          contains any periods, it must be a fully qualified DNS name
          which resolves to the provided IP for the entire lifetime of
-         this Descriptor block.
+         this Descriptor block.  It must be no more than 128 characters.
      'Identity': The modulus of this Mix node's long-term signing key,
          represented in ASN.1, and encoded in BASE64.  Whitespace in
          this field is ignored, to allow the key to span multiple
          lines.  The modulus of this key should be at least 2048 bits
-         long.  The exponent of this key must be 65535.
+         long and no more than 4096 bits long.  The exponent of this 
+         key must be 65535.
 
 	 Clients should at least give a warning if the identity key of
          any server should ever change. [XXXX Write more in section
@@ -632,7 +633,8 @@ the entries:
          GMT on this date, this server must support the operations listed
          in this descriptor.
      'Contact': An email address that may be used to contact the
-         administrator of this server. Optional field.
+         administrator of this server. Optional field.  Must be no
+         more than 256 characters.
      'Comments': Human-readable information about this server.  Must
          be <1024 bytes long.  It *must not* be necessary to read this
          information to use the server properly.
@@ -653,6 +655,10 @@ If this server accepts incoming MMTP connections, it MAY have an
      'Protocols': A comma-separated list of the protocols this
            server accepts.
 
+and any number of entries of the form:
+     'Allow': Address Pattern
+     'Deny': Address Pattern
+
 If this server supports outgoing MMTP connections, it MAY have a
 'Modules/MMTP' section, with one entry each of the form:
 
@@ -662,19 +668,21 @@ If this server supports outgoing MMTP connections, it MAY have a
 
 and any number of entries of the form:
 
-      'Allow': Address
-      'Deny': Address
+      'Allow': Address Pattern
+      'Deny': Address Pattern
 
-The Address tokens are of the form:
+The Address Pattern tokens are of the form:
 
-   Address = IP ('/' Mask)? (Port ('-' MaxPort)?)?
+   AddressPattern = (IP ('/' Mask)? | '*') (Port ('-' MaxPort)?)?
+
+'*' is a synonym for '0.0.0.0/0.0.0.0'.
 
 An omitted mask defaults to 255.255.255.255.  An omitted portrange
 defaults to 48099 on ALLOW and 0-65535 on DENY.
 
 The entries are order-significant; the first one to match wins.
 
-The default policy is 'Deny: 0.0.0.0/0.0.0.0'
+The default policy is 'Deny: *'
 
 If this server supports outgoing delivery for a module ABCD, it will
 have a [Modules/ABCD] section.  See appendices for more detail on
@@ -697,7 +705,7 @@ be operational at a given time.
 
 A directory server provides an HTTP URL for uploading server
 descriptors, an HTTP URL for downloading a directory, and a long-term
-public key (2048 bits).
+public key (2048-4096 bits).
 
 To upload a descriptor block, a client performs an HTTP POST request
 to the upload URL, with the server block as enclosed entity.
