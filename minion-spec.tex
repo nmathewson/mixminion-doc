@@ -848,17 +848,17 @@ Inputs: Q (a queue of messages)
         N (the number of messages in the queue).
 	MIX_INTERVAL (algorithm parameter; time to wait between
                       batches of messages.  Should be around XXXXX.)
-        POOL_SIZE (algorithm parameter; minimum size of pool.  Should
-                   be at least XXXXXXXX)
-        MAX_REPLACEMENT_RATE (algorithm parameter; largest allowable
-                   rate for messages to be removed from the
-                   pool. Should be between XXXX and XXXX.)
+        THRESHOLD (algorithm parameter; minimum size of pool to send. 
+                   Same as Cottrell's ``min''.  Must be at least XXXXXXXX)
+        RETAIN_RATE (algorithm parameter; fraction of messages to be
+                   kept in pool.  Same as Cottrell's ``frac''.
+                   Should be between XXXX and XXXX.)
 Outputs: (A set of messages sent to the network).
 
 1. Wait for MIX_INTERVAL seconds.
 
-2. If N > POOL_SIZE, then choose Min(N-POOL_SIZE, N*MAX_REPLACEMENT_RATE)
-    messages from Q.  Transmit the selected messages.
+2. If N > THRESHOLD, then choose N * (1 - RETAIN_RATE) messages from
+    Q.  Transmit the selected messages.
 
 3. Repeat indefinitely.
 
