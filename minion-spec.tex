@@ -6,13 +6,18 @@
 
 1. Mail gateways. We should specify these.
    [Should go into appendix]
-     
+
 4. Description of mixing algorithm should go in descriptor blocks. -NM
+   [XXXX Unless the mixing method requires special packaging of the message 
+         we could require the servers to specify the amount of anonymity that
+ 	 they expect to give to each message. The information theoretic one
+ 	 presented by myself and Andrei could do the job quite well. -GD]
 
 6. We should specify: are 'DROP'-type messages dropped before they go
     into the mix pool, or after they're pulled from the pool?
 
   [Before. -NM]
+  [My feeling is After, but I should think about it... -GD]
 
 7. We should specify: what happens when a message is undeliverable?
 
@@ -23,9 +28,13 @@
 9. ``End-to-end'' issues
 
   [I've added a revised version of my E2E note to the repository. -NM]
+  [Looked at the E2E document, and I think it is v.good. We need to update 
+   the main specs to be in conformance with it. I quite like the fact that 
+   they are separate documents, since the one can be used to implement a
+   ``pure'' server and the other a client or an ``impure server'' -GD]
 
 10. K-of-N delivery or fragments.
-
+    [I believe this is covered by the E2E spec -GD]
 
 \section{FUTURE ISSUES}
 (These are unresolved issues that we don't want to think about till we
@@ -39,6 +48,10 @@ have more stuff done.)
 4. When does link padding get generated?
    [Both active research areas; not for first cut]
 
+5. Automatic retrieval of Server Information
+[XXXX I think it is important to have a standard way to query a server given 
+      an IP and a port. -GD]
+
 \section{Message Format}
 
 \subsection{Overview}
@@ -48,7 +61,7 @@ payload.  The header section has a main header and a
 secondary header, both of which have identical structure.  Each
 header is further composed of up to 16 subheaders, which are
 addressed and encrypted to the intermediate nodes (MIXes).  We
-begin by explaining how the full message is structured but starting
+begin by explaining how the full message is structured by starting
 with the smallest building block.
 
 \subsection{Definitions and cryptographic primitives}
@@ -71,6 +84,7 @@ with the smallest building block.
 - Encrypt(K,M) (Len(M) bytes) Rijndael encryption (in Counter mode,
   with 128-bit blocksize) of message M using key K.  (All Rijndael
   operations use 128-bit blocks.)
+  [XXXX Initial Vector (IV) is Z(16)]
 - Decrypt(K,M,i,j) (j-i bytes) Rijndael counter mode decryption 
   using the key material byte i to j.
 - PRNG(K, n) (n bytes) Uses Rijndael in counter mode to produce N
@@ -81,8 +95,11 @@ with the smallest building block.
   as described in XXXXCITE, with PRNG(K,n) as our stream generator,
   and the keyed-SHA1 construction specified in the LIONESS paper.
 
+  [XXXX We say above that we use PRNG(K,n) but below we describe the 
+	algorithm using ENRYPT. This has already confused Marc and could
+	confuse others. -GD]
   [XXXX I think we can get away with BEAR instead.  See my email of
-    September 6. -NM]
+    September 6. -NM I agree -GD]
 
   K1 through K4 are 160 bits long.
 
@@ -349,7 +366,16 @@ PROCEDURE: Process a message M
 	   	Put (H1, H2, P) in queue to be sent to the address in RI.
         Otherwise:
 		Give (RT, RI, HASH(SK,``APPLICATION KEY''), P) to
-Module manager. 
+		Module manager. 
+
+[XXXX Marc prompted me to clarify where the ``Application Key'' is 
+	needed. -GD]
+ 
+The Application Key that is provided to the module is a shared secret 
+between the construtor of the header and the module that is going to be 
+incharge of processing it. It is transformed in such a way that it cannot 
+use the secret Sk in any way that could compromise its other functions 
+(such as the decryption of the unlinkability of the message).
 
 \section{Decoding of messages}
 
@@ -361,9 +387,29 @@ with only the a TAG field attached to them.
 A client that receives a message that is ultimately destined to them
 should perform the following operations to decode it:
 
+[XXXX A note about the philosophical significance of the ``KEY'':
+	Here (and in the E2E document) the KEY that is used to test 
+	whether a message can be decoded is really attached to a 
+	particular pseudonym of the recipient. This, I think, must 
+	be made more explicit than it is otherwise people implementing 
+	protocols on top of MixMinion will get things wrong.
+
+	Maybe it would even be a good strategy if we use something like
+	NYMLOGINNAME|KEY(or PASSWORD) just to stress that after this step 
+	any operation on the data is linkable to this pseudonym, 
+	and no operation should be performed that link two different 
+	pseudonyms together. 
+	
+	In fact a test as described below allows a particular pseudonym 
+	to check if a message if for it. It is WRONG to give it a sequence 
+	of KEYs and just get back a set of messages that is not annotated 
+	with the identity of the decoder. -GD]
+
+
 PROCEDURE: Decode a message.
 
-Input:  TAG field of sub-header or header where 
+Input:  KEY is the long term key of one of the identities of the receipient.
+	TAG field of sub-header or header where 
         TAG = ( Encrypt(KEY, nHops | seed) | padding up to 44b).
         M the body of the message.
 Output: P, the plaintext of the message.
@@ -399,7 +445,7 @@ some advice. -GD]
 that would allow the final recipient to decide if this is a forward
 path message or a SURBed message. Also the size of valid bytes has
 been scrapped, which does not help in extracting the valid bits from
-the junk. -GD]
+the junk. -GD I guess this comment is now covered by the E2E document -GD]
 
 \section{Single Use Reply Block exchange formats}
 
@@ -510,6 +556,13 @@ of stateless replies must support at least this latter mode.]
 [Note 2: 'Encrypt' here is not AES in counter mode; that would be
 madness.  Instead, we use AES in CBC mode.]
 [ XXXX if we use CBC mode we will need to use a different IV everytime -GD]
+[ XXXX we now use a hash and therefore this is not relevent any more -GD]
+
+[ XXXX It seems that the TAG generated takes up all the space that the TAG 
+	is allowed to use. Would it be a good idea if we allow the constructor
+	of the SURB to embed more (even propriatery) information in the TAG?
+	That would require us to use ENCRYPTION instead of H(.) as in the new
+	E2E document. -GD]
 
 \section{Replay Avoidance}
 
@@ -597,7 +650,9 @@ portions are non-normative descriptions of TLS.)
      * B sends "RECEIVED", CRLF, HASH(M|"RECEIVED JUNK") (10 +20 bytes)
 
        [Note that both cases require the same number of bytes and 
-        processing time.]
+        processing time. Implementations must make sure the real message 
+	and the padding cases are undistinguishables to a third party, or 
+	even to the parties involved after the keys have been updated.]
 
 * After sending a batch of messages, A sends an TLS handshake
   renegotiation message. This updates the session key and
