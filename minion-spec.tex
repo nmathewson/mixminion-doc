@@ -718,7 +718,7 @@ portions are non-normative descriptions of TLS.)
 * A sends "SEND", NL, M, H(M,"SEND") (5 + 32k + 20 bytes)
 * B sends "RECEIVED", NL, H(M,"RECEIVED") (9 + 20 bytes)
 
-* A sends an SSL handshake renegotiation message.
+* A sends an TLS handshake renegotiation message.
   (and MUST not reuse the same key for 
    transfering another message)
   This updates the session key and overrides the old ones.
@@ -740,27 +740,163 @@ hash element in the Master Header is nonzero, the certificate of
 the communication partners must be signed using a key that hashes
 appropriately.
 
-\section{Remailer Information Exchange format}
+\section{MIX Information Exchange format}
 
-[Need to provide signature + encryption keys, expiry dates, root of
-list of hashes, Address, services and modules, policies, ...]
+In order to automate and standardize directory servers, we provide 
+a standardized extensible server descriptor format.
 
-[A more comprehensive list of things that the Remailer information
-needs to provide:
+All server descriptors and statistics blocks follow a simple
+section-based key/value format, with items loosely based on RFC822.
 
-Status: Serial Number, Supercedes, Timestamp created, timestamp to
-        refresh, urgency (revokation, routine ...)	  
-Address and names: IP Address, TCP Port, Name of Owner, e-mail of
-                   admin, trust domain(s) 
-RSA Long Term Verification Public Key of server: e, n, timestamp,
-                   hash(e, n, IP, Port). (next key hash)
-RSA Short Term Encryption Public Key: e, n, timestamp, Hash(...)
-Network Services: MixMinion Protocols supported.
-		  MMTP Protocols supported.
-	          SMTP Support flag, address restrictions.
-                  LOCAL Support flag, mailbox restrictions.
-	          IP addresses it will accept and send to.
-Modules: Modules supported, configurations.
+-----BEGIN DOCTYPE-----
+[Section1]
+Key: Value
+Key: Value
+Key: Value
+
+Key: Value
+Key: Value
+ That
+ Spans a few lines.
+
+[Section2]
+Key: Value
+-----END DOCTYPE-----
+
+[XXXX For configuration files, we should allow a broader format.  It
+  should allow '=' and ' ' as synonyms for ':'.  It should also allow
+  comments preceded with '#'. -NM]
+
+\subsection{Syntax}
+
+(Notation:  X*: 0 or more occurences of X.
+            X+: 1 or more occurences of X.
+	    X?: 0 or 1 occurrences of X.
+            X Y: An occurrence of X followed by an occurrence of Y.
+	    X*{Y}: 0 or more occurrences of X separated by occurences
+                  of Y.
+            X|Y: Either an occurrence of X, or an occurence of Y.)
+
+Descriptor = NL* Beginline Section* Endline NL*
+
+Beginline = '-----BEGIN ' Doctype '------' NL+
+
+Endline = '-----END ' Doctype '------' NL+
+
+Doctype = (<any printable character but '-'>)+
+
+Section = SectionLine EntryLine*
+
+SectionLine = '[' Word ']' NL+
+
+EntryLine = Word ':' (' ' | '\t')+ Data ContinuationLine* NL+
+
+Word = (<Any printable, non-space character but ':'>)+
+
+Data = (<any character but NL>)*
+
+ContinuationLine = (' ' | '\t')+ Data NL
+
+[XXXX Again, NL = '\n', or NL = '\r\n'?? -NM]
+
+\section{Mixminion descriptor blocks}
+
+This section describes the format of server descriptors, as uploaded
+to and downloaded from directory servers.  A server descriptor is a
+promise, by a MIX's administrators, to provide a given set of
+services, keys, and exit policies over a set period of time.
+
+
+'Doctype' above must be 'Mixminion Server'.  It must begin with a
+'Server' section.  This section includes the entries:
+
+     'Descriptor-Version':  the string "1.0"
+     'IP': An IPv4 address, in dotted-quad format.
+     'Nickname': A human-readable identifier for this server.  If it
+         contains any periods, it must be a fully qualified DNS name
+         which resolves to the provided IP for the entire lifetime of
+         this Descriptor block.
+     'Identity': The modulus of this Mix node's long-term signing key,
+         represented in ASN.1, and encoded in BASE64.  Whitespace in
+         this field is ignored, to allow the key to span multiple
+         lines.  The modulus of this key should be at least 2048 bits
+         long.  The exponent of this key must be 65535.
+
+	 Clients should at least give a warning if the identity key of
+         any server should ever change. [XXXX Write more in section
+         about directory servers. -NM]
+     'Digest': The digest of this server block.  See below.
+     'Signature': The signed digest of this block.  See below.
+     'Valid-After': A date, in the form 'DD/MM/YYYY'.  After midnight GMT
+         on this date, this server must support the operations listed
+         in this descriptor.
+     'Valid-Until': A date, in the form 'DD/MM/YYYY'.  Until midnight
+         GMT on this date, this server must support the operations listed
+         in this descriptor.
+     'Contact': An email address that may be used to contact the
+         administrator of this server. Optional field.
+     'Comments': Human-readable information about this server.  Must
+         be <1024 bytes long.  It *must not* be necessary to read this
+         information to use the server properly.
+     'Packet-key': A BASE64-encoded modulus used to encode subheaders
+         intended for this server.
+
+The digest of a descriptor block is computed by replacing all digest
+and signature fields with the empty string, and computing the SHA-1
+digest of the result.  The signed digest is the OAEP/PCKS1 signature
+of the digest with the server's identity key.  Both of these values
+are represented in BASE64, with whitespace allowed.
+
+If this sever accepts incoming MMTP connections, it must have an
+'Incoming/MMTP' section, with the following entries:
+
+     'MMTP-Descriptor-Version': The string '1.0'
+     'Port': A port at which IP accepts incoming MMTP connections.
+     'Key-Digest': The KEYID of this server, encoded in BASE64.
+
+[XXXX Should we include MMTP versions here? -NM]
+
+If this server supports outgoing MMTP connections, it must have a
+'Modules/MMTP' section, with one entry of the form:
+
+      'MMTP-Descriptor-Version': The string '1.0'
+
+and any number of entries of the form:
+
+      'Allow': Address
+      'Deny': IP
+
+The patterns are of the form:
+
+   IP/Port = IP ('/' Mask)? (Port ('-' MaxPort)?)?
+
+An omitted mask defaults to 255.255.255.255.  An omitted portrange
+defaults to 48099 on ALLOW and 0-65535 on DENY.
+
+The entries are order-significant; the first one to match wins.
+
+The default policy is 'Deny: 0.0.0.0/0.0.0.0'
+
+If this server supports outgoing SMTP connections, XXXX
+
+If this server supports LOCAL delivery, XXXX
+
+Other services provided by this server should each have their own section.
+
+(Note: A server need not advertise all of its capabilities; it is
+permissible (for example) for a server that supports incoming MMTP
+connections to omit the Incoming/MMTP section.)
+
+A client should ignore any sections it does not recognize, but should
+not use any service whose sections have an unrecognized descriptor
+version.
+
+[XXXX I suggest that the following section on Trust management be
+  omitted, until we figure out what we really want in the way of
+  directory service. -NM]
+
+[XXXX
+
 Trust Management: Hash of the State of the world as the mix knows it at
         that point. This can be the hash of a whole tree:
 
@@ -782,6 +918,17 @@ revoke their verification keys in the same day it is possible to
 check that the historic information (and stats) across the network has
 not been modified. (there is only the need to reveal the hashes from a
 node to the head of the tree to check the validity of the information).
+
+XXXX]
+
+\subsection{Directories}
+
+A 'directory' is a signed list of MIX nodes.  It is transmitted as a
+'Mixminion Directory' block and a list of 'Mixminion Server' blocks.
+By convention, the server blocks are sorted in ascending order by
+their Identity Moduli.
+
+[XXXX What's in a directory? -NM]
 
 \section{Statistics Information Exchange formats}
 
