@@ -54,8 +54,8 @@
  
 \begin{abstract}
 
-We present Mixminion, a message-based anonymous remailer protocol that
-supports secure single-use reply blocks. Mix nodes cannot distinguish
+We present Mixminion, a message-based anonymous remailer protocol with
+secure single-use reply blocks. Mix nodes cannot distinguish
 Mixminion forward messages from reply messages, so forward and reply
 messages share
 the same anonymity set. We add directory servers that allow users to
@@ -63,9 +63,9 @@ learn public keys and performance statistics of participating remailers,
 and we describe nymservers that allow users to maintain long-term
 pseudonyms using single-use reply blocks as a primitive. Our design
 integrates link encryption between remailers to provide
-forward anonymity. Mixminion %brings together the best solutions from
-%previous work to
-protects against most known attacks.
+forward anonymity. Mixminion works in a real-world Internet environment,
+requires little synchronization and coordination between nodes, and
+protects against almost all known attacks.
 
 \end{abstract}
 
@@ -103,9 +103,8 @@ the Type I remailer network.
 transport. We use TLS over TCP between remailers; thus we can introduce
 link encryption with ephemeral keys to ensure forward anonymity for
 each message. Link encryption also makes obsolete many active and
-passive attacks that could have been performed on the communication
-links, and forces attackers to run corrupt nodes to attack the
-system. 
+passive attacks on the communication links, forcing attackers to run
+corrupt nodes to perform most attacks.
 
 % We also provide flexible delivery schemes ---
 %rather than just allowing delivery to mail or Usenet, we allow designers
@@ -124,7 +123,20 @@ describe a protocol which allows recipients to opt out of receiving mail
 from remailers, but at the same time makes it difficult for an adversary
 to deny service to interested recipients.
 
-\item \textbf{Replay prevention and key rotation:} ...
+\item \textbf{Replay prevention and key rotation:} 
+If an adversary records the input and output batches of a mix and then
+replays a given message, that message's decryption will be exactly the
+same. Thus replayed messages completely break the security of the mix
+\cite{chaum-mix}. Mixmaster offers rudimentary replay prevention by
+keeping a list of recent message IDs. To keep the list from getting too
+large, it expires entries after a server-configurable amount of time. But
+now the adversary simply has to wait until the mix has forgotten about a
+message before replaying it. Mixminion counters this flaw by introducing
+key rotation: a message is addressed to a given key, and after the key
+changes no messages to that key will be accepted; so the mix can forget
+about all the messages addressed to old keys. It turns out that the
+number of hashes a node needs to remember between key rotations is not
+too great a burden.
 
 \item \textbf{Integrated directory servers:} Mixmaster uses several \emph{ad hoc}
 approaches to distributing remailer availability, performance, and
@@ -175,7 +187,7 @@ research community currently has no answer).
 %% Also, the writing here NEEDS to be cleaned up.  -NM
 %
 % What's a mix-net?
-In a mix-net, message senders achieve anonymity by routing their
+In a mix-net, senders achieve anonymity by routing their
 messages through a path of relay servers, or `mixes.'  When Alice
 wants to send an anonymous message to Bob through the mixes $M_1$,
 $M_2$, and $M_3$, she encrypts her message successively with the
@@ -191,16 +203,15 @@ encrypted with $M_i$'s public key.
 % What do mixes do?
 When a mix receives a message, it decrypts it with its public key, 
 and delays it according to some `batching rule' so that an observer
-cannot easily associate its outputs with its inputs.  It then sends
-extracts the address of the next mix in the sequence from the
-decrypted message, and delivers the contents of the message to the
-next mix.
+cannot easily associate its outputs with its inputs.  It then
+extracts the address of the next mix in the path from the
+decrypted message, and passes on the contents of the message.
 
 % XXXX Mention how this provides any anonymity!
 
 % What's a reply block?
 When recipients want to achieve anonymity, some mix-net designs allow
-them to construct \empf{reply blocks} that allow others to send
+them to construct \emph{reply blocks} that allow others to send
 messages to them without knowing their identities.  A reply block
 contains only the routing portion of a message; the actual contents
 are provided by the user that eventually sends a message to the
@@ -218,28 +229,28 @@ attacks described below in REF.
 
 % Server requirements
 First of all, the system must be relatively simple to deploy.  Past
-systems have never found it easy to get a reliable pool of mix
+systems have never found it easy to get a reliable group of mix
 operators to run long-lived servers; Mixminion must add as few
-technical barriers as possible.  Thus, we require that our protocol
-require only loose clock synchronization (within a few minutes);
-that it achieve acceptable performance on commodity hardware, and 
-that it require little coordination between servers.
+technical barriers as possible.  Thus our protocol
+requires only loose clock synchronization (within a few minutes);
+it must achieve acceptable performance on commodity hardware; and
+it must require little coordination between servers.
 
 % Client requriements
 Furthermore, software adoption has also been a barrier to past
-systems. (REF?) Thus, we require that only users who receive anonymity
-from the system need to run special software -- that is, users should
+systems. (REF?) Thus, we only require users who receive anonymity
+from the system to run special software --- that is, users should
 be able to receive messages from anonymous senders and send messages
-to anonymous recipients without any support beyond a standard email
+to anonymous recipients with a standard email
 client.  Users must also be able to send and receive anonymous
 messages using only commodity hardware.  Finally, although users with
-persistant network connections are necessarily more resistant to
+persistent network connections are necessarily more resistant to
 intersection attacks than users with intermittent connections (see
 REF below), the system must still support users with intermittent
 connections and offer them as much anonymity as possible.
 
-For an adversary model, we assume a well-funded attacker who can
-observe all or most traffic on the network, who can generate, modify,
+We assume a well-funded adversary who can
+observe all traffic on the network, who can generate, modify,
 delete, or delay traffic on the network, who can operate mixes of its
 own, and who can compromise some fraction of the mixes on the network.
 We assume that such an adversary is attempting to compromise users'
@@ -296,7 +307,7 @@ Chaum introduced the concept of a mix-net for anonymous communications
 mixes (or mix nodes), each of which is associated with a public
 key. Each mix receives encrypted messages, which are then decrypted,
 batched, reordered, and forwarded on without any information
-identifying the sender. Chaum demonstrates the security of mixes
+identifying the sender. Chaum demonstrated the security of mixes
 against a \emph{passive adversary} who can eavesdrop on all
 communications between mixes but is unable to observe the reordering
 inside each mix.
@@ -348,49 +359,12 @@ introduces \emph{inter-mix detours}, where nodes can rewrap a message
 and send it through a few randomly chosen new hops --- so even the sender
 cannot be sure of recognizing his message as it leaves the mix.
 
-%\subsection{Robustness}
-%
-%Previous work primarily investigates the \emph{robustness} of mix-nets
-%in the context of a distributed mix system \cite{flash-mix}. A mix
-%is considered robust if it survives the failure of any $k$ of $n$
-%participating servers, for some threshold $k$. This robustness is
-%all-or-nothing: either $k$ servers are good and the mix works, or they are
-%not good and the mix likely will not work.
-%
-%Robustness has been achieved primarily via zero-knowledge proofs of
-%correct computation.  Jakobsson showed how to use precomputation to reduce
-%the overhead of such a mix network to about 160 modular multiplications
-%per message per server \cite{flash-mix}, but the protocol was later
-%found to be flawed \cite{mitkuro} by Mitomo and Kurosawa.  Desmedt and
-%Kurosawa's alternate approach \cite{desmedt} requires many participating
-%servers. Abe's mix \cite{abe} provides \emph{universal verifiability} in
-%which any observer can determine after the fact whether a mix cheated,
-%but the protocol is still computationally expensive. Neff recently
-%made further efficiency improvements to universally verifiable mixing
-%\cite{shuffle}.
-
-\subsection{Remailer Statistics}
-
-Levien's \emph{statistics pages} \cite{levien} track both remailer
-capabilities (such as what kinds of encryption the remailer supports)
-and remailer up-times (obtained by pinging the machines in question
-and by sending test messages through each machine or group of
-machines).  Such \emph{reputation systems} improve the reliability of
-mix-nets by allowing users to avoid choosing unreliable mixes. The
-Jack B Nymble 2 remailer client \cite{potato} and the Mixmaster 2.9
-remailer allow users to import statistics files and can then pick
-remailers according to that data. Users can specify minimum
-reliability scores, decide that a remailer should always or never be
-used, and specify maximum latency. Ongoing research on more powerful
-reputation systems includes a reputation system for free-route
-networks \cite{mix-acc} and another for mix cascades \cite{casc-rep}.
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{The Mix-net Design}
 \label{sec:design}
 
-Mixminion brings together the current best approaches for providing
+Mixminion brings together the current best practical approaches for providing
 anonymity in a batching message-based mix environment. We don't aim
 to provide low-latency connection-oriented services like Freedom
 \cite{freedom} or Onion Routing \cite{goldschlag99} --- while those
@@ -507,10 +481,10 @@ authentication tags for the whole message at each hop.  But
 the situation becomes more complicated when reply messages are
 introduced --- the message and the reply block are
 created by different users. It is therefore impossible for the creator
-of the SURB to include in the header a checksum of a message it they
-do not yeat know. Mixminion uses a hybrid strategy to protect against
-such attacks, by protecting the headers using cryptographic checksums,
-while making sure that the addressing information contained in the
+of the SURB to include in the header a checksum of a message he
+does not yet know. Mixminion uses a hybrid strategy to protect against
+such attacks: we use cryptographic checksums to protect the headers,
+and we make sure that the addressing information contained in the
 message is destroyed if the payload is modified by an adversay.
 
 \subsection{Replies}
@@ -711,7 +685,7 @@ path to the final destination of the forward path,  is encrypted by the
 sender by the hash of the payload that is to arrive at the mix. The
 mix then needs to perform the decryption and swap the first header for
 the second one.
-Specifically, our solution falls into several cases:
+Our security argument falls into several cases:
 
 \begin{itemize}
 \item Forward messages: if the message is tagged during the first leg,
@@ -1269,11 +1243,12 @@ Further, because we have allowed our adversary to send and delay messages,
 he can manipulate the batch of messages entering a mix so the only message
 unknown to him in the batch is the target message. This approach is
 known as the \emph{blending attack} because the adversary blends his
-own messages with the batch \cite{batching-taxonomy}. By repeatedly
+own messages with the honest messages in the batch
+\cite{batching-taxonomy}. By repeatedly
 attacking each mix in the path, the adversary will link Alice and Bob.
 
-Mixminion nodes use a \emph{timed dynamic-pool} batching strategy adapted
-from Mixmaster \cite{batching-taxonomy}. A
+Mixminion nodes use a \emph{timed dynamic-pool} batching strategy
+\cite{batching-taxonomy} adapted from Mixmaster. A
 mix fires every... [insert Cottrell mix description here. Perhaps put
 the algorithm itself from the spec into a side box, or an appendix?]
 
@@ -1324,10 +1299,10 @@ can no longer single out the target message in the outgoing batch, and so
 he must track each of the dummies along with the original target message.
 
 During normal traffic, these dummies affect anonymity very little. They
-aim to protect anonymity in times of low traffic --- whether it is low
-because there are actually few messages going through the mix, or there
-are the normal number of messages but most of them are created by the
-adversary.
+aim to protect anonymity in times of low traffic --- either when it
+is low because there are actually few messages going through the mix,
+or when there are the normal number of messages but most of them are
+created by the adversary.
 
 \subsection{Transmitting many messages}
 
