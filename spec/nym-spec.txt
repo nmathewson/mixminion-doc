@@ -1,4 +1,4 @@
-$Id: nym-spec.txt,v 1.4 2003/10/01 22:15:24 nickm Exp $
+$Id: nym-spec.txt,v 1.5 2003/10/07 19:56:10 nickm Exp $
 
                                Mix3:Nym
     Underhill: A Proposed Type 3 Nymserver Protocol Specification
@@ -523,7 +523,7 @@ Table of Contents
 
      Let K = R(16).
      Let M_Enc = SPRP_Encrypt(K, "", M_P)
-     Let RSA_LEN = Len(PK_nym) - OAEP_OVERHEAD - 16
+     Let RSA_LEN = Len(PK_nym) - PK_OVERHEAD_LEN - 16
      Let RSA_PART = PK_Encrypt(PK_nym, K | M_Enc[0:RSA_LEN])
 
      Return RSA_PART | M_Enc[RSA_LEN:Len(M_Enc)-RSA_LEN]

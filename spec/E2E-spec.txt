@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.12 2003/10/02 14:23:32 nickm Exp $
+$Id: E2E-spec.txt,v 1.13 2003/10/07 19:56:10 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -429,7 +429,7 @@ Table of Contents
 
    To send an encrypted forward message M to a user with an RSA public
    key PK with length PKLEN (in octets), we set PAYLOADS =
-   PACKETIZE(M, 28KB-OAEP_OVERHEAD+TAG_LEN-SPRP_KEY_LEN).  (We lose 42
+   PACKETIZE(M, 28KB-PK_OVERHEAD_LEN+TAG_LEN-SPRP_KEY_LEN).  (We lose 42
    octets to OAEP padding and 20 to encode the session key, but gain
    20 by spilling the encrypted data into the decoding tag.)
 
@@ -438,10 +438,10 @@ Table of Contents
       Repeat:
            Let K = Rand(SPRP_KEY_LEN).
            Let P = K | PAYLOAD_i
-           Let P0 = PK_Encrypt(PK, P[0:PKLEN-OAEP_OVERHEAD])
+           Let P0 = PK_Encrypt(PK, P[0:PKLEN-PK_OVERHEAD_LEN])
       Until the most significant bit of P0[0] is equal to 1.
       Let P1 = SPRP_Encrypt(K, "END-TO-END ENCRYPT",
-                            P[PKLEN-OAEP_OVERHEAD: Len(P)-PKLEN-OAEP_OVERHEAD])
+                            P[PKLEN-PK_OVERHEAD_LEN: Len(P)-PKLEN-PK_OVERHEAD_LEN])
       Let TAG_i = P0[0:TAG_LEN]
       Let EPAYLOAD_i = P0[TAG_LEN:Len(P0)-TAG_LEN] | P1
 
