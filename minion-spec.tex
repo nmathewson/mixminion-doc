@@ -495,7 +495,9 @@ A SURB can be encoded in a standard binary or ASCII format.
 Binary Format:
 
 Begin Marker: 4 bytes
+Version: 2 bytes
 Address Size: 2 bytes
+Address Type: 2 bytes
 Address: (Address Size) bytes
 Use-by-Date: 4 bytes
 SURB size: 2 bytes
@@ -508,18 +510,23 @@ Digest: 20 bytes
 Total: 54 bytes + Address Size + SURB size + Linked Data Size
 
 * The magic marker contains the ASCII 4-byte string 'SURB'. 
-   [ XXXX There should be a version number here. -NM ]
+* The version number contains the format version of the SURB.
+  (should be 1 and 0 for this standard)
 * Address: Contains the address of the first hop to which the message
   encoded using this SURB should be sent to.
    [ XXXX Won't the first hop always be a forward address?  If so, then
      we don't need the size marker: we only need an IP, port, and
      keyid.  If not, then we need a routing type as well. -NM ]
+   [ XXXX I would rather have a consistent addressing scheme
+          throughout. Is that causing any problems? Added an address 
+          type as well. -GD]
 * Use-by-Date: indicated the expiry date the SURB should be used by. Can
   be calculated using the key rotation frequencies of the intermediate
   nodes.
    [ XXXX Units? If we're too fine-grained, people may use this to
      leak info.  If we're too course-grained, we can't move to a
      tighter schedule later on.  -NM]
+   [ XXXX Should we have it in days since a magic date? -GD]
 * SURB data: Containst the SURB that is created as described
   above. The Junk at the end can be omited (although it is not wise
   to reduce it more than half the size of a full SURB). When the SURB
@@ -534,28 +541,53 @@ Total: 54 bytes + Address Size + SURB size + Linked Data Size
 
     [ XXXX Why not just always include the junk?  It'd be easier, and
        omitting the junk never saves more than 1K per SURB. -NM]
+    [ XXXX True. Leaving the Junk also does not give away any
+       information about the real length of the message. I included
+       this possibility because 16 hops is actually quite a lot and 1k
+       in a message of 32k could be significant (particularly is more
+       than one SURB have to be transported). -GD]
 
 * Linked Data: Additional data that might have to be linked with the 
   SURB.
     [ XXXX Hm.  What is the point of this? Leaving it free-form raises
       issues of linkability.  I suggest that rather than adding a
-      catch-all hook, we just embed SURBs when we want to embed them. -NM]
+      catch-all hook, we just embed SURBs when we want to embed
+  them. -NM]
+    [ XXXX The rationale for including this additional data is the
+  following: we might want to associate a public encryption key or
+  someting else with the address itself, so the hash needs to be
+  included before the junk. It is better to have a standard place to
+  hold and encode this additional data otherwise everyone will be
+  finding a different method for doing it. -GD]
+
 * The Digest is a Hash of all the other fields.
     [ XXXX Why have a digest here?  What is the risk?  Anybody who can
        tamper with a SURB can recompute the digest.  -NM ]
-
+    [ XXXX This is not a security feature, this is a reliability
+       one. As the SURBs are transported over email (that can be
+  commented etc) it is better if they can be checked as valid. Could
+  just be a CRC. Is is nice if it is a hash since we are sure it is
+  difficult to find another SURB that hashes to the same ID. -GD]
 
 The ASCII Encoding of SURBs.
 
 The  ASCII compatible format of SURB's is:
 
 --- BEGIN SURB ---
+Version: x.x
 ID: Base64 Encoding of the first 48 bits of the Digest (8 characters).
 Base64 encoded binary SURB 
 --- END SURB ---
 
+The version number should be in decimal ASCII and is the same as the
+binary version.
+
 [ XXXX This should absolutely have a version number.  Again, what does
   the digest defend against? -NM]
+[ XXXX It is not a security feature but an ID that uniquely identifies
+  this SURB. Can be used by applications that manage SURBs to refer to
+  them, and as a 8 character short hand if you want to address an
+  email to the SURB -GD]
 
 \section{Email Transport exchange format}
 
