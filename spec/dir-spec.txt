@@ -1,5 +1,6 @@
-$Id: dir-spec.txt,v 1.2 2003/06/20 06:05:28 nickm Exp $
+$Id: dir-spec.txt,v 1.3 2003/06/20 07:11:03 nickm Exp $
 
+				Mix3:3
            Type III (Mixminion) Mix Directory Specifications
 
                             George Danezis
@@ -10,14 +11,12 @@ $Id: dir-spec.txt,v 1.2 2003/06/20 06:05:28 nickm Exp $
 Status of this Document
 
    This draft document ("dir-spec.txt") describes a proposed
-   specification for Type III Mixes and directories to exchange
-   information about node capabilities.  It is not a final version.
+   specification for Type III Remailers.  It is not a final version.
    It has not yet been submitted to any standards body.
 
    TODO:
       - See open issues section
       - Resolve XXXXs
-      - Describe crossover and server operations
       - Final directory operation.
 
 Abstract
@@ -199,12 +198,12 @@ Table of Contents
 
             AddressPattern ::= Address OptPortSpec
 
-	    Address ::= '*' | IP OptMask
-	    OptMask ::= '/' IP |
-	    IP ::= <an IPv4 dotted quad>
-	    
-	    OptPortSpec ::= | Port | Port '-' Port
-	    
+            Address ::= '*' | IP OptMask
+            OptMask ::= '/' IP |
+            IP ::= <an IPv4 dotted quad>
+            
+            OptPortSpec ::= | Port | Port '-' Port
+            
        An omitted mask defaults to 255.255.255.255.  '*' is a synonym
        for 0.0.0.0/0.0.0.0.  An omitted PortSpec defaults to 48099 for
        'allow' entries and 0-65535 on 'deny' entries.
@@ -253,7 +252,7 @@ Table of Contents
             exponent of this key must be 65537.
 
         'Digest': The digest of this descriptor.  When generating the
-	    digest, the Digest entry is excluded as unsigned.
+            digest, the Digest entry is excluded as unsigned.
 
         'Signature': The signed digest of this block, signed by the
             Identity key.  When generating the digest, the Signature
@@ -278,7 +277,7 @@ Table of Contents
             In a production network, only one value should be used for
             this field. [Added in Mixminion 0.0.3]
 
-	 
+         
 
     The 'Server' section MAY contain the following entries, at most
     once each:
@@ -319,9 +318,9 @@ Table of Contents
         'Port': A port at which IP accepts incoming MMTP connections.
 
         'Key-Digest': The KEYID of this server, encoded in BASE64.  This
-	      is the same as the SHA-1 digest of the ASN.1 encoding of
-	      the identity key.  (See "minion-spec.txt" for more
-	      information.)
+              is the same as the SHA-1 digest of the ASN.1 encoding of
+              the identity key.  (See "minion-spec.txt" for more
+              information.)
 
         'Protocols': A comma-separated list of the versions of MMTP this
               server accepts.
@@ -485,9 +484,9 @@ Table of Contents
    test/plain, and contents of the form
 
         UploadReply ::= StatusLine MessageLine
-	StatusLine ::= "Status: " Bit EOL
-	Bit ::= '0' | '1'
-	MessageLine ::= "Message: " Value EOL
+        StatusLine ::= "Status: " Bit EOL
+        Bit ::= '0' | '1'
+        MessageLine ::= "Message: " Value EOL
 
    If the upload is successful and the descriptor will be accepted into
    the directory, the status MUST be 1, and the message MUST be
@@ -577,13 +576,13 @@ X. Open problems
    contact before he/she has enough information?  How do we catch
    dishonest directory servers?
    
-				 * * *
+                                 * * *
   
    Also: statistics information. Also: we should think about avoiding
-   	    catastrophic failure modes if directories _do_ fail or
-   	    change. -NM
+            catastrophic failure modes if directories _do_ fail or
+            change. -NM
 
-				 * * *
+                                 * * *
    
    2. Description of mixing algorithm should go in descriptor blocks. -NM
       [XXXX Unless the mixing method requires special packaging of the
@@ -592,7 +591,7 @@ X. Open problems
             information theoretic one presented by myself and Andrei
             could do the job quite well. -GD]
    
-				 * * *
+                                 * * *
 
    1. Statistics Information Exchange format
       [Not for first cut]
