@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.20 2003/11/20 08:04:33 nickm Exp $
+$Id: dir-spec.txt,v 1.21 2004/01/27 05:31:18 nickm Exp $
 
 				MIX3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -313,12 +313,12 @@ Table of Contents
             In a production network, only one value should be used for
             this field.
 
+        'Contact': An email address that may be used to contact the
+            administrator of this server. MUST be no more than 256
+            characters.  [This was a 'MAY' until Mixminion 0.0.7.]
+
     The 'Server' section MAY contain the following entries, at most
     once each:
-
-        'Contact': An email address that may be used to contact the
-            administrator of this server. Must be no more than 256
-            characters.
 
         'Contact-Fingerprint': Fingerprint of the server administrator's
             PGP key. Must be no more than 128 characters.
