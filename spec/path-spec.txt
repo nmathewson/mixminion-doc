@@ -1,4 +1,4 @@
-$Id: path-spec.txt,v 1.7 2003/11/11 21:06:52 weasel Exp $
+$Id: path-spec.txt,v 1.8 2003/11/11 21:41:26 weasel Exp $
 
                               MIX3:path
                  Type III (Mixminion) Path Generation
@@ -367,17 +367,10 @@ Table of Contents
                   and standard deviation 1.5.  A GaussianHops component
                   expands into at least 1 RandomHop component.
 
-                - If the last component in the resulting path is a
-                  RandomHop component, and we selected a random exit
-                  hop in step 2 above, then remove the last component.
-                  If the last component in the resulting path is a
-                  ByNickname component, and we chose the corresponding
-                  server in step 1 above, remove the last component.
-
                Call the resulting expanded path specifier "ESPEC".
 
-            5. Let the last hop in the path be the server descriptor
-               chosen in step 1 or step 2 above.
+            5. If we selected a random exit hop in step 2 above, replace the
+               last hop in the path with that node.
 
             6. From last to first, choose a server descriptor to satisfy each
                component in ESPEC.
