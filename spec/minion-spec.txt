@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.14 2003/10/01 22:15:24 nickm Exp $
+$Id: minion-spec.txt,v 1.15 2003/10/02 14:23:33 nickm Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -317,7 +317,7 @@ Table of Contents
       enemy from oppression."
 
    (In hexadecimal, the hash of P is:
-    [90 89 60 BC 88 EF 92 B0 9c 58 26 C4 BE 32 B3 34 A7 1C AA 5A].)
+    [90 89 60 BC 88 EF 92 B0 9C 58 26 C4 BE 32 B3 34 A7 1C AA 5A].)
 
    For all public key operations in Type III packets, we use 2048-bit
    keys.  We define:

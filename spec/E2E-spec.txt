@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.11 2003/10/01 22:15:23 nickm Exp $
+$Id: E2E-spec.txt,v 1.12 2003/10/02 14:23:32 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -114,7 +114,7 @@ Table of Contents
 
       * "Corrupted packet" - A packet which has had its payload
         corrupted on the second leg of its path.  [Other forms of
-        corruption will result in the message's not being delivered.]
+        corruption will result in the packet not being delivered.]
 
 2. End-to-end message encoding
 
@@ -162,7 +162,7 @@ Table of Contents
    version.
 
    We also define DECOMPRESS as the inverse of COMPRESS: namely, ZLIB
-   decompression as described in RFCs 1950 and 1951.  Note that not
+   decompression as described in RFCs 1950 and 1951.  Note that
    DECOMPRESS is not defined for every sequence of bytes.
 
 2.1.2. K-of-N fragmentation
@@ -183,11 +183,11 @@ Table of Contents
    Currently, we use the algorithm described by Luigi Rizzo in several
    papers and implemented in software at
              http://info.iet.unipi.it/~luigi/fec.html .
-   This algorithm has
-   several advantages: first, it has freely-available implementations
-   in C and Java under a modified-BSD style license.  Second, it runs
-   with acceptable performance for modest values of K (less than 30 or
-   so).  Third, it does not seem to be patent encumbered.
+   This algorithm has several advantages: first, it has freely-available
+   implementations in C and Java under a modified-BSD style license.
+   Second, it runs with acceptable performance for modest values of K
+   (less than 30 or so).  Third, it does not seem to be patent
+   encumbered.
 
    Of course, this algorithm has disadvantages.  First, it lacks a
    complete, byte-level specification beyond that given at the URL
@@ -249,7 +249,7 @@ Table of Contents
    WHITEN(M) = SPRP_Encrypt(K_whiten, "WHITEN", M)
    UNWHITEN(M) = SPRP_Decrypt(K_whiten, "WHITEN", M)
 
-   where K_whiten is equal to the octet sequence {57 48 49 54 45 4E}.
+   where K_whiten is equal to the octet sequence [57 48 49 54 45 4E].
 
    Note that applying K_whiten and DIVIDE together has the effect of
    turning DIVIDE from an erasure correcting code into a full secret
@@ -747,6 +747,22 @@ Table of Contents
   [XXXX Are msg-ids really what we want? Should we say more?  Should
         we restrict encoding? -NM]
 
+  [XXXX The client should not be allowed to supply IN-REPLY-TO.  Instead
+        the exit node should set IN-REPLY-TO to the last msg-id in the
+        REFERENCES header.
+        Also there should be a standard encoding of msgd-ids: for
+        instance msg-ids should be seperated by one space (0x20)
+        exactly.
+        Additionaly there should be a specified way of dealing with
+        references lines that are too long.  The standard in news seems
+        to be to keep the first msg-id in the list (the original post
+        that started a thread), and then remove as many of the following
+        msg-ids so that the line fits in the space available.
+        (XXX: need to cross-check that with the usefor drafts).  - PP]
+
+  [XXXX Okay; let me know when you have crosschecked successfully, and
+        when you have an citation for this. -NM]
+
   Unrecognized or malformatted headers MUST be removed.
 
 3.2.3. Delivery
@@ -794,8 +810,16 @@ Table of Contents
    The "In-Reply-To" and "References" lines should be taken verbatim
    from the corresponding headers, if those headers are present.
    [XXXX Is this sensible? -NM]
+   [XXXX See my comment about in-reply-to above. -PP]
 
-   The "X-Anonymous" line should be present, and set to "yes".
+   The "X-Anonymous" line SHOULD be present, and set to "yes".
+   [XXXX Do you really think this is a good idea? -PP]
+   [XXXX Yes.  There's nothing wrong with letting people who don't
+         want anonymous messages block 'em.  (On IRC, PP says that he
+         is worried about large ISPs filtering.)  This bears more
+         thought, but I think it's probably a bad idea to deliberately
+         screw over unwilling recipients in order to bypass
+         clueless/draconian sysadmins. -NM]
 
    Note again that all unrecognized or misformatted headers MUST be
    rejected.
@@ -812,7 +836,7 @@ Table of Contents
    maximum permitted message size in KB (before compression).  Note
    that because of base64-encoding, actual delivered messages may be
    longer than this by a factor of ~1.33.  The value must be at least
-   "32".  It MUST contain a "Allow-From" line, containing 'yes' if the
+   "32".  It MUST contain an "Allow-From" line, containing 'yes' if the
    server allows user-supplied from addresses and 'no' if it does not.
 
 3.3. SMTP
@@ -831,7 +855,7 @@ Table of Contents
 
       MAILBOX ::= LOCALPART AT HOSTPART
       LOCALPART ::= ATOM | LOCALPART DOT ATOM
-      HOSTPART ::= ATOM | LOCALPART DOT ATOM
+      HOSTPART ::= ATOM | HOSTPART DOT ATOM
       ATOM ::= ATOMCHAR | ATOM ATOMCHAR
       ATOMCHAR ::= Any character in the range hex 21 through hex 7E,
              excluding '[', ']', '(', ')', '<', '>', '@', ',', '.',
@@ -843,6 +867,12 @@ Table of Contents
    blacklisting hard, and encourage senders to resolve target hosts.
 
    [XXXX I suspect the above should be "SHOULD NOT." -NM]
+   [XXXX It is possible that an email address is in fact
+         example@[192.186.2.1], so it really should be SHOULD NOT.
+         Also can we reach all possible mail addresses using this
+         strict syntax?  Do we care? -PP] 
+   [XXXX Using IP addresses does, as noted above, make blacklisting
+         hard.  But we should review RFC2821 to see if we care. -NM]
 
 3.3.2. Formatting: Message body
 
@@ -870,7 +900,7 @@ Table of Contents
    that because of base64-encoding, actual delivered messages may be
    longer than this by a factor of ~1.33. The value must be at least
    "32".  A server MAY drop any message that uncompresses to be
-   longer than this type. It MUST contain a "Allow-From"
+   longer than this type. It MUST contain an "Allow-From"
    line, containing 'yes' if the server allows user-supplied from
    addresses and 'no' if it does not.
 
