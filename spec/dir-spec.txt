@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.3 2003/06/20 07:11:03 nickm Exp $
+$Id: dir-spec.txt,v 1.4 2003/06/20 17:26:32 nickm Exp $
 
 				Mix3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -102,7 +102,7 @@ Table of Contents
    allowed.
 
    Formally, a Mix Information Message is a sequence of ASCII
-   characters, consisting of one or more Sections.  Each Section
+   characters, consisting of zero or more Sections.  Each Section
    contains a Header, and one or more Entries.  Each Header consists of
    an left square-bracket ('[', ASCII 91), an Identifier, a right
    square-bracket (']', ASCII 93), and an EOL.  Each Entry consists of
@@ -180,10 +180,17 @@ Table of Contents
 
      - All numeric quantities are represented in decimal.
 
-     - All dates are represented in YYYY/MM/DD format.
+     - All dates are represented in YYYY-MM-DD format.
      
-     - All times are represented in YYYY/MM/DD HH:MM:SS or YYYY/MM/DD
+     - All times are represented in YYYY-MM-DD HH:MM:SS or YYYY-MM-DD
        HH:MM:SS.mmmm format, relative to UTC.
+
+       [Compatibility note: Mixminion through 0.0.4 generates and
+        accepts only US-style YYYY/MM/DD dates.  To transition to
+        ISO-style YYYY-MM-DD dates, version 0.0.5 will accept both
+        styles and generate only US style.  Version 0.0.6 will accept
+        both styles and generate only ISO-style.  Version 0.0.7 will
+        accept and generate only ISO style.]
 
      - All binary data is base-64 encoded, with all linebreaks and space
        removed.
