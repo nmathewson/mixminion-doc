@@ -1255,20 +1255,75 @@ comfortable.
 \section{Maintaining anonymity sets}
 \label{sec:maintaining-anonymity}
 
-\subsection{Transmitting large files with Mixminion}
+\subsection{Batching Strategy}
+\label{subsec:batching}
 
-We would like to use Mixminion as a transport layer for higher-level
-applications such as anonymous publication systems
-\cite{freehaven-berk}, but much research remains before we can
-provide security for users transferring large files over Mixminion.
+Low-latency systems like Onion Routing aim to provide anonymity against an
+adversary who is not watching both Alice and Bob \cite{onion-routing}. If
+the adversary watches both, he can for instance count packets and observe
+packet timing to become confident that they are communicating. Because
+Mixminion aims to defeat even a global passive adversary, we must address
+this end-to-end timing vulnerability.
 
-Alice wants to send a large file to Bob; thus she must send many Mixminion
-messages. Conventional wisdom suggests that she should pick a different
+Further, because we have allowed our adversary to send and delay messages,
+he can manipulate the batch of messages entering a mix so the only message
+unknown to him in the batch is the target message. This approach is
+known as the \emph{blending attack} because the adversary blends his
+own messages with the batch \cite{batching-taxonomy}. By repeatedly
+attacking each mix in the path, the adversary will link Alice and Bob.
+
+Mixminion nodes use the \emph{timed dynamic-pool} batching strategy as
+outlined in \cite{batching-taxonomy}, and as adapted from Mixmaster. A
+mix fires every... [insert Cottrell mix description here. Perhaps put
+the algorithm itself from the spec into a side box, or an appendix?]
+
+Timed dynamic-pool mixes offer several benefits. Firstly, they increase
+the cost of the blending attack: because the number of messages coming
+out at each flush is always a fraction of the number waiting, it is
+impossible to arrange to completely flush the mix with high probability
+in one flush. Thus an adversary is forced to spend multiple intervals
+(and thus delay other messages for considerable time) both in flushing
+the original honest messages from the mix, and again in flushing the
+target message from the mix. This delay will be noticed by the other
+mixes, because [nick? clarify here] they talk to each other over tcp so
+they know when something's up.
+
+This batching strategy also increases the cost of intersection attacks by
+providing large anonymity sets for each message in the network. Because
+a message could plausibly have been held in a pool for several rounds
+at each mix, the set of possible senders when Bob receives the target
+message is large.
+
+\subsection{Dummy policy}
+
+...will write this soon
+\cite{langos02}.
+
+We could gain stronger protection by letting mixes address dummies
+to actual users. But each mix must know all the users in the system:
+if a mix only delivers dummies to a subset of the users, an adversary
+can distinguish with better than even probability between a dummy and
+a legitimate message.
+
+
+\subsection{Transmitting many messages}
+
+When Alice (the owner of a pseudonym) is downloading her mail from a
+nymserver, she will likely receive many separate messages.
+%
+%We would like to use Mixminion as a transport layer for higher-level
+%applications such as anonymous publication systems
+%\cite{freehaven-berk}, but much research remains before we can
+%provide security for users transferring large files over Mixminion.
+%
+%Alice wants to send a large file to Bob; thus she must send many Mixminion
+%messages.
+Conventional wisdom suggests that she should pick a different
 % can I get a \cite here? -RRD
 path for every message, but an adversary that owns all the nodes in
 \emph{any} of the paths could learn her identity --- without any work
-at all. (Even an adversary owning a very small fraction of the network
-can perform this attack, since the Mixminion message size is small.)
+at all. Even an adversary owning a small fraction of the network
+can perform this attack, since each Mixminion payload is so small.
 
 % Assuming Alice picks five nodes at random for
 %each path, at 28k of data per packet (assuming no redundancy or overhead)
@@ -1277,21 +1332,21 @@ can perform this attack, since the Mixminion message size is small.)
 %time she sends message 92 (meaning her file is roughly 2.5 megabytes),
 %Alice has a less than 1\% chance of keeping her anonymity.
 
-Alice seems more likely to maintain her unlinkability by sending all the
+Alice thus seems most likely to maintain her unlinkability by sending all the
 messages over the same path. On the other hand, a passive adversary can
-still watch the flood of messages traverse that path. We must hope the
-honest nodes will hide message streams enough to
-foil these attacks. The multiple-message tagging attacks described in
-Section \ref{subsec:multi-tagging} make the situation even more dangerous.
+watch the flood of messages traverse that path.
 
-A compromise approach is to pick a small number of paths and use them
-together. Still, if the messages are sent all at once, it seems clear
-we're going to need some really good cover traffic schemes before we
-can offer security. The same problem, of maintaining anonymity when
-sending many messages, comes up when the owner of a pseudonym
-is downloading his mail from a nymserver.
+% We must make sure the
+%honest nodes will hide message streams enough to
+%foil these attacks.% The multiple-message tagging attacks described in
+%Section \ref{subsec:multi-tagging} make the situation even more dangerous.
 
-\subsection{Batching Strategy and Network Structure}
+%A compromise approach is to pick a small number of paths and use them
+%together. Still, if the messages are sent all at once, it seems clear
+%we're going to need some really good cover traffic schemes before we
+%can offer security.
+
+\subsection{Batching Strategy and Dummy Policy}
 \label{subsec:batching}
 
 %[This subsection is draft/experimental/controversial. Don't pay much
@@ -1459,7 +1514,7 @@ analyzed security properties than less constrained approaches.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Future Directions}
+\section{Future Directions and Open Problems}
 \label{sec:conclusion}
 
 This design document represents the first step in peer review of the
