@@ -61,28 +61,6 @@ with the smallest building block.
              K3 = K xor 0x00...02
              K4 = K xor 0x00...03
 
-  [XXXX This violates the constraint in the LION/BEAR paper that
-        requires the keys to be 'independant'.  Nonetheless, George
-	and Markus Kuhn believe it's safe, since all the keys
-        will be used as inputs to hash functions before anybody
-        uses them. -NM]
-
-  [XXXX Where we use H(K_n | L | K_n) above, LIONESS specifies 
-        L xor K_n.  In our case, however, L and K_n are longer than
-        the keysize of PRNG.  Rather than truncate L xor K_n (which
-        could violate the all-or-nothing properties of LIONESS),
-        we use the same keyed-hash construction for all 4 keys. -NM]
-
-  [XXXX From a security point of view I think that what you do is
-        optimal. On the other side it imposes 2 additional Hash
-        operations per encryption/decryption. I will think about it a
-        bit more -GD]
-
-  [XXXX Don't worry about the H(K|L|K) hash operations; combined, they 
-        represent about one 500th of the time that LIONESS takes.
-        (About 11% of LIONESS goes to H(K|R|K), and about 87% goes to the 
-        stream cipher.) -NM ]
-
 - SPRP_DECRYPT(K1,K2,K3,K4,M) (Len(M) bytes) Inverts SPRP_ENCRYPT.
 
   We also define SPRP_DEC(K,P,M) as the inverse of SPRP_ENC.
@@ -500,7 +478,7 @@ Digest: 20 bytes
 
 Total: 54 bytes + Address Size + SURB size + Linked Data Size
 
-* The magic marker contains the ASCII 4-byte string 'SURB'.
+* The magic marker contains the ASCII 4-byte string 'SURB'. 
 * Address: Contains the address of the first hop to which the message
   encoded using this SURB should be sent to.
 * Use-by-Date: indicated the expiry date the SURB should be used by. Can
@@ -523,9 +501,31 @@ Total: 54 bytes + Address Size + SURB size + Linked Data Size
 
 The ASCII Encoding of SURBs.
 
-[XXXX Any ideas?]
+The  ASCII compatible format of SURB's is:
+
+--- BEGIN SURB ---
+ID: Base64 Encoding of the first 48 bits of the Digest (8 characters).
+Base64 encoded binary SURB 
+--- END SURB ---
 
 \section{Email Transport exchange format}
+
+This format should be used when the SMTP address type is used for a
+message. The SMTP address is specified in the ``EMAIL ADDRESS'' field,
+and the ``TAG'' FIELD should be included in the SMTP header after as
+``X-Remailer-Tag'' filed.
+
+The Reply-to field should contain the email address which can be used
+to block service to the receipient. The body should also clearly
+indicate how the procedure of blocking oneself works.
+
+--- BEGIN ANONYMOUS MESSAGE ---
+VERSION: x.x
+ID: 48 first bits of the hash of the whole binary message.
+Base64 encoded mixminion packet (32kb long -> 44 kb long)
+--- END ANONYMOUS MESSAGE ---
+
+The subject line should read: ``Anon. Message: '' + ID
 
 [Need to specify how we are going to wrap the message
  as an email. This is only intended for SURB use and
@@ -550,8 +550,6 @@ be made public.
 
 \section{Type III (Mixminion) forward secure protocol}
 
-[cut + paste from other document]
-
 A special channel should be established between mixes that provides
 forward secrecy making it impossible to recognize or decrypt any
 message that went through it in the past. In order to establish this
@@ -564,12 +562,6 @@ The Mixminion protocol uses TLS (the IETF standardization of SSL) with
 the ciphersuite "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" (defined in
 tls-ciphersuite-03.txt).  No other ciphersuite is permitted for
 MIX-to-MIX communications.
-
-  [XXXX Do we want to use DHE_DSS instead? -NM]
-
-  [XXXX We don't use AES256 because (a) it doesn't seem to be in
-        the works for OpenSSL 0.9.7, and (b) all our other AES
-        operations use 128-bit blocks and keys. -NM]
 
 X.509 certificates need not be signed; instead, they must only contain
 a key matching that used in the KEYID portion of the header's routing
@@ -628,12 +620,6 @@ taken to permanently erase them from the Hard Disk and memory.
 The standard transport mechanism over which the MixMinion Transfer
 Protocol is TCP over IP. The standard listening TCP port should be 
 number 48099 (until we register a port with www.iana.org)
-
-[Q Should we request a system (<1023) or user port -GD]
-[Q System ports can only be opened by root. we should avoid needing
-to be root. -RD]
-[Q I imagine it's hard to register a port with iana. Let's wait on
-that til everybody takes us seriously. -RD]
 
 All possible checks should be performed during the transfer protocol
 and if any fail the connection MUST stop and all state MUST
