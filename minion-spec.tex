@@ -460,9 +460,9 @@ the ciphersuite "TLS_DHE_RSA_WITH_AES_128_CBC_SHA" (defined in
 tls-ciphersuite-03.txt).  No other ciphersuite is permitted for
 MIX-to-MIX communications.
 
-[Servers must allow incoming connections via RSA/3DES/SHA1 for clients
-written with older SSL libraries.  However, servers must never initiate
-connections with this suite.]
+[Servers must allow incoming connections via SSL3_RSA_DES_192_CBC3_SHA
+for clients written with older SSL libraries.  However, servers must
+never initiate connections with this suite.]
 
 X.509 certificates need not be signed; instead, they must contain
 a key matching that used in the KEYIDportion of the header's routing
@@ -493,18 +493,16 @@ portions are non-normative descriptions of TLS.)
   key has been established. All communications are then encrypted
   using this session key.
 
-* A sends "PROTOCOL 1.0", CRLF.  This indicates the highest protocol
-  version A supports.
+* A sends "MMTP 1.0", CRLF.  This indicates the protocol versions that
+  A supports.
 
   (Future clients that support more protocols should transmit
    "PROTOCOL", a list of comma-separated protocol versions, and a CRLF.)
 
-[Why not having the magic word ``MMTP'' instead of ``PROTOCOL''? -GD]
-
 * If B is not willing to use any protocol A supports, B closes the 
   connection.
 
-  B sends "PROTOCOL 1.0", CRLF.  This indicates B's choice of protocol.
+  B sends "MMTP 1.0", CRLF.  This indicates B's choice of protocol.
 
   If A is not willing to support B's choice, A closes the connection.
 
@@ -515,7 +513,7 @@ portions are non-normative descriptions of TLS.)
 
 * Padding case:
 
-     * A sends "JUNK", CRLF, Junk, HASH(M|"SEND") (6 + 32k + 20 bytes)
+     * A sends "JUNK", CRLF, Junk, HASH(M|"JUNK") (6 + 32k + 20 bytes)
        (where Junk is an arbitrary 32k sequence."
      * B sends "RECEIVED", CRLF, HASH(M|"RECEIVED JUNK") (10 +20 bytes)
 
@@ -653,7 +651,7 @@ and any number of entries of the form:
      'Deny': Address Pattern
 
 If this server supports outgoing MMTP connections, it MAY have a
-'Modules/MMTP' section, with one entry each of the form:
+'Outgoing/MMTP' section, with one entry each of the form:
 
       'MMTP-Descriptor-Version': The string '1.0'
       'Protocols': A comma-separated list of the protocols this server
@@ -678,7 +676,7 @@ The entries are order-significant; the first one to match wins.
 The default policy is 'Deny: *'
 
 If this server supports outgoing delivery for a module ABCD, it will
-have a [Modules/ABCD] section.  See appendices for more detail on
+have a [Delivery/ABCD] section.  See appendices for more detail on
 specific modules, including SMTP and MBOX.
 
 Other services provided by this server should each have their own section.
@@ -800,7 +798,7 @@ implementations for MBOX delivery.
 MBOX delivery differs from SMTP delivery in that it is not intended
 for addressing messages to arbitrary SMTP addresses.
 
-Servers that support MBOX delivery MAY include a [Modules/MBOX]
+Servers that support MBOX delivery MAY include a [Delivery/MBOX]
 section, containing only the entry "Version: 1.0".
 
 The MBOX routing type is used for messages to be delivered to a local
@@ -821,7 +819,7 @@ format' below.
 and tagged messages, reply messages, and non-plaintext messages are
 all delivered as junk.]
 
-Servers supporting SMTP MAY include a [Modules/SMTP] section,
+Servers supporting SMTP MAY include a [Outgoing/SMTP] section,
 containing only the entry "Version: 1.0".
 
 Servers SHOULD include a note with every SMTP, explaining that the
