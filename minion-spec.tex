@@ -6,7 +6,7 @@
 
 Type III (Mixminion) MIX messages are composed of a header section and a
 payload.  For technical reasons, each message has a main header and a
-sectondary header, both of which have identical structure.  Each
+secondary header, both of which have identical structure.  Each
 header is further composed of up to 16 subheaders, which are
 addressed and encrypted to the intermediate nodes (MIXes).  We
 begin by explaining how the full message is structured but starting
@@ -17,14 +17,14 @@ with the smallest building block.
 - if B is a byte array, B[i:j] (j bytes) is sub array starting at 
   byte i with length j.
 - R(n) (n bytes) Generates n random bytes by any secure method.
-- Z(n) (n bytes) Generates n zero bytes
-- Len(M) (2 bytes) is the length of message M (* bytes)
+- Z(n) (n bytes) Generates n zero bytes.
+- Len(M) (2 bytes) is the length of message M (* bytes).
 - x|y (Len(x)+Len(y) bytes) denotes x concatenated with y.
 
 - PAD(M,L) (L bytes) pads the message M (Len(M) <= L) to length L
   using zeroes.
-- H(M) (20 bytes) is the SHA-1 hash of M (* bytes)
-- PK_Encrypt(K,M) (128 bytes): the RSA-encryption of a header M 
+- H(M) (20 bytes) is the SHA-1 hash of M (* bytes).
+- PK_Encrypt(K,M) (128 bytes) The RSA-encryption of a header M 
   using the public key K.  M is padded using RSA-OAEP, and encoded
   with PCKS1.
 - PK_Decrypt(K,M) (up to 86 bytes) Gives the decryption of the
@@ -70,10 +70,10 @@ with the smallest building block.
   [XXXX Where we use H(K_n | L | K_n) above, LIONESS specifies 
         L xor K_n.  In our case, however, L and K_n are longer than
         the keysize of PRNG.  Rather than truncate L xor K_n (which
-        could violate the all-or-nothing properties of LIONESS,
+        could violate the all-or-nothing properties of LIONESS),
         we use the same keyed-hash construction for all 4 keys. -NM]
 
-  [XXXX From a security point of view I think that what you do if
+  [XXXX From a security point of view I think that what you do is
         optimal. On the other side it imposes 2 additional Hash
         operations per encryption/decryption. I will think about it a
         bit more -GD]
@@ -116,7 +116,10 @@ Shared Secret:   16 bytes
 Digest:          20 bytes
 Routing Size:    2 bytes
 Routing Type:    2 bytes  [total 43 bytes]
-Routing info:    [Routintg Size] bytes
+  [XXXX 43? Is this a fencepost error? I count 42. And it says 42
+        below.
+   -RD]
+Routing info:    [Routing Size] bytes
 
 * The Version is present to manage concurrent versions of the
 protocol. If a packet is received with a version that is not supported
@@ -129,8 +132,12 @@ other keys for the operations of the node on the packet. It must be
 kept secret and discarded as soon as the packet has been processed. 
 * The Digest contains an integrity check of the remainder of the
 current header (128*15 bytes in total).  It is calculated on the
-remailing subheaders and the junk that will be present at then end 
+remaining subheaders and the junk that will be present at then end 
 of headers when the node receives the message. 
+
+[XXXX Don't we want the digest to cover the current subheader too?
+      Otherwise a bad server can modify the directly-next-header
+      (he still can't know what he's changing, but hey). -RD]
 
 * The Routing Type of a message defines how the MIX should deliver or
   relay it.  Most routing methods require addition addressing information.
@@ -141,12 +148,12 @@ of headers when the node receives the message.
   If a MIX receives a routing type it does not recognize, it must
   discard the message. 
 
-  The subheader is are encrypted using RSA after having been padded
+  The subheader is encrypted using RSA after having been padded
   using OAEP, using a 1024 bit key.  This results in an encrypted block
   of 128 bytes.  If the routing info is longer than 86-42=44 bytes, then
-  additional subheader have to be added.
+  one or more additional subheaders have to be added.
 
-  When an additional block is added to fit the routing info, it must be be a
+  When an additional block is added to fit the routing info, it must be a
   multiple of 128 bytes and should have the following structure:
  
   Routing Extension:
@@ -156,10 +163,16 @@ of headers when the node receives the message.
 
 * The address data length is specified by the ``Routing Size'' field
   contained in the subheader.
-* Padding of zeroes is used to make the size of the Address Extension a
-multiple of 128 bytes.  
+* Padding of zeroes is used to make the size of the Routing Extension a
+  multiple of 128 bytes.  
 
-The Address Extension corresponding to a particular subheader is
+  [XXXX Something's wrong here. the routing size limits the routing info
+        in the first subheader to fit within the 86 byte limit (the
+        size of the plaintext of a subheader), but here we talk about
+        128, the size of the crypttext of the subheader. What's up?
+   -RD]
+
+The Routing Extension corresponding to a particular subheader is
 encrypted using the Encrypt function with key=Hash(Shared Secret,
 ``ROUTING EXTENSION SECRET KEY'') and appended to the RSA encrypted
 subheader.
@@ -168,6 +181,11 @@ We will formally refer to the subheader structure as:
 SHS(V, SK, D, F, A)
 And to the RSA-OAEP encrypted subheader structure as:
 ESHS(PK, SK, D, F, A)
+
+[XXXX What are F and A here? Is SHS always 68 bytes, or "up to 68 bytes",
+      or 68+68n {n:1,...} bytes, or an arbitrary number of bytes, or what?
+      Similarly, ESHS is always 128 bytes? Or 128+128N?
+ -RD]
 
 \subsection{Routing information}
 
