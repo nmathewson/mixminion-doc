@@ -193,6 +193,9 @@ ESHS(PK, SK, D, F, A)
       Similarly, ESHS is always 128 bytes? Or 128+128N?
  -RD]
 
+[XXXX They used to be Flags and Address. We do not have a Flags
+anymore since all the information is contained in the address. -GD]
+
 \subsection{Routing information}
 
 There are 5 predefined routing types:
@@ -310,6 +313,9 @@ other variable information. -GD]
 
          Sound ok?                                 -NM ]
 
+[XXXX I would add a type field for identification, and I think it is
+ok -GD]
+
 \subsection{The header structure}
 
 Each type III message has two identical headers that are swapped at
@@ -405,6 +411,7 @@ The payload of a Mixminion message has a fixed length of 32 kb
      do this with reply payloads anyway?
 
      I'm just confused here. -NM]
+[XXXX See discussion on the mailing list about payload encryption -GD]
 
 Size:   2 bytes
 Data:   (Variable)
