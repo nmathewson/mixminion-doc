@@ -4,6 +4,7 @@
 
 [All of these are mentioned in more detail below.]
 
+
 1. Is there any reason for the RECEIVED ack in MMTP?
 1.5. Is the 'BAD SHA1' nak in MMTP acceptable?
 
@@ -22,6 +23,8 @@
    payload. -RD
 
 2b. Mail gateways. We should specify these.
+
+   XXXX
 
 3. Email transport exchange format.
 
@@ -56,9 +59,22 @@
 
 7. Local delivery
 
-   XXXX
+   Proposal: Servers that want to support LOCAL delivery have an
+   internal list of users they accept messages to, and an internal
+   mapping from those users to some delivery mechanism for each one.
+   Typically, this is a mapping from 'username' to
+   'username@localhost', and delivery defaults to local delivery via
+   sendmail.
+       Servers are free to provide other implementations for local 
+   delivery. -NM
 
-8. Server descriptor rules for Local/SMTP modes.
+8a. Server descriptor rules for Local mode
+
+   Proposal: If a server supports LOCAL delivery, it MAY have a
+   'Modules/Local' section, which contains only a version string,
+   which must be "1.0". -NM
+
+8b. Server descriptor rules for SMTP mode.
 
    XXXX
 
@@ -80,7 +96,25 @@
 
 13. Do we change directories to XML?  What about descriptor blocks?
 
-    Proposal: Use XML for both. That's what it's there for. -NM
+    Proposal: Use XML for both. That's what it's there for. More
+    specifically, we should make descriptors take EITHER the form:
+
+    <mixminion-server>            <mixminion-server>
+      <section>                      <section>
+      key=val                           <key>val</key>
+      key=val                           <key>val</key>
+      </section>         OR          </section>        
+      <section>                      <section>
+      key=val                           <key>val</key>
+      key=val                           <key>val</key>
+      </section>                     </section>        
+    </miximinion-server>         </mixminion-server>
+
+    Which one is more sensible?  Beats me.  If we go for the latter,
+    we probably don't want to have the configuration files correspond
+    to the server info any more.  This may be a good thing.
+
+    Also, will XML signatures serve our purposes? -NM
 
 14. Sensible support for multiple directory servers.
 
@@ -884,7 +918,7 @@ the result.  The signed digest is the OAEP/PCKS1 signature of the
 digest with the server's identity key.  This values is
 represented in BASE64.
 
-If this server accepts incoming MMTP connections, it must have an
+If this server accepts incoming MMTP connections, it MAY have an
 'Incoming/MMTP' section, with the following entries:
 
      'MMTP-Descriptor-Version': The string '1.0'
@@ -893,7 +927,7 @@ If this server accepts incoming MMTP connections, it must have an
      'Protocols': A comma-separated list of the protocols this
            server accepts.
 
-If this server supports outgoing MMTP connections, it must have a
+If this server supports outgoing MMTP connections, it MAY have a
 'Modules/MMTP' section, with one entry each of the form:
 
       'MMTP-Descriptor-Version': The string '1.0'
