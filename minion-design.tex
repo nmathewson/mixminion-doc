@@ -61,7 +61,7 @@ the same anonymity set. We add directory servers that allow users to
 learn public keys and performance statistics of participating remailers,
 and we describe nymservers that allow users to maintain long-term
 pseudonyms using single-use reply blocks as a primitive. Our design
-integrates link-level encryption between remailers to provide
+integrates link encryption between remailers to provide
 forward anonymity. Mixminion brings together the best solutions from
 previous work to create a conservative design that protects against most
 known attacks.
@@ -102,7 +102,7 @@ instead relies on the older and less secure cypherpunk Type I remailer
 design \cite{remailer-history}. By integrating reply capabilities into
 Mixminion, we can finally retire the Type I remailer network.
 
-We introduce link-level encryption with ephemeral keys to ensure forward
+We introduce link encryption with ephemeral keys to ensure forward
 anonymity for each message. We also provide flexible delivery schemes ---
 rather than just allowing delivery to mail or Usenet, we allow designers
 to add arbitrary modules to handle incoming and outgoing messages. By
@@ -644,11 +644,11 @@ analysis of this multiple-paths approach to future work.
 \section{Related design decisions}
 
 In this section we discuss how we are using
-link-level encryption with ephemeral keys to provide forward anonymity,
+link encryption with ephemeral keys to provide forward anonymity,
 message types and modules to handle different types of messages, and
 exit policies for advertising what delivery options a node will provide.
 
-\subsection{Link-level encryption and what it gets us}
+\subsection{Link encryption and what it gets us}
 \label{subsec:link-encrypt}
 
 Unlike remailer Types I and II that used SMTP \cite{SMTP} (i.e. ordinary
@@ -693,7 +693,7 @@ asymmetric encryption techniques, so they are relatively fast.
 % I'm not sure, though, whether we want one of the cert-based ones (A)
 % or one of the the anon-server ones. (B) -Nick
 
-The purpose of link-level encryption is to provide forward secrecy: 
+The purpose of link encryption is to provide forward secrecy: 
 % link-level, *not* link-layer. link-layer is a layer-2 OSI thing.
 % saying that our transport level protocol uses link-layer encryption
 % makes no sense. -RRD
