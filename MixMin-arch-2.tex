@@ -12,7 +12,7 @@
 \section{Abstract}
 \section{Introduction}
 
-[Q Roger is reworking the introduction]
+[Q Roger is reworking the introduction -GD]
 
 \section{Requirements}
 
@@ -148,15 +148,27 @@ Rijendal in counter mode.
 
 \subsection{Rejected design decisions}
 
-[Q Feel free to fill the gaps on the rejected design, or add new ones]
+[Q Feel free to fill the gaps on the rejected design, or add new
+ones -GD]
 
 \begin{itemize}
-\item Logs
-\item Extensions
-\item Receipts
-\item Fancy ElGamal Schemes + verifiable mixing.
-\item Connection oriented mixes (Onion routing)
-\item Multiple inter-mix communication schemes.
+\item \emph{Logging}.  While some users might want to inquire about
+   the status of their messages, logging such information on Mix nodes
+   would present grave issues for forward security.
+\item \emph{Extensions}.  It is best to have as few optional features
+   on intermediate nodes as possible; otherwise, users who preferred
+   one kind of intermediate node over another would expose themselves
+   to traffic analysis. [Q Was this the intention here? -NM]
+\item \emph{Receipts}
+\item \emph{Fancy ElGamal Schemes + verifiable mixing}.  These last
+   two we reject from our committment to a conservative design.
+\item \emph{Connection oriented mixes (Onion routing)}.  There are
+   other projects working on this more difficult goal.  Once again, it 
+   documents.
+\item \emph{Multiple inter-mix communication schemes.}  While it might
+   be desirable to place a node behind a firewall which --for
+   example-- might only permit HTTP or SMTP connections, we are
+   leaving such options to a future version.
 \end{itemize}
 
 \section{Specifications}
@@ -164,7 +176,7 @@ Rijendal in counter mode.
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
 NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and
 "OPTIONAL" in this document are to be interpreted as described in
-RFC 2119.\} Need to correct the document to comply with 2117.
+RFC 2119. [Q Need to correct the document to comply with 2117. -GD]
 
 \subsection{Overview}
 
@@ -176,7 +188,7 @@ key and capability discovery.
 \subsection{The packet format}
 
 The message format of MixMinion packets is divided in
-2 parts. The Main Header (MH), contains information encrypted under 
+2 parts. The Master Header (MH), contains information encrypted under 
 the public key of the mix it is addressed to. The second part is the 
 payload that contains the message to be forwarded to the next hop or 
 to the local application. The Payload is encrypted using a symmetric 
@@ -190,17 +202,15 @@ Master Header:
 - Major Version      - 1 byte
 - Minor Version      - 1 byte
 - Master Secret (MS) - 16 bytes
-- Timestamp          - 8 bytes
+- Timestamp          - 2 bytes
 - Size               - 2 bytes
 - Type               - 2 bytes
-- Return Level       - 1 byte
-- Reuse Level        - 2 bytes
 - Address Type       - 2 bytes
 - Next Address       - 16 bytes
 - Dest. Port         - 2 bytes
 - Expected Key       - 20 bytes
 
-Total size: 73 bytes
+Total size: 64 bytes
 \end{verbatim}
 
 In the rest of the document we will refer to these fields as:
@@ -208,17 +218,15 @@ In the rest of the document we will refer to these fields as:
 \begin{verbatim}
 Major Version, Minor Version: V [2 bytes]
 Master Secret: MS [16 bytes]
-Timestamp: T [8 bytes]
+Timestamp: T [2 bytes]
 Size: S [2 bytes]
 Type: Tp [2 bytes]
-Return Level: Rt [1 byte]
-Reuse Level: Ru [2 bytes]
-Address Type, Next Address, Dest. Port, Expected Key: A [20bytes]
+Address Type, Next Address, Dest. Port, Expected Key: A [40bytes]
 \end{verbatim}
 
 We denote a particular header composed of the above elements as:
 
-\begin{verbatim}MH(V, MS, T, S, Tp, Rt, Ru, A)\end{verbatim}
+\begin{verbatim}MH(V, MS, T, S, Tp, A)\end{verbatim}
 
 The Master Header MUST be encrypted using the RSAEP-OAEP method with
 an RSA key of modulus 1024 bits as described in the PKCS\#1
@@ -257,12 +265,19 @@ of Packet field SHOULD contain a fixed value of 62kb (62*1024 bytes)
 when the packet is transiting through the network. Another value N
 (smaller than 62kb) MAY be specified if the message is to be processed
 locally on the mix. In that case only the N first bytes of the body
-are to be given to the application.  The size of 62kb has been chosen
+are to be given to the application.  
+
+(The size of 62kb has been chosen
 to fit into the maximum size UDP packet although UDP is not by default
-used for transport.  [Is 64kb a bit large for each packet? This is
-much more than the average email and even with 20 hops (which should
-cover most of the planet anonymity set wise) you still have around
-60kb remaining. What about going down to 32kb or 16kb?]
+used for transport.)
+
+%  [Is 64kb a bit large for each packet? This is
+%much more than the average email and even with 20 hops (which should
+%cover most of the planet anonymity set wise) you still have around
+%60kb remaining. What about going down to 32kb or 16kb?]
+% 
+% Nick says:  I disagree with the proposal for smaller packets. Let's go with
+% what we have, and change it only if it turns out to work poorly.
 
 The \emph{type field} of the header allows unobservable multiplexing of
 applications using anonymous communications. Some values have special
@@ -325,7 +340,7 @@ how $M_0$ should treat the message.
 Define:
 - if B is a byte array, B[i:j] (j bytes) is sub array starting at 
   byte i with length j.
-- R(n) (n bytes) Generates n random bytes 
+- R(n) (n bytes) Generates n random bytes. Only used by client.
 - Z(n) (n bytes) Generates n zero bytes
 - Len(M) (2 bytes) is the length of message M (* bytes)
 - x|y (Len(x)+Len(y) bytes) denotes x concatenated with y.
@@ -414,8 +429,8 @@ MMProcess(K_x, M)
 - Check that the OAEP structure is intact.
 - Check that protocol version V is supported.
 - Check T to make sure the message is valid.
-- Calculate US = H(M[0:128]) and check that it has not been seen
-  before.
+- Calculate US = H(M[0:128]) and check that it has not been
+  seen before.
 - Store US.
 - If Tp = 0
   o Check that S = 62kb
@@ -436,14 +451,19 @@ MMProcess(K_x, M)
     * Return (Tp, H(MS,"MODULE_MODE"),D[0:62kb-(N-1)*128]) 
       to application
 
-[Q The few lines above describe how to decode a SURB, addressed to this
-mix. Would it be better if the type of message was actually specified
-by the real sender rather than the person that constructs the onion?
+[Q The few lines above describe how to decode a SURB, addressed
+to this mix. Would it be better if the type of message was
+actually specified by the real sender rather than the person that
+constructs the onion?
 
-WARNING: There might be some vulnerabilities in letting the sender
-specify the type of message. If any side effect resulting from the
-message being processed as a particular type is visible then this is
-threatening to the anonymity of the system.]
+WARNING: There might be some vulnerabilities in letting the
+sender specify the type of message. If any side effect resulting
+from the message being processed as a particular type is visible
+then this is threatening to the anonymity of the system. -GD]
+
+[Q Indeed.  Unless the type of the message is specifiable by the
+sender, how can anybody send a multipart message?  This needs to
+get straightened out. -NM] 
 
   o else
     * D=Decrypt(H(MS|"SECRECY_MODE")[0:16],
@@ -538,13 +558,13 @@ The standard transport mechanism over which the MixMinion Transfer
 Protocol is TCP over IP. The standard listening TCP port should be 
 number 48099 (until we register a port with www.iana.org)
 
-[Question: Should we request a system (<1023) or user port]
+[Q Should we request a system (<1023) or user port -GD]
 
 All possible checks should be performed during the transfer protocol
 and if any of them fails the connection MUST stop and all state MUST
 be deleted. An error MAY be logged. In particular the certificate of
 the communication partners should be signed using a key that hashes to
-the address hash if it is present in the master header.
+the address hash if it is present in the Master Header.
 
 \section{Administrative Issues}
 
@@ -573,6 +593,10 @@ Signature: [The signed SHA-1 of all the previous fields using the
             mix key in base64]. <LFCR>
 \end{verbatim}
 
+[Q What does <LFCR> mean? -NM]
+
+[Q We must specify the capabilities section. -NM]
+
 The address field can contain more than one addresses separated by
 white spaces. The capabilities refer to modules. Clients should not 
 send messages relying on capabilities that a mix does not advertise.
@@ -586,7 +610,8 @@ security properties of the MixMinion system.
 
 \subsection{Requesting information on a node}
 
-[Q describe standard way that you can request information from a node]
+[Q describe standard way that you can request information from a
+node -GD]
 
 \subsection{Logging format permitted}
 
@@ -598,7 +623,7 @@ reliability of other nodes.
 [Q If we want to have logs automatically processable we should define
 formats here. We need to have some statistics on the mix, such as \#of
 messages in and out for the day, failed deliveries for other mixes
-during the day, etc ...]
+during the day, etc ... -GD]
 
 \section{Standard Modules}
 
@@ -606,9 +631,15 @@ All modules have a fixed type number. The contents of the message
 along with some shared secret is given to the appropriate module for
 processing by the node.
 
+\subsection{FORWARD}
+
+[Q This is the standard one, included only for completeness.  All
+mix nodes must support it. -NM]
+
 \subsection{DUMP}
 
-[Q specifies that the received message should be silently dropped]
+[Q specifies that the received message should be silently dropped.
+All mix nodes must support this.]
 
 \subsection{INFO}
 
@@ -616,11 +647,23 @@ processing by the node.
 transformed into a full in band resource discovery protocols. But do
 we really want to have such a thing in this document?]
 
+[Q I claim that we should have at least the basic thing here-- it
+would be nice to build statistics servers and clients that must work
+with all valid Mixes.  All mixes should support this. -NM]
+
 \subsection{MULTIPART}
 
-[Who knows enough about forward error correction codes (Turbo codes?)
+[Q Who knows enough about forward error correction codes (Turbo codes?)
 to write a spec about them (Zooko?)? Given the packet size (63kb)
-what should be the error correction rate? ]
+what should be the error correction rate? -GD]
+
+\subsection{GZIP}
+
+[Q Do we want to include this?  What do we want to say? -NM]
+
+\subsection{SMTP}
+
+[Q We should specify a way to do mail, else our system is not useful.-NM]
 
 \section{Security Considerations}
 
