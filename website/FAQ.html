@@ -1,16 +1,16 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
           "http://www.w3.org/TR/html4/strict.dtd">
 <!-- *******************************************************************
-     $Id: FAQ.html,v 1.1 2003/08/29 05:58:24 nickm Exp $
+     $Id: FAQ.html,v 1.2 2003/09/04 20:03:02 nickm Exp $
      This file is maintained in CVS; edit the version in the repository.
      *******************************************************************
   -->
 <html>
 <head>
 <title>Mixminion/Type III Remailer FAQ</title>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta http-equiv="Content-Style-Type" content="text/css" />
-<link rel="stylesheet" type="text/css" href="./minion.css" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" >
+<meta http-equiv="Content-Style-Type" content="text/css" >
+<link rel="stylesheet" type="text/css" href="./minion.css" >
 </head>
 <body>
 
@@ -89,7 +89,7 @@ What exactly do you mean by
 When you communicate on the Internet, even when you use encryption,
 anybody receiving or intercepting your communication can tell which
 addresses are talking to which addresses.  By "anonymous communication
-system", we mean a system in which it is very difficult for
+system", we mean a system in which it is difficult for
 anybody&mdash;even the people communicating with each other&mdash;to
 tell who is talking to whom.
 </p>
@@ -215,9 +215,12 @@ the <em>Type II</em> or "Mixmaster" protocol.
   several versions.  Claims for Type I below refer to the state of the
   art in Type I, such as it is.)
 </p>
-<table width="100%" columns="4" border="1" frame="box" rules="1">
+<table width="100%" border="1" frame="box" rules="all">
+<colgroup>
+<col width="85%">
+<colgroup span="3">
 <tr>
-<th align="left" width="85%">Feature</th>
+<th align="left">Feature</th>
 <th colspan="3" align="center">Supported&nbsp;by</th>
 </tr>
 <tr>
@@ -267,6 +270,24 @@ the <em>Type II</em> or "Mixmaster" protocol.
 <td></td><td></td><td>3</td></tr>
 <tr><td>Run a directory server and mislead specific users</td>
 <td></td><td></td><td>3</td></tr>
+
+<!-- ********
+     * PARAMETERS
+     ******** -->
+<tr>
+<th align="left">Parameter</th>
+<th align="center" colspan="3">Value</th>
+</tr>
+<tr><td>Public key length (bits)</td>
+    <td>Variable</td><td>1024</td><td>2048</td></tr>
+<tr><td>Payload length<sup>c</sup></td>
+    <td>Variable</td><td>10K</td><td>28K</td></tr>
+<tr><td>Packet length<sup>c</sup></td>
+    <td>Variable</td><td>20K</td><td>32K</td></tr>
+<tr><td>Maximum path length</td>
+    <td>None</td><td>20</td><td>~30<sup>d</sup></td></tr>
+<tr><td>Ciphers used</td>
+    <td>as in<br>PGP</td><td>RSA<br>3DES</td><td>RSA<br>AES</td></tr>
 </table>
 
 <p>XXX What else?</p>
@@ -285,6 +306,17 @@ the <em>Type II</em> or "Mixmaster" protocol.
     padded messages even more linkable than unpadded ones.)  [2] Mixes
     can trivially distinguish added padding from message material
     (!!!).
+    </dd>
+<dt>c.</dt><dd>As used here, a "Packet" is a single piece of data
+    transmitted across the mix-net, and a "Payload" is the portion of
+    a packet containing the sender's data.  If a user's message is
+    larger than can fit in a single payload, it may be divided over
+    multiple payloads.</dd>
+<dt>d.</dt><dd>The number of a path that can fit in a Type III header
+    depends on the length of the mixes' addresses.  If all of the
+    mixes in a path have static IPv4 addresses, the maximum path
+    length is 34.  On the other, if all the mixes have 20-character
+    hostnames, the maximum path length is 30.
     </dd>
 </dl>
 </div>
@@ -392,6 +424,15 @@ protocol.
 <h3>What's a SURB?  Why doesn't Type III have multiple-use reply
 blocks?</h3>
 <div class="answer">
+<p>All multiple-use reply block designs that we're aware of suffer
+  from a common problem:  anybody who gets ahold of a MURB can use it
+  to send an arbitrary pattern of traffic to the recipient.  An
+  eavesdropper or compromised exit remailer can use this property to
+  trace a MURB's recipients.  (Some MURB designs have additional
+  vulnerabilities to replay attacks and flooding attacks.)  
+</p>
+<p>XXXX write more.
+</p>
 </div>
 
 <h3>Why doesn't Type III have (insert feature here)?</h3>
@@ -405,6 +446,36 @@ blocks?</h3>
 <h3>Is the design paper still accurate?  What's changed since
   then?</h3>
 <div class="answer">
+<p>Changes since the publication of the original design paper are:</p>
+<ul>
+  <li>We no longer perform key rotation on MMTP connections.  MMTP
+    connections are typically so short-lived that it doesn't impose
+    any significant overhead to close and re-open any connections that
+    stay open for a long time.</li>
+  <li>The RSA key length has increased from 1024 bits to 2048 bits,
+    which led us to change the way we pack subheaders into
+    headers.</li>
+  <li></li>
+</ul>
+<p>Features in the specification not described in the original design
+  paper are:</p>
+<ul>
+  <li>End-to-end encoding to make corrupted payloads, reply payloads,
+  and encrypted forward payload indistinguishable from one another
+  except by their recipients. (XXXX this wasn't in the paper, was
+  it?)</li>
+</ul>
+<p>Features described in the original paper but not yet fully
+  specified are:</p>
+<ul>
+  <li>Incoming email gateways.</li>
+  <li>Automatic opt-out.</li>
+  <li>Coordination between multiple directories. (But see 
+    <a href="http://mixminion.net/dir-agreement.txt">dir-agreement.txt</a>.) 
+  </li>
+  <li>Nymservers. (But see
+    <a href="http://mixminion.net/nym-spec.txt">nym-spec.txt</a>.)</li>
+</ul>
 </div>
 
 <h2>
@@ -413,53 +484,268 @@ blocks?</h3>
 
 <h3>Where's the code?  Does it work?</h3>
 <div class="answer">
+<p>You can always find a link to the latest release of the code at 
+   <a href="http://mixminion.net/">http://mixminion.net/</a>.</p>
+<p>If you want to access the CVS repository, there's a regularly
+  updated sandbox with anonymous pserver access.  To use it, run:
+</p>
+<ul>
+<li>cvs -d :pserver:guest@cvs.seul.org:/home/minion/cvsroot login</li>
+<li>cvs -d :pserver:guest@cvs.seul.org:/home/minion/cvsroot co src doc</li>
+</ul>
+<p>So far as we know, the code works fine.  As of 4 September 2003,
+  there are 21 servers running, including 11 with exit support.</p>
 </div>
 
-<h3>What do I need in order to run a client?</h3>
+<h3>Can I use Mixminion to send anonymous messages today?</h3>
 <div class="answer">
+<p>It depends how anonymous you need to be. For casual use, Mixminion
+  may meet your needs.</p>
+<p>For the moment, however, we <em>do not</em> recommend using Mixminion for
+  messages that require real anonymity.  This is for the following
+  reasons:</p>
+<ol>
+<li>The code is still under development. There may be unknown bugs
+  that could compromise your anonymity.  (We do not know of any such
+  bugs.)</li>
+<li>In order to test the code, many servers are running in
+  configurations that could harm your anonymity.  For example, some
+  servers are configured to log verbosely.  Others are configured to
+  use the "timed-pool" mixing algorithm rather than the more robust
+  "timed dynamic-pool" mixing algorithm. While these configurations
+  help us debug Mixminion, they also make it easier for an
+  eavesdropper or a compromised server to trace your messages.  The
+  final Mixminion release will not support these configurations.</li>
+<li>Some features that are necessary for high security, robustness,
+  anonymity are not yet implemented.  These include:
+  <ul>
+    <li>Distributed directories.  (The current centralized directory
+      is a single point of failuure.)</li>
+    <li>Support for servers with dynamic IP addresses.</li>
+    <li>Automatic generation of dummy messages</li>
+    <li>Built-in network reliability testing ("pinging")</li>
+  </ul></li>
+<li>There aren't enough people using Type III today.  Even if the
+  software works perfectly, you aren't hidden unless you have a large
+  number of people to hide among.</li>
+</ol>
+<p>So in summary, feel free to play with Mixminion and use it for
+  casual anonymity, but don't count on it for strong anonymity yet.</p>
 </div>
 
-<h3>What do I need in order to run a server?</h3>
+<h3>What do I need in order to run a Mixminion client?</h3>
 <div class="answer">
+<p>Right now, the requirements to build and run a Mixminion client are:</p>
+<ul>
+  <li>A Unix-like operating system.  Mixminion is known to work on
+  Linux, FreeBSD, Macintosh OS X, and Cygwin.  It is <em>believed</em> to run
+  on Solaris, OpenBSD, and so on, but has not been thoroughly tested
+  on those platforms.  If you find any bugs, please let us know so
+  that we can fix them.</li>
+  <li>A working version of Python.  Currently, all Python versions
+  since 2.0 are supported.  As of 4 September 2003, the stable
+  versions of Python are: 2.0.1, 2.1.3, 2.2.3, and 2.3.<p>
+  If you're using Solaris, be aware that some versions of Solaris
+  come installed with mis-compiled versions of Python that don't have
+  networking support.  Don't worry&mdash;compiling your own Python
+  installation is dead easy.  Go to 
+  <a href="http://python.org">python.org</a> and start from there.  A
+  basic Python installation should take 20-30 MB of disk space.</p>
+  </li>
+  <li>A working C compiler and a copy of Make, in order to compile the
+  Mixminion C extensions.
+  </li>
+  <li>Enough disk space.  The installed code takes about 5 MB.</li>
+  <li>A working version of OpenSSL 0.9.7 or higher.  If you don't
+  have one, the Mixminion build process can download and compile one
+  for you.</li>
+</ul>
 </div>
 
-<h3>How can I use the code?</h3>
+<h3>What do I need in order to run a Mixminion server?</h3>
 <div class="answer">
+<p>To build and run a Mixminion server, your system must meet the
+  requirements listed above for building and running a
+  client. Additionally, you'll need all of the following to run a
+  server:</p>
+<ul>
+  <li>A fixed IP address.  (Dynamic IP support is scheduled for
+  Mixminion 0.0.6.)</li>
+  <li>Enough disk space to hold logs and pending messages.  20-30 MB
+  should be enough for pending messages for now.  If you're running
+  with verbose logs, you'll need about 2MB per day to hold them.
+  You'll probably want to rotate the logs regularly.</li>
+  <li>Enough bandwidth.  A cable modem or DSL line seems to be
+  plenty; a dial-up connection probably isn't.  [Also, if you pay by
+  the megabyte, be careful: the code doesn't currently try to do any
+  bandwidth throttling or smoothing, and tends to generate large
+  traffic spikes.]</li>
+  <li>A fairly reliable network connection.  90% uptime is probably
+  good enough; 10% uptime probably isn't.</li>
+  <li>Possibly, an MTA (such as Sendmail or Postfix).  This is only
+  necessary if you're planning to run an exit server.  If you're
+  running in middleman mode, you don't need an MTA.</li>
+  <li>Permission. If your terms of service allow you to run a
+  remailer, you're set.  If not, you probably want to come to an
+  arrangement with your service provider's abuse department.  (On the
+  other hand, running in middleman mode is a good away to avoid abuse
+  complaints.)</li>
+</ul>
 </div>
 
-<h3>Do any clients support it yet?</h3>
+<h3>How do I use the code?</h3>
 <div class="answer">
+<p>There are instructions in each version of the release
+  notes. (That's the file entitled "README" in the Mixminion
+  distribution.)  Additionally, versions of Mixminion since 0.0.5
+  include a manual page for client functionality.
+</p>
 </div>
 
-<h3>How can I add Type III support to my client?</h3>
+<h3>Do any GUI clients support it yet?</h3>
 <div class="answer">
+<p>Not yet.  The only client is the built-in CLI client.</p>
+</div>
+
+<h3>How can I add Type III support to my GUI client?</h3>
+<div class="answer">
+<p>Right now, you have two options:</p>
+<ul>
+  <li>Use Mixminion as an external program; invoke it as a separate
+      process, and parse the output.</li>
+  <li>If you're writing in Python, invoke the functions in the module 
+      <tt>mixminion.ClientMain</tt> directly.  (Be aware version 0.0.6,
+      these functions will change in order to more closely support the
+      proposed <a href="http://mixminion.net/api-spec.txt">Client API</a>.)
+   </li>
+</ul>
+<p>The Mixmaster team currently plans for Mixmaster version 4 to
+include a C library to support Type III messages.  This code,
+however, is not yet written.</p>
 </div>
 
 <h3>Why is it written in Python?  Isn't that slow?</h3>
 <div class="answer">
+<p>Actually, no.  Mixminion is written in a mixture of Python and C
+  for portability, rapid development, and robustness.  For more
+  information about Python's advantages, peruse the documentation at
+  <a href="http://python.org">python.org</a>.
+ </p>
+<p>As for speed concerns: If Mixminion were written <em>entirely</em>
+  in Python, it would indeed be slow.  Fortunately, the
+  application's performance-critical sections are almost entirely
+  concentrated in cryptography and I/O, and by using C for these
+  operations, we get close to ideal performance.</p>
+<p>(For example, RSA decryption is so slow that the other operations
+  a server performs when decrypting and processing a Mixminion packet
+  take less than 5% of the CPU resources expended per packet.
+  Assuming that OpenSSL's (C) implementation of RSA is already close
+  to optimal, we would expect no more than a 5% performance
+  improvement from rewriting packet processing in C.)
+  </p>
+<p>This is a general case of the 90/10 rule: programs usually spend
+  about 90% of their time in 10% of their code.  Optimizing this code
+  is sufficient to optimize the application; further optimization
+  gives diminishing returns.  (This is just a rule of thumb, but oddly
+  enough, it turns out that 11.3% of the code in Mixminion 0.0.5 is
+  written in C.)</p>
 </div>
 
-<h3>When will it run on Windows?</h3>
+<h3>When will Mixminion run on Windows?</h3>
 <div class="answer">
+<p>When version 0.0.6 is released, it will have command-line support
+  for Windows 98 and later.  Some of the code is already written, but 
+  more testing and infrastructure are needed.</p>
+<p>Mixminion 0.0.5 already runs on Windows under Cygwin.  If you're
+  not a Unix person, you probably don't want to bother with
+  Cygwin.</p>
 </div>
 
 <h3>When will it have (insert feature here)?</h3>
 <div class="answer">
+<p>The <a href="http://mixminion.net/cvs/src/minion/TODO">TODO</a>
+  file in the CVS repository has a tentative schedule for features
+  to appear in future releases.</p>
+<p>The schedule in the TODO file is tentative&mdash;and so are <em>all
+  other statements</em> that anybody makes, ever, about dates and
+  features for future releases.  This is a volunteer project, and
+  progress depends heavily on how much spare time Nick has from week
+  to week.</p>
+<p>With that in mind, the historical wait between releases has
+  been:</p>
+<table border="1" framge="box" rules="all">
+<tr><td>From first CVS commit to 0.0.1</td><td>~6.5 months</td></tr>
+<tr><td>From 0.0.1 to 0.0.2</td><td>~21 days</td></tr>
+<tr><td>From 0.0.2 to 0.0.3</td><td>~1.5 months</td></tr>
+<tr><td>From 0.0.3 to 0.0.4</td><td>~3.75 months</td></tr>
+<tr><td>From 0.0.4 to 0.0.5</td><td>~2.75 months</td></tr>
+</table>
+<p>Nick says that he's trying to shoot for a two month release cycle,
+  but this may be too ambitious.</p>
 </div>
 
 <h3>How do I report a bug in the code?</h3>
 <div class="answer">
+<p>Preferably, go to the Mixminion bugzilla page at 
+  <a href="http://bugs.noreply.org">bugs.noreply.org</a>.</p>
+<p>If this isn't feasible, send email to the list at
+  mixminion-dev&#64;freehaven.net, or to Nick Mathewson at
+  nick&#109;&#64;freehaven.net.</p>
+<p>When reporting a bug, please include <strong>all</strong> of
+  the following:</p>
+<ul>
+  <li>What version of Mixminion you're using.</li>
+  <li>What version of Python you're using.</li>
+  <li>What operating system you're using.  (Include OS and
+      version).</li>
+  <li>A transcript of the interaction between you and the
+      program.</li>
+  <li>A description of how the program's behavior was different from
+      what you expected, if the expected behavior isn't completely
+      obvious.</li>
+  <li>If you get an error message with a stack trace, the complete
+    stack trace.</li>
+  <li>If you're reporting a bug in the server, a copy of your server's
+    configuration, and the last few hundred lines of your server's
+    log before the error.</li>
+</ul>
 </div>
 
 <h3>Who else is working on Type III implementations?</h3>
 <div class="answer">
+<p>The Mixmaster team plans to include Type III support in Mixmaster
+  version 4.</p>
+<p>Others have expressed interest in writing Type III client libraries
+  in C, but no announcements have been made and code has yet been
+  publicly released.
 </div>
 
 <h3>
 Is there a backdoor in the Mixminion code? Could there be?
 </h3>
 <div class="answer">
+<blockquote>
+<p>There is no backdoor in the Mixminion code.  The code is publicly
+  available, so anybody who reads Python can check for themselves.</p>
+<p>I will never willingly add a backdoor in the Mixminion code.
+  (Exceptions: Any testing infrastructure that endangers anonymity
+  will be labeled as such, and will be removed before the first beta
+  release. The code will cause any testing servers running in
+  non-anonymous configurations to advertise themselves as such.)</p>
+<p>Of course, if I'm legally compelled to add a backdoor, I probably
+  won't be allowed to tell you about it.  Continue to review the
+  diffs between releases, and don't trust any release that doesn't
+  come with source.</p>
+<p>Also, you should probably get worried if this question disappears
+  from the FAQ. :)</p><p>&mdash;<i>Nick</i></p>
+</blockquote>
 </div>
 
+<!--
+    Substitute "damn" every time you're inclined to write "very;" your
+    editor will delete it and the writing will be just as it should
+    be.  - Mark Twain.
+    -->
+    
 </body>
 </html>
