@@ -283,9 +283,17 @@ intersection attack, but for now it remains an open problem.
 
 We choose to drop packet-level compatibility with Mixmaster and the
 cypherpunk remailer systems, in order to provide a simple extensible
-design. At the same time, we provide a new feature: a reply block
-mechanism that is as secure as forward messages.
+design. We can retain minimal backwards compatibility by ``remixing''
+Type II messages to be Type III messages, thus increasing the anonymity
+set of the Type III network. Type II messages, when received by a
+remailer capable of understanding both Type II and III and destined for
+a remailer capable of understanding both Type II and III, are treated
+as plaintext and encrypted to the next remailer in the chain using its
+Type III key. The message is then sent as Type III encrypted message,
+and decrypted to reveal the Type II message.
 
+We also provide a new feature: a reply block mechanism that is as secure
+as forward messages.
 Reusable reply blocks, such as those in the cypherpunk remailer, are a
 security risk --- by their very nature they let people send multiple
 messages through them.  These multiple messages can easily be used to
@@ -728,9 +736,10 @@ support.  (See Section \ref{subsec:delivery-modules} below.)
 \subsection{Message types and delivery modules}
 \label{subsec:delivery-modules}
 
-Once a Mixminion packet reaches the final MIX in its path, it must
-either be delivered to its intended recipient, or dropped if it's an
-intra-network dummy message. In order to support different kinds of
+Once a Mixminion packet reaches the final MIX in its path, it must either
+be delivered to its intended recipient, dropped if it's an intra-network
+dummy message, or processed further if it is a remixed Type II packet.
+In order to support different kinds of
 delivery, the header includes a type code for the action to be taken
 to deliver the message.  A few types --- such as `dummy', `SMTP', and
 `local delivery' --- are specified as a part of the Mixminion
@@ -781,8 +790,8 @@ in a variable-length annex to the final header.
 
 The types each MIX supports are described in a \emph{capability block},
 which also includes the MIX's address, long-term (signing) public key,
-short-term key (for use in header encryption), and batching strategy.
-MIXes sign these capability blocks
+short-term key (for use in header encryption), remixing capability and
+batching strategy. MIXes sign these capability blocks
 and publish them on directory servers (see Section \ref{sec:dir-servers}).
 Clients download this information from the directory servers.
 
