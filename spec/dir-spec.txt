@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.9 2003/07/24 03:33:21 nickm Exp $
+$Id: dir-spec.txt,v 1.10 2003/07/28 00:49:08 nickm Exp $
 
 				Mix3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -97,18 +97,18 @@ Table of Contents
 
    Formally, a Mix Information Message is a sequence of ASCII
    characters, consisting of zero or more Sections.  Each Section
-   contains a Header, and one or more Entries.  Each Header consists of
-   an left square-bracket ('[', ASCII 91), an Identifier, a right
+   contains a Header, and one or more Entries.  Each Header consists
+   of an left square-bracket ('[', ASCII 91), an Identifier, a right
    square-bracket (']', ASCII 93), and an EOL.  Each Entry consists of
-   an Identifier, a colon (':', ASCII 58), a Space, a Value, and an EOL.
-   An Identifier is a sequence of one or more printable nonspace
-   characters other than colon (ASCII 33-57,59-126 inclusive).  A Space
-   is a sequence of one or more space (' ', ASCII 32) or tab ('\t' ASCII
-   9) characters.  A Value is a sequence of zero or more printing ASCII
-   characters, excluding NL and CR (ASCII 9, 32-126 inclusive), and not
-   beginning with a space or a tab.  An EOL is an optional Space,
-   followed by either a CR ('\r', ASCII 13), an NL ('\n', ASCII 10), or
-   a CR-NL sequence.
+   an Identifier, a colon (':', ASCII 58), a Space, a Value, and an
+   EOL.  An Identifier is a sequence of one or more printable nonspace
+   characters other than colon and brackets (ASCII 33-57, 59-90, 92,
+   94-126 inclusive).  A Space is a sequence of one or more space ('
+   ', ASCII 32) or tab ('\t' ASCII 9) characters.  A Value is a
+   sequence of zero or more printing ASCII characters, excluding NL
+   and CR (ASCII 9, 32-126 inclusive), and not beginning with a space
+   or a tab.  An EOL is an optional Space, followed by either a CR
+   ('\r', ASCII 13), an NL ('\n', ASCII 10), or a CR-NL sequence.
 
    [XXXX Is there any reason to handle non-ASCII here?  I don't want to
     walk down the road of having a dozen competing charsets and
@@ -123,7 +123,7 @@ Table of Contents
 
       Identifier ::= IdentifierChar | Identifier IdentifierChar
       IdentifierChar ::= [Any character from ASCII 33 through ASCII 126
-         inclusive, excluding ASCII 58.]
+         inclusive, excluding ASCII 58, ASCII 91, ASCII 93.]
 
       OptValue ::= Value |
       Value ::= NonSpaceValueChar | Value ValueChar
