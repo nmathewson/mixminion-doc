@@ -54,9 +54,9 @@
 \begin{abstract}
 
 We present Mixminion, a message-based anonymous remailer protocol that
-supports secure single-use reply blocks. Mixminion reply messages are
-indistinguishable from forward messages, allowing forward and reply
-messages to share
+supports secure single-use reply blocks. MIX nodes cannot distinguish
+Mixminion reply messages from forward messages, so forward and reply
+messages share
 the same anonymity set. We add directory servers that allow users to
 learn public keys and performance statistics of participating remailers,
 and we describe nymservers that allow users to maintain long-term
@@ -302,8 +302,8 @@ intersection of both outgoing batches.  To prevent these replays,
 Mixminion therefore provides only \emph{single-use} reply blocks. Since
 replies may be very rare relative to forward messages, and thus
 much easier to trace, the Mixminion protocol makes reply messages
-indistinguishable from forward messages. Thus forward and reply messages
-can share the same anonymity set.
+indistinguishable from forward messages even for the MIX nodes. Thus
+forward and reply messages can share the same anonymity set.
 
 \subsection{Batching Strategy and Network Structure}
 \label{subsec:batching}
@@ -417,10 +417,8 @@ their own public key.
 By making forward messages and replies indistinguishable, we prevent an
 adversary from dividing the message anonymity sets into two classes. In
 particular, if replies are infrequent relative to forward messages,
-an adversary who controls
-some of the MIXes can more easily trace the path of each reply:  even
-though the batches may be large, the number of replies in each batch
-will be quite small.
+an adversary who controls some of the MIXes can more easily trace the
+path of each reply.
 
 Having indistinguishable replies, however, creates new attacks.  In
 Mixmaster, senders ensure message integrity by including a hash of
@@ -521,12 +519,6 @@ how this all-or-nothing encryption approach helps protect against tagging.
 \subsection{Defenses against tagging attacks}
 \label{subsec:tagging}
 
-% We never define what a tagging attack is. -Nick
-% Yes we do. This following paragraph does, give or take. Should
-%   we say more? -RRD
-% We never actually said that the attack described is a tagging
-%   attack.  
-
 Without the crossover point, an adversary could mount a \emph{tagging
 attack} by modifying (``tagging'') the payload of a forward message as
 it leaves Alice, and recognizing it later when it reaches Bob.
@@ -602,6 +594,7 @@ Replies are indistinguishable at every hop from forward messages. Even the
 crossover point cannot know if it's processing a reply or forward message.
 The protocol doesn't allow a MIX to know its location in the path (other
 than the exit node), or the total length of the route.
+% FIXME we need to resolve this paragraph
 
 \subsection{Multiple-message tagging attacks}
 \label{subsec:multi-tagging}
