@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
           "http://www.w3.org/TR/html4/strict.dtd">
 <!-- *******************************************************************
-     $Id: FAQ.html,v 1.2 2003/09/04 20:03:02 nickm Exp $
+     $Id: FAQ.html,v 1.3 2003/12/16 05:07:37 nickm Exp $
      This file is maintained in CVS; edit the version in the repository.
      *******************************************************************
   -->
@@ -14,7 +14,7 @@
 </head>
 <body>
 
-<h1> 
+<h1>
 Mixminion/Type III Remailer FAQ
 </h1>
 
@@ -33,7 +33,7 @@ nick&#109;&#64;freehaven&#46;net with comments or suggestions.  All
 entries are by me unless otherwise noted.
 </p>
 
-<!-- 
+<!--
 <h4>Contents</h4>
 <ul>
 <li>1. General
@@ -45,7 +45,7 @@ entries are by me unless otherwise noted.
      Back up&mdash;what's a remailer?  A mix-net?</a><li>
  <li><a href="#1-3">1.3.</a>
      So how does Type III improve
- 
+
  </ul></li>
 <li>2. Design</li>
 <li>3. Implementation</li>
@@ -58,7 +58,7 @@ entries are by me unless otherwise noted.
 </h2>
 
 <h3>
-<a name="whats-mixminion">Mixminion?</a>  
+<a name="whats-mixminion">Mixminion?</a>
 Type III?  What are you talking about?
 </h3>
 <div class="answer">
@@ -74,17 +74,17 @@ the type III protocol, and is also the name for the reference
 implementation of the protocol. (The protocol used to be named
 "Mixminion" too, but when the Mixmaster team
 <a href="http://archives.seul.org/mixminion/dev/Apr-2002/msg00045.html">
-decided</a> to use support "Mixminion" protocol as the basis for
+decided</a> to use the "Mixminion" protocol as the basis for
 Mixmaster version 4, we changed the name of the protocol to be more
 project neutral.)
 </p>
 </div>
 
 <h3>
-What exactly do you mean by 
+What exactly do you mean by
 <a name="whats-anonymous">"anonymous"</a>?
 </h3>
-<div class="answer">
+<div class="answer"><!-- Use the word 'untraceability'. XXXX -->
 <p>
 When you communicate on the Internet, even when you use encryption,
 anybody receiving or intercepting your communication can tell which
@@ -116,12 +116,12 @@ easy to achieve, and we won't mention it any further.)
 </div>
 
 <h3>
-Back up&mdash;what's a remailer? 
+Back up&mdash;what's a remailer?
 <a name="whats-a-mix-net">A mix-net</a>?
 </h3>
 
 <div class="answer">
-<p>Back in 1981, David Chaum wrote a 
+<p>Back in 1981, David Chaum wrote a
 <a href="http://freehaven.net/anonbib/#chaum-mix">paper</a>
 describing an anonymity server called a "mix".  In Chaum's design,
 users encrypt messages to a mix's public key, and send those messages
@@ -143,7 +143,7 @@ called a "mix-net".
 The term 'remailer' comes with a more application-oriented pedigree.
 It originally referred to anonymity servers that accepted messages
 via email and delivered them via email, without necessarily
-supporting decryption, batching, or chaining.  Later generations of
+supporting encryption, batching, or chaining.  Later generations of
 remailer added these features, and thus have become true mixes.
 </p>
 <p>
@@ -158,7 +158,7 @@ anonymity server,' thus making Type III a remailer regardless.)
 </div>
 
 <h3>
-In theory, <a name="how-anonymous">how much anonymity</a> 
+In theory, <a name="how-anonymous">how much anonymity</a>
 does Type III give me?
 </h3>
 <div class="answer">
@@ -190,7 +190,7 @@ research.
 </div>
 
 <h3>
-So how does Type III improve on other 
+So how does Type III improve on other
 <a name="how-improve-deployed-mix">deployed</a>
 remailer designs?
 </h3>
@@ -206,7 +206,7 @@ the <em>Type II</em> or "Mixmaster" protocol.
  added new features in an attempt to mitigate some of the protocol's
  weaknesses, with limited success.  Lance Cottrell's Type II (1995)
  software fixed most of Type I's insecurities, but dropped
- support for reply blocks. 
+ support for reply blocks.
 </p>
 <p>The following table outlines the feature-differences and security
   differences between the three protocols.  Parenthesis indicate
@@ -293,10 +293,11 @@ the <em>Type II</em> or "Mixmaster" protocol.
 <p>XXX What else?</p>
 <h6>Notes</h6>
 <dl>
-<dt>a.</dt><dd>Some type I implementations support a XXX directive to
-    limit the number of times a given message can be replayed.  Using
-    this directive is optional, however, and users of this directive
-    are distinguishable from non-users.</dd>
+<dt>a.</dt><dd>Some type I implementations support a XXX directive to limit
+    the number of times a given message can be replayed.  Using this
+    directive is optional, however, and users of this directive are
+    distinguishable from non-users.  It does not solve reply-block flooding
+    attacks.</dd>
 <dt>b.</dt><dd>Some type I implementations support message padding in
     an attempt to prevent an attacker from correlating messages based
     on their size.  This feature is of little or no security benefit,
@@ -322,7 +323,7 @@ the <em>Type II</em> or "Mixmaster" protocol.
 </div>
 
 <h3>
-And how is Type III different from other 
+And how is Type III different from other
 <a name="how-improve-deployed-other">deployed</a> anonymity systems?
 </h3>
 <div class="answer">
@@ -353,7 +354,7 @@ And how is Type III different from research/theoretical anonymity systems?
   "theoretical" because they are better known through the research
   literature than via any widely deployed implementation.)
 </p>
-<p>G&uuml;lc&uuml; and Tsudik's 
+<p>G&uuml;lc&uuml; and Tsudik's
    <a href="http://freehaven.net/anonbib/#babel">Babel</a> mix design
    (1996) addresses Type I's size-correlation and PGP issues, while
    adding multiple-use reply blocks.  Unlike Babel, Type III's reply
@@ -389,14 +390,14 @@ How can I learn more?
  and <a href="http://mixminion.net/dir-spec.txt">dir-spec.txt</a>
  for information about server descriptors and directory
  capabilities.</li>
-<li>The specifications are not yet finalized.  See 
+<li>The specifications are not yet finalized.  See
  <a href="http://mixminion.net/spec-issues.txt">spec-issues.txt</a>
- for a list of open issues.  There's also a 
+ for a list of open issues.  There's also a
  <a href="http://mixminion.net/spec-issues.txt">draft design for
  directory agreement</a>, and a
  <a href="http://mixminion.net/nym-spec.txt">draft nymserver
  specification.</a></li>
-<li>If you want to learn more about anonymity, see 
+<li>If you want to learn more about anonymity, see
  the <a href="http://freehaven.net/anonbib">Freehaven.net anonymity
  bibliography</a>.</li>
 </ul>
@@ -428,19 +429,129 @@ blocks?</h3>
   from a common problem:  anybody who gets ahold of a MURB can use it
   to send an arbitrary pattern of traffic to the recipient.  An
   eavesdropper or compromised exit remailer can use this property to
-  trace a MURB's recipients.  (Some MURB designs have additional
-  vulnerabilities to replay attacks and flooding attacks.)  
-</p>
-<p>XXXX write more.
-</p>
-</div>
-
-<h3>Why doesn't Type III have (insert feature here)?</h3>
-<div class="answer">
+  trace a MURB's recipients with end-to-end traffic analysis.</p>
+<p>Some MURB designs (such as Type I) have additional
+  vulnerabilities to replay attacks and flooding attacks.</p>
 </div>
 
 <h3>Why don't you just use SMTP with TLS for mix-to-mix transfer?</h3>
 <div class="answer">
+<p>Older remailer designs use SMTP not only for delivering messages to their
+  recipients, but also for transferring packets from one remailer to the
+  next.  Type III, however, uses MMTP (a simple TLS-based protocol) when
+  transferring packets to or from remailers.  This has several advantages,
+  including:</p>
+<ul>
+  <li>Email has become complicated.  Misconfigured MTAs, spam filters, and
+    virus scanners have been known to block or corrupt Type I/II packets as
+    they between and the next.  Such bugs are often hard to diagnose and
+    address, since the offending systems are typically operated by ISPs out
+    of the remops' control.  Even when these systems relay Type I/II packets
+    correctly, they often keep logs and backups that can help an adversary
+    analyze the mix network.</li>
+  <li>MMTP is always encrypted, authenticated, and forward-secure.  SMTP is
+    not necessarily so.  For SMTP to be encrypted, Type I/II remailer
+    operators need to install and configure a TLS-capable MTA such as
+    Postfix/TLS; for authentication, remops must exchange certificates
+    manually; and for forward secrecy, they must configure their MTA's TLS
+    module to only use forward-secure ciphersuites.  Not all remops have done
+    these steps, especially the ones required for forward secrecy.  (As of
+    this writing, it seems that roughly half of the Type I/II remailers have
+    TLS support, and that roughly three fourths of those are using
+    forward-secure cypersuites.)</li>
+  <li>Because Type III remailers use MMTP, they are free to set their own
+    policies for access control, for retrying failed deliveries, and so on,
+    independently of their policies for mail delivery.</li>
+  <li>Because email is not always 8-bit clean, packets must be encoded
+    before transmitting them as email messages.  This adds a non-negligible
+    (typically about 35%) bandwidth overhead.</li>
+</ul>
+<p>There are, however, a few drawbacks to not using SMTP for relaying
+  messages.  We believe that they are outweighed by the benefits of a
+  uniform, integrated, encrypted protocol, but we list them for completeness:
+  </p>
+<ul>
+  <li>Some people have argued that using encrypted SMTP helps remailer
+    traffic blend in with non-remailer traffic, if a remailer's MTA also
+    handles regular email.  This is probably of less benefit than it might
+    seem at first: since type III packets are fixed-size, an attacker can
+    probably distinguish them from regular email by size, even if encryption
+    is used.</li>
+  <li>MMTP adds complexity to every Type III client and server; if we just
+    used SMTP, our code would be simpler and smaller.  (Currently, the MMTP
+    implementation and the store-and-forward together take about 9% of the
+    Mixminion codebase.)</li>
+</ul>
+</div>
+
+<h3>Why do you use AES128 and SHA1?  Ferguson and Schneier's <i>Practical
+    Cryptography</i> says...</h3>
+<div class="answer">
+<p>The relevant quote (from p. 65) is:
+<blockquote>A 128-bit key would be great except for one problem: collision
+  attacks.  Time and time again we find systems that can be attacked by a
+  birthday attack or a meet-in-the-middle attack.  We know these attacks
+  exist.  Sometimes designers just ignore them, and sometimes they think
+  they are safe but somebody finds a new, clever way of using them.  Most
+  block cipher modes allow meet-in-the-middle attacks of some form.  We've
+  had enough of this race, so here is one of our design rules.
+  <br><br>
+  <b>Design rule 3.</b> <i>For a security level of n bits, every
+  cryptographic value should be at least 2n bits long.</i></blockquote>
+<p>Because of this principle, Ferguson and Schneier recommend AES-256 as a
+  block cipher and double-SHA-256 as a digest function.  The current type III
+  specification, on the other hand, calls for 128-bit AES and 160-bit SHA1:
+  if there were a way to exploit birthday or meet-in-the-middle attacks against
+  our protocol, then instead of 128 bits of security, we would only have 64
+  or 80.</p>
+<p>(Collision attacks exploit the property that "If an element can take on
+   N different values, then you can expect the first collision after choosing
+   about SQRT(N) random elements."  Thus, one only needs to perform about 2^80
+   SHA-1 operations to find two different strings that hash to the same
+   value.)</p>
+<p><em>We do not now believe</em> that there are any useful collision
+  attacks against the Type III protocol.  Here's why:</p>
+<p>First, we can exclude attacks where an attacker waits for collisions in
+   AES128 keys or SHA1 digests: to do so, the attacker would need at least
+   37 zettabytes (!) of storage to store just a single-leg 2K header for
+   each message.  Thus, the attacker's best hope is to find collisions
+   on their own and then somehow exploit them.  But even if an attacker does
+   know a set of collisions, they could at worst use them to send packets of
+   their own which would interfere with each other, not to compromise
+   others' anonymity.</p>
+<p>F&amp;S also recommend double-SHA (that is, SHA(SHA(x))) as a digest
+  algorithm, since SHA has the regrettable property that SHA(x|y) can be
+  deduced from SHA(x) and y.   We use variable-length SHA in 6 places, all of
+  which we believe to be safe:</p>
+<ol>
+  <li>The OAEP padding we use with RSA uses plain SHA&mdash;but OAEP has
+    been well analyzed by many people, and is believed to be safe.</li>
+  <li>The SSL ciphersuites we recommend use plain SHA&mdash;but again,
+    SSL is well-analyzed, and it is believed to use SHA safely.</li>
+  <li>In MMTP and in end-to-end message encoding, we send each "msg" along
+    with SHA(msg) to check
+    whether the message has been corrupted&mdash;but in these cases, we are
+    only concerned with accidental corruption, and have other approaches to
+    prevent deliberate modification.</li>
+  <li>Our keystore implementation uses SHA(salt|password|salt) as an
+    AES key to encrypt the actual stored secret keys on the disk.  But this
+    value is secret (since the password is secret), so the SHA vulnerability
+    has no application.</li>
+  <li>The LIONESS variable-length block cipher uses SHA as part of its
+    Feistel-like structure.  But again, the SHA-extending attack doesn't
+    allow an attacker to break LIONESS.
+  <li>Directories and server descriptors sign SHA digests. But in this
+    case there is no problem with the attacker computing a digest for a
+    longer descriptor/directory, so long as he can't forge an RSA
+    signature.</li>
+</ol>
+<p>So there doesn't seem to be any need to move to AES-256 and double-SHA-256
+  right now.</p>
+</div>
+
+<h3>Why doesn't Type III have (insert feature here)?</h3>
+<div class="answer">
+<p>(XXXX list a bunch of features.)
 </div>
 
 <h3>Is the design paper still accurate?  What's changed since
@@ -448,14 +559,13 @@ blocks?</h3>
 <div class="answer">
 <p>Changes since the publication of the original design paper are:</p>
 <ul>
-  <li>We no longer perform key rotation on MMTP connections.  MMTP
+  <li>We no longer perform session key rotation on MMTP connections.  MMTP
     connections are typically so short-lived that it doesn't impose
     any significant overhead to close and re-open any connections that
     stay open for a long time.</li>
   <li>The RSA key length has increased from 1024 bits to 2048 bits,
     which led us to change the way we pack subheaders into
     headers.</li>
-  <li></li>
 </ul>
 <p>Features in the specification not described in the original design
   paper are:</p>
@@ -470,8 +580,8 @@ blocks?</h3>
 <ul>
   <li>Incoming email gateways.</li>
   <li>Automatic opt-out.</li>
-  <li>Coordination between multiple directories. (But see 
-    <a href="http://mixminion.net/dir-agreement.txt">dir-agreement.txt</a>.) 
+  <li>Coordination between multiple directories. (But see
+    <a href="http://mixminion.net/dir-agreement.txt">dir-agreement.txt</a>.)
   </li>
   <li>Nymservers. (But see
     <a href="http://mixminion.net/nym-spec.txt">nym-spec.txt</a>.)</li>
@@ -484,7 +594,7 @@ blocks?</h3>
 
 <h3>Where's the code?  Does it work?</h3>
 <div class="answer">
-<p>You can always find a link to the latest release of the code at 
+<p>You can always find a link to the latest release of the code at
    <a href="http://mixminion.net/">http://mixminion.net/</a>.</p>
 <p>If you want to access the CVS repository, there's a regularly
   updated sandbox with anonymous pserver access.  To use it, run:
@@ -493,8 +603,8 @@ blocks?</h3>
 <li>cvs -d :pserver:guest@cvs.seul.org:/home/minion/cvsroot login</li>
 <li>cvs -d :pserver:guest@cvs.seul.org:/home/minion/cvsroot co src doc</li>
 </ul>
-<p>So far as we know, the code works fine.  As of 4 September 2003,
-  there are 21 servers running, including 11 with exit support.</p>
+<p>So far as we know, the code works fine.  As of 15 December 2003,
+  there are 27 servers running, including 11 with exit support.</p>
 </div>
 
 <h3>Can I use Mixminion to send anonymous messages today?</h3>
@@ -535,7 +645,8 @@ blocks?</h3>
 
 <h3>What do I need in order to run a Mixminion client?</h3>
 <div class="answer">
-<p>Right now, the requirements to build and run a Mixminion client are:</p>
+<p>Right now, the requirements to build and run a Mixminion client on a
+  Unix-like operating system are:</p>
 <ul>
   <li>A Unix-like operating system.  Mixminion is known to work on
   Linux, FreeBSD, Macintosh OS X, and Cygwin.  It is <em>believed</em> to run
@@ -543,12 +654,12 @@ blocks?</h3>
   on those platforms.  If you find any bugs, please let us know so
   that we can fix them.</li>
   <li>A working version of Python.  Currently, all Python versions
-  since 2.0 are supported.  As of 4 September 2003, the stable
-  versions of Python are: 2.0.1, 2.1.3, 2.2.3, and 2.3.<p>
+  since 2.0 are supported.  As of 15 December 2003, the stable
+  versions of Python are: 2.0.1, 2.1.3, 2.2.3, and 2.3.2.<p>
   If you're using Solaris, be aware that some versions of Solaris
   come installed with mis-compiled versions of Python that don't have
   networking support.  Don't worry&mdash;compiling your own Python
-  installation is dead easy.  Go to 
+  installation is dead easy.  Go to
   <a href="http://python.org">python.org</a> and start from there.  A
   basic Python installation should take 20-30 MB of disk space.</p>
   </li>
@@ -560,6 +671,13 @@ blocks?</h3>
   have one, the Mixminion build process can download and compile one
   for you.</li>
 </ul>
+<p>To run Mixminion on Windows, you'll need:
+<ul>
+  <li>Windows 98 or later.</li>
+  <li>Optionally, Python 2.3.  (If you don't have it, you can download
+    the standalone Mixminion distribution.)</li>
+  <li>Enough disk space.</li>
+</ul>
 </div>
 
 <h3>What do I need in order to run a Mixminion server?</h3>
@@ -569,8 +687,7 @@ blocks?</h3>
   client. Additionally, you'll need all of the following to run a
   server:</p>
 <ul>
-  <li>A fixed IP address.  (Dynamic IP support is scheduled for
-  Mixminion 0.0.6.)</li>
+  <li>A DNS entry for your server, or a fixed IP address.</li>
   <li>Enough disk space to hold logs and pending messages.  20-30 MB
   should be enough for pending messages for now.  If you're running
   with verbose logs, you'll need about 2MB per day to hold them.
@@ -597,8 +714,8 @@ blocks?</h3>
 <div class="answer">
 <p>There are instructions in each version of the release
   notes. (That's the file entitled "README" in the Mixminion
-  distribution.)  Additionally, versions of Mixminion since 0.0.5
-  include a manual page for client functionality.
+  distribution.)  <!-- Additionally, versions of Mixminion since 0.0.5
+  include a manual page for client functionality. -->
 </p>
 </div>
 
@@ -613,8 +730,9 @@ blocks?</h3>
 <ul>
   <li>Use Mixminion as an external program; invoke it as a separate
       process, and parse the output.</li>
-  <li>If you're writing in Python, invoke the functions in the module 
-      <tt>mixminion.ClientMain</tt> directly.  (Be aware version 0.0.6,
+  <li>If you're writing in Python, invoke the functions in the module
+      <tt>mixminion.ClientMain</tt> directly.  (Be aware that in some later
+      version,
       these functions will change in order to more closely support the
       proposed <a href="http://mixminion.net/api-spec.txt">Client API</a>.)
    </li>
@@ -651,14 +769,9 @@ however, is not yet written.</p>
   written in C.)</p>
 </div>
 
-<h3>When will Mixminion run on Windows?</h3>
+<h3>How much of the protocol is implemented?</h3>
 <div class="answer">
-<p>When version 0.0.6 is released, it will have command-line support
-  for Windows 98 and later.  Some of the code is already written, but 
-  more testing and infrastructure are needed.</p>
-<p>Mixminion 0.0.5 already runs on Windows under Cygwin.  If you're
-  not a Unix person, you probably don't want to bother with
-  Cygwin.</p>
+<p></p>
 </div>
 
 <h3>When will it have (insert feature here)?</h3>
@@ -679,6 +792,7 @@ however, is not yet written.</p>
 <tr><td>From 0.0.2 to 0.0.3</td><td>~1.5 months</td></tr>
 <tr><td>From 0.0.3 to 0.0.4</td><td>~3.75 months</td></tr>
 <tr><td>From 0.0.4 to 0.0.5</td><td>~2.75 months</td></tr>
+<tr><td>From 0.0.5 to 0.0.6</td><td>~3 months</td></tr>
 </table>
 <p>Nick says that he's trying to shoot for a two month release cycle,
   but this may be too ambitious.</p>
@@ -686,7 +800,7 @@ however, is not yet written.</p>
 
 <h3>How do I report a bug in the code?</h3>
 <div class="answer">
-<p>Preferably, go to the Mixminion bugzilla page at 
+<p>Preferably, go to the Mixminion bugzilla page at
   <a href="http://bugs.noreply.org">bugs.noreply.org</a>.</p>
 <p>If this isn't feasible, send email to the list at
   mixminion-dev&#64;freehaven.net, or to Nick Mathewson at
@@ -717,7 +831,7 @@ however, is not yet written.</p>
   version 4.</p>
 <p>Others have expressed interest in writing Type III client libraries
   in C, but no announcements have been made and code has yet been
-  publicly released.
+  publicly released.</p>
 </div>
 
 <h3>
@@ -746,6 +860,6 @@ Is there a backdoor in the Mixminion code? Could there be?
     editor will delete it and the writing will be just as it should
     be.  - Mark Twain.
     -->
-    
+
 </body>
 </html>
