@@ -1,6 +1,6 @@
-$Id: dir-spec.txt,v 1.24 2004/08/12 04:53:28 nickm Exp $
+$Id: dir-spec.txt,v 1.25 2004/08/12 07:44:07 nickm Exp $
 
-				MIX3:3
+                                MIX3:3
            Type III (Mixminion) Mix Directory Specification
 
                             George Danezis
@@ -55,7 +55,7 @@ Table of Contents
 1. Introduction
 
    For a Mix network to provide anonymity to its users, it is vital
-   that those users to provide cover traffic to one another by
+   that those users provide cover traffic to one another by
    behaving as similarly as possible when choosing paths and servers
    for their messages.  Because of this, it is vital that users have a
    means to learn about usable Mixes -- and that this means yield
@@ -100,7 +100,7 @@ Table of Contents
    allowed.
 
    Formally, a Mix Information Message is a sequence of ASCII
-   characters, consisting of zero or more Sections.  Each Section
+   characters, consisting of one or more Sections.  Each Section
    contains a Header, and one or more Entries.  Each Header consists
    of a left square-bracket ('[', ASCII 91), an Identifier, a right
    square-bracket (']', ASCII 93), and an EOL.  Each Entry consists of
@@ -113,6 +113,11 @@ Table of Contents
    and CR (ASCII 9, 32-126 inclusive), and not beginning with a space
    or a tab.  An EOL is an optional Space, followed by either a CR
    ('\r', ASCII 13), a NL ('\n', ASCII 10), or a CR-NL sequence.
+
+   [XXXX Everybody using Minion is going to support ASCII, so I think
+     it's fine to make them use it here. -RD]
+   [XXXX Contact Information and comments desgined to be read by humans
+     may want to be encoded in UTF-8. -PP]
 
    Here is a grammar, using C syntax for characters:
 
@@ -144,7 +149,9 @@ Table of Contents
       [Empty_Section]
       [Section-Three]
       Key-two: the second value is this value
-      Key3:
+      Key3: 
+
+   (Note: the space after "Key3:" above is not optional.)
 
 2.2. Processing unrecognized information
 
@@ -238,6 +245,12 @@ Table of Contents
        for 0.0.0.0/0.0.0.0.  An omitted PortSpec defaults to 48099 for
        'allow' entries and 0-65535 on 'deny' entries.
 
+       [XXXX please consider using cidr notation instead.
+              e.g. 192.0.2.0/24 -PP]
+       [XXXX Tentatively agreed, but it is very possible that none of
+              the Address Pattern uses will ever get implemented, so
+              I'll hold off on revising this for a bit. -NM]
+
      - Unless specified otherwise, all 'sorted' lists are sorted lexically by
        their ASCII encodings, in ascending order.
 
@@ -280,14 +293,16 @@ Table of Contents
         'Descriptor-Version':  the string '1.0'
 
         'Nickname': A human-readable identifier for this server.  It
-            MUST be no more than 128 characters.  It MUST contain only
+            MUST NOT be more than 128 characters.  It MUST contain only
             the characters [A-Za-z0-9] and '-'.  It MUST NOT begin
             with a '-' or a digit.
 
         'Identity': This Mix node's identity key, represented in ASN.1,
-            and encoded in BASE64.  The modulus of this key should be at
+            and encoded in BASE64.  The modulus of this key SHOULD be at
             least 2048 bits long and no more than 4096 bits long.  The
-            exponent of this key must be 65537.
+            exponent of this key MUST be 65537.
+        [XXX: Is there a reason why the exponent is a MUST requirement,
+               and not a SHOULD? - PP]
 
         'Digest': The digest of this descriptor.  The value of this
             entry is unsigned.  (See section 2.5)
@@ -312,30 +327,33 @@ Table of Contents
 
         'Packet-Versions': A comma-separated list of allowable
             major.minor versions for packets this server will process.
-            In a production network, only one value should be used for
+            In a production network, only one value SHOULD be used for
             this field.
 
-        'Contact': An email address that may be used to contact the
-            administrator of this server. MUST be no more than 256
+        'Contact': An email address that can be used to contact the
+            administrator of this server. MUST NOT be more than 256
             characters.  [This was a 'MAY' until Mixminion 0.0.7.]
+
+            [XXX: it 'MUST be no more..' and it 'MAY be not more..'
+                  what's the difference?  confused - PP]
 
     The 'Server' section MAY contain the following entries, at most
     once each:
 
         'Contact-Fingerprint': Fingerprint of the server administrator's
-            PGP key. Must be no more than 128 characters.
+            OpenPGP key. MUST NOT be more than 128 characters.
 
-        'Comments': Human-readable information about this server.  Must
-            be <1024 bytes long.  It MUST NOT be necessary to read this
-            information to use the server properly.
+        'Comments': Human-readable information about this server.  MUST
+            be less than 1024 bytes long.  It MUST NOT be necessary
+            to read this information to use the server properly.
 
         'Software': A string description of the software this server is
-            running.  Must be less than 256 characters.  Softare SHOULD
+            running.  MUST be less than 256 characters.  Softare SHOULD
             NOT take any action based on this field, other than to
             display it.
 
         'Secure-Configuration': A boolean value.  If true, the server
-            must not be running in an insecure operating mode. [XXXX
+            MUST NOT be running in an insecure operating mode. [XXXX
             list these modes.  Added in Mixminion 0.0.4]
 
         'Why-Insecure': A human-readable string.  This string SHOULD
@@ -343,7 +361,7 @@ Table of Contents
             present, it SHOULD contain an explanation of why the
             operating mode is insecure. [Added in Mixminion 0.0.5]
 
-   [Note: before computing the digest, all implementations must
+   [Note: before computing the digest, all implementations MUST
    normalize CR and CR-LF style newlines to a single NL, and remove
    any spaces and tabs that may have been introduced at the ends of
    lines.]
@@ -364,7 +382,7 @@ Table of Contents
         *FWD/HOST messages, and that servers with IPs can send
         *FWD/IPv4 messages.]
 
-        'Port': A port at which IP accepts incoming MMTP connections.
+        'Port': A TCP port at which IP accepts incoming MMTP connections.
 
         'Protocols': A comma-separated list of the versions of MMTP this
               server accepts.
@@ -462,8 +480,8 @@ Table of Contents
      - 'DirectoryURL' : The URL base for this directory server. (See 5.1)
 
      - 'DirectoryIdentity' : The Identity key of the directory server
-       that generated this directory.  The modulus of this key must be
-       between 2048 and 4096 bits long, and the exponent must be 65537.
+       that generated this directory.  The modulus of this key MUST be
+       between 2048 and 4096 bits long, and the exponent MUST be 65537.
 
      - 'DirectoryDigest' : The digest of the entire directory, starting
        with the Directory-Info section.
@@ -495,7 +513,7 @@ Table of Contents
 
      - 'Voting-Servers' : A comma-separated list of information for the of
        the directory servers who voted on this directory.  Each item contains
-       a fingerprint, a single space, and a URL base.  Each fingerprints is a
+       a fingerprint, a single space, and a URL base.  Each fingerprint is a
        base-64 encoded SHA1 hash of the ASN.1 encoding of the directory
        server's identity key; each URL base MUST be escaped.  (See 5.1 below
        for more information on URL bases.)  The items are sorted by
@@ -512,8 +530,8 @@ Table of Contents
        issue a warning, and MAY refuse to run.
 
      - 'MixminionServer' : A comma-separated list of up-to-date versions of
-        Mixminion, in ascending order by version.  Servers should interpret
-        this list as clients interpret 'MixminionClient'.
+       Mixminion, in ascending order by version.  Servers should interpret
+       this list as clients interpret 'MixminionClient'.
 
    Entries in 'MixminionClient' and 'MixminionServer' are in decreasing order
    of preference. Because the version numbering scheme will be different for
@@ -613,7 +631,7 @@ Table of Contents
        B/
 
           SHOULD contain a human-readble HTML document describing the
-          directory server's
+          directory server and its policies.
 
        B/current.gz
 
