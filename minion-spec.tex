@@ -582,9 +582,9 @@ portions are non-normative descriptions of TLS.)
 
 * Padding case:
 
-     * A sends "JUNK", CRLF, Junk, HASH(M|"JUNK") (6 + 32k + 20 bytes)
+     * A sends "JUNK", CRLF, Junk, HASH(Junk|"JUNK") (6 + 32k + 20 bytes)
        (where Junk is an arbitrary 32k sequence.)
-     * B sends "RECEIVED", CRLF, HASH(M|"RECEIVED JUNK") (10 +20 bytes)
+     * B sends "RECEIVED", CRLF, HASH(Junk|"RECEIVED JUNK") (10 + 20 bytes)
 
        [Note that both cases require the same number of bytes and 
         processing time. Implementations must make sure the real message 
