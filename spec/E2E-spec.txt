@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.16 2003/11/20 08:05:18 nickm Exp $
+$Id: E2E-spec.txt,v 1.17 2003/11/20 08:32:35 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -943,6 +943,10 @@ A.2. Appendix: storing client secrets
    [XXX This format is supported by Mixminion 0.0.6 and later: earlier
    versions of the software use a more Python-specific format that
    you really shouldn't try to read.]
+
+   First, the keyring itself is stored with RFC2440-style ASCII armor,
+   with header text "BEGIN TYPE III KEYRING" and an armor header
+   "Version" with a value "0.1".  The contents to be encoded are:
    
          magic       [8 octets]
          format type [1 octet == 0]
