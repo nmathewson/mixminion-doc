@@ -234,7 +234,7 @@ mixes \cite{realtime-mix} and web mixes \cite{web-mix}.
 More complex designs use zero-knowledge proofs and stronger assumptions
 to guarantee delivery or to detect and exclude misbehaving participants.
 These include flash mixes \cite{flash-mix} and attacks against them
-\cite{mitkuro}, hybrid mixes \cite{hybrid-mix}\cite{jakobsson-optimally},
+\cite{mitkuro}, hybrid mixes \cite{jakobsson-optimally}\cite{hybrid-mix},
 and provable shuffles \cite{PShuffle}\cite{shuffle}. The properties
 of these designs are appealing, but they are often not practical since
 they assume a lot of coordination and synchronization between the mixes,
@@ -429,24 +429,6 @@ distinguishing between them.
 \section{The Mix-net Design}
 \label{sec:design}
 
-%Headers addressed to each intermediate mix are encrypted using RSA.
-%%RSA-OAEP \cite{PKCS1} and are of 128 bytes each.
-%% IMO we should use OAEP+, and variable-length headers. -DH
-%They contain a secret 
-%that can be used to generate padding and decrypt the rest
-%of the message. They also contain the address of the next node to 
-%which the message should be forwarded along with its expected signature 
-%key fingerprint.
-
-% we haven't said what a subheader is yet. too early to say this. -RD
-%To frustrate tagging attacks (see
-%Section \ref{subsec:tagging}), the sub-header also contains a hash of
-%the header.
-
-% This last paragraph assumes that the audience already knows the
-% material well enough to know that Alice encrypts each layer with the
-% appropriate mix's public key. Is this assumption safe -Nick
-
 Mixminion uses a free-route mix-net just like \cite{mixmaster-spec}
 and \cite{babel}. Mixminion's principal difference from earlier mix-net
 designs is the mechanism it uses to support reply messages with the
@@ -548,7 +530,10 @@ decryption key for decrypting the rest of the message. The mix also
 derives a padding seed from this master key. It uses this padding seed
 to place predictable padding at the end of the header, so the hash will
 match even though each hop must regrow the header to maintain constant
-length.
+length. Each subheader also includes the address of the next node to which
+the message should be forwarded, along with its expected signature key
+fingerprint --- the mix refuses to deliver the message until the next
+hop has proved its identity.
 
 For forward messages, Alice provides both legs. For anonymous replies, Alice
 uses Bob's reply block as the second leg, and generates her own path
@@ -745,6 +730,8 @@ some mixes may only allow outgoing mail to local addresses; if such a
 node gets a crossover message that has been trashed, it might guess
 that the recipient is one of the local addresses.} and so we recommend
 that the second leg be at least a few hops long.
+We use a path length of 4 hops per leg, but with only 2 hops in the
+second leg of a forward message.
 
 It is worth noting that while semantically secure encryption cannot be
 used directly to solve the probem of tagging attacks in Mixminion, the
@@ -758,11 +745,12 @@ will provide no information at all to an attacker. It is the
 first time, to our knowledge, that this property is achieved by
 distributing the operation of a cipher across many nodes of a mix network.
 
-No mix except the crossover point can distinguish forward messages from
-replies --- even the crossover point cannot be sure whether it is processing
-a reply or forward message, but it may be able to guess that crossover
-points are more frequent on forward paths than direct replies or
-anonymized reply paths.
+No mix except the crossover point can get any information distinguishing
+forward messages from replies. While the crossover point cannot be
+certain whether the message that it is processing is a forward message
+or a reply, it does gain partial information because crossover points
+are less frequent on forward paths, and therefore a message which is
+crossing-over is more likely to be a reply message.
 
 \subsection{Multiple-message tagging attacks}
 \label{subsec:multi-tagging}
@@ -880,19 +868,22 @@ some jurisdictions.
 %(Reply blocks can still be used for this purpose.)
 Even if an
 attacker manages to get hold of the session key at a particular point
-they would have to observe all subsequent traffic to be able to update
-their key appropriately.
+he would have to observe all subsequent traffic to be able to update
+his key appropriately.
 
 Additionally link encryption makes active and passive attacks on the
-network links very difficult. Given that mix messages give an
+network links more difficult. Given that mix messages give an
 indication to the mixes about the identity of their successors it is
 hard for an 
-adversary to modify messages, inject messages in a node as if they
-were part of the normal communications, or delete messages. It is
-still possible to delay messages, unless an additional
-\emph{heartbeat} signal is included in the SSL tunnel. This forces a
-determined adversary to run nodes or to corrupt nodes in 
-order to break the anonymity of Mixminion.
+adversary to modify messages, inject messages to a node as if they
+were part of the normal communications, or delete messages.
+An additional \emph{heartbeat} signal in the SSL tunnel complicates
+message delaying attacks.
+%This forces a
+%determined adversary to run nodes or to corrupt nodes in 
+%order to break the anonymity of Mixminion.
+%  hogwash. the adversary can muck up the network link, and we can't
+%  distinguish that from normal network suckage -RD
 
 The encrypted channel offers only limited protection against traffic
 analysis. Encrypted links between honest nodes prevent an adversary
@@ -986,8 +977,7 @@ incoming mail by guessing that one of those ways is Alice's favorite.
 An active attacker could even lure users into using a compromised
 exit node by advertising that node as supporting a
 rare but desirable delivery method.
-
-We claim that these attacks do not provide an argument against
+We believe these attacks do not provide an argument against
 extensibility \emph{per se}, but rather argue against the proliferation
 of redundant extensions, and against the use of rare extensions.  
 
@@ -1012,19 +1002,27 @@ receiving mail is opt-in, an abuser can forge an opt-in request from
 his victim. Indeed, requiring recipients to declare their interest
 in receiving anonymous mail is risky --- human rights activists in
 Guatemala cannot both sign up to receive anonymous mail and also retain
-plausible deniability.\footnote{
-  Compare with the 1965 U.S. Supreme Court case Lamont v. Postmaster
-  General (381 U.S. 301), where the Post Office would detain mail it
-  deemed to be `communist political propaganda' and instead send a form
-  to the addressee telling him to send back the signed form if he wanted
-  to receive such mail. The government maintained a list of citizens
-  who had filled out these forms.
-} Similarly, if receiving mail is opt-out, an abuser can deny service
-by forging an opt-out request from a legitimate user. We might instead
-keep the mail at the exit node and send a note to the recipient
-telling them how to collect their mail; but this increases
-server liability by storing messages (see Section \ref{sec:nymservers}
-below), and also doesn't really solve the problem.
+plausible deniability.%\footnote{
+%  Compare with the 1965 U.S. Supreme Court case Lamont v. Postmaster
+%  General (381 U.S. 301), where the Post Office would detain mail it
+%  deemed to be `communist political propaganda' and instead send a form
+%  to the addressee telling him to send back the signed form if he wanted
+%  to receive such mail. The government maintained a list of citizens
+%  who had filled out these forms.}
+Similarly, if receiving mail is opt-out, an abuser can deny service
+by forging an opt-out request from a legitimate user. We use a compromise,
+where all users are assumed to want to receive mail, but each Mixminion
+message arrives with instructions on how to opt out. Specifically, the
+message includes a secret that must be used to authorize the opt-out. Thus
+adversaries who cannot read the victim's mail cannot forge an opt-out
+request. After all, adversaries strong enough to read the victim's mail
+can probably deny service to him in some other way.
+
+%We might instead
+%keep the mail at the exit node and send a note to the recipient
+%telling them how to collect their mail; but this increases
+%server liability by storing messages (see Section \ref{sec:nymservers}
+%below), and also doesn't really solve the problem.
 
 Of course, a mixture of open and restricted exit nodes will allow the
 most flexibility for volunteers running servers. But while a large number
@@ -1092,8 +1090,8 @@ advertise it widely along with their public key information.
 Note that this solution does not entirely solve the partitioning problem
 --- near the time of a key rotation, the anonymity set of messages will
 be divided into those senders who knew about the key rotation and used
-the new key, and those who did not.  Moreover, if keys overlap, the above
-delaying attack still works.
+the new key, and those who did not.%  Moreover, if keys overlap, the above
+%delaying attack still works.
 Also note that while key rotation and link encryption (see Section
 \ref{subsec:link-encrypt}) both provide forward security, their protection
 is not redundant. With only link encryption, an adversary running
@@ -1101,9 +1099,9 @@ one mix could compromise another and use its private key to decrypt
 messages previously sent between them. Key rotation limits the window
 of opportunity for this attack.
 
-A more complete solution to partitioning attacks may be possible by
-using the ``synchronous batching'' approach described in
-Section \ref{subsec:batching}; this is a subject for future research.
+%A more complete solution to partitioning attacks may be possible by
+%using the ``synchronous batching'' approach described in
+%Section \ref{subsec:batching}; this is a subject for future research.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1155,9 +1153,12 @@ and for clients to download \emph{complete} directories.\footnote{
   the road allow clients to efficiently, securely, and privately download
   a subset of the directory.
 }
-Servers can work together to ensure correct and complete data by
+Directory servers work together to ensure correct and complete data by
 successively signing certificate bundles, so users can be sure that a
 given mix certificate has been seen by a threshold of directory servers.
+While we require stronger synchronization and trust for the directory
+servers, we believe this is realistic because there will be far fewer
+of them than mix nodes, and they will be much more static.
 
 But even if client knowledge is uniform, an attacker can mount a
 \emph{trickle attack} by delaying messages from Alice at a compromised
@@ -1171,14 +1172,12 @@ newly-published nodes. Dummy traffic to old nodes may also
 help thwart trickle attacks.
 
 Directory servers compile node availability and performance information by
-sending traffic through mixes in their directories. In its basic form this
-can be very similar to the current ping servers \cite{levien}, but in the
+sending traffic through mixes in their directories. This is currently
+very similar to the current ping servers \cite{levien}, but in the
 future we can investigate integrating more complex and attack-resistant
-reputation metrics.   Even this reputation information introduces
+reputation metrics.  But even this reputation information introduces
 vulnerabilities: for example, an adversary 
 trying to do traffic analysis
-% want to leave the above line in. Otherwise the reader will say
-% "so? what does this get him?" -RRD
 can get more traffic by gaining a high reputation \cite{mix-acc}. We can
 defend against these attacks by building paths from a suitably large pool
 of nodes \cite{casc-rep} to bound the probability that an adversary will
@@ -1235,7 +1234,7 @@ deny service by flooding the mailbox to exhaust the available
 reply blocks and block further messages from getting delivered.
 
 A more robust design uses a protocol inspired by e-mail retrieval
-protocols such as IMAP \cite{IMAP} or POP \cite{POP3}:
+protocols such as POP \cite{POP3}:
 messages arrive and queue at the nymserver, and the user periodically
 checks the status of his mail and sends a sufficient batch of reply
 blocks so the nymserver can deliver that mail.
@@ -1252,7 +1251,7 @@ B \rightarrow \mathrm{Nym}&: \alpha, M \\
 
 In this case, the nymserver doesn't need to store any reply blocks.
 The above flooding attack still works, but now it is exactly
-like flooding a normal IMAP or POP mailbox, and the usual techniques (such as
+like flooding a normal POP mailbox, and the usual techniques (such as
 allowing the user to delete mails at the server or specify which mails to
 download and let the others expire) work fine. The user can send a set
 of indices to the server after successfully receiving
@@ -1308,8 +1307,8 @@ in one flush. Thus an adversary is forced to spend multiple intervals
 (and thus delay other messages for considerable time) first to flush
 the original honest messages from the mix, and again to flush the
 target message from the mix. This delay will be noticed by the other
-mixes, because [nick? clarify here] they talk to each other over tcp so
-they know when something's up.
+mixes, because they communicate over TLS with a heartbeat to detect
+delays.
 
 This batching strategy also increases the cost of intersection attacks by
 providing large anonymity sets for each message in the network. Because
