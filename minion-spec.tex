@@ -184,7 +184,7 @@ EXT(RI)                       [Ceil((Len(RI)-44)/128) * 128 bytes]
 
 There are 5 predefined routing types:
 
-0x0000-0x00FF: PROTOCOL SUPPORT
+0x0000-0x00FF: PROTOCOL SUPPORT: NON-EXIT TYPES
 
 0x0000 DROP    (0 bytes of routing information)
 0x0001 FWD/IP4 (IP: 4 bytes, PORT: 2 bytes, KEYID: 20 bytes): 26 bytes
@@ -192,8 +192,8 @@ There are 5 predefined routing types:
 
 0x0100-0x0FFF: PREDEFINED DELIVERY TYPES.
 
-0x0100 SMTP   (EMAIL ADDRESS: variable, TAG: variable) Variable bytes
-0x0101 MBOX   (USER: variable, TAG: variable) Variable bytes
+0x0100 SMTP   (TAG: 20 bytes, EMAIL ADDRESS: variable, TAG: variable) Variable bytes
+0x0101 MBOX   (TAG: 20 bytes, USER: variable) Variable bytes
 0x0102 MIX2   (EMAIL ADDRESS: variable).  Type-2 remailer support.
 
 0x1000-0xEFFF: UNALLOCATED
@@ -410,7 +410,7 @@ Binary Format:
    Encryption key: 16 bytes
    Routing Info: (Routing Size) bytes
 
-   Total: 14 bytes + Header size + Routing info size.
+   Total: 30 bytes + Header size + Routing info size.
 
 * The begin marker is the ASCII 4-byte string 'SURB'. 
 * The version number contains the format version of the SURB.
@@ -687,12 +687,12 @@ the entries:
          any server should ever change.
      'Digest': The digest of this block. See below.
      'Signature': The signed digest of this block.  See below.
-     'Published': A date/time, in the form 'DD/MM/YYYY HH:MM:SS',
+     'Published': A date/time, in the form 'YYYY/MM/DD HH:MM:SS',
          for when this block was generated.
-     'Valid-After': A date, in the form 'DD/MM/YYYY'.  After midnight GMT
+     'Valid-After': A date, in the form 'YYYY/MM/DD'.  After midnight GMT
          on this date, this server must support the operations listed
          in this descriptor.
-     'Valid-Until': A date, in the form 'DD/MM/YYYY'.  Until midnight
+     'Valid-Until': A date, in the form 'YYYY/MM/DD'.  Until midnight
          GMT on this date, this server must support the operations listed
          in this descriptor.
      'Contact': An email address that may be used to contact the
@@ -823,7 +823,7 @@ Implementors are strongly encouraged to use this algorithm, or another
 equally robust against active and passive attacks.  (Be sure to read
 \cite{batching-taxonomy}.)
 
-PROCEDURE: Choose sets of messages to transmit ("Cotterll-style batching")
+PROCEDURE: Choose sets of messages to transmit ("Cottrell-style batching")
 
 Inputs: Q (a queue of messages)
         N (the number of messages in the queue).
@@ -839,7 +839,14 @@ Outputs: (A set of messages sent to the network).
 
 1. Wait for MIX_INTERVAL seconds.
 
-2. If N > POOL_SIZE, then choose Min(N-POOL_SIZE, N*MAX_REPLACEMENT_RATE)
+[XXXX Not quite
+  2. If N > POOL_SIZE, then choose Min(N-POOL_SIZE, N*MAX_REPLACEMENT_RATE)
+     messages from Q.  Transmit the selected messages.
+
+   [Examination of the mixmaster source confirms the following rule.] -NM]
+
+2. If N > POOL_SIZE, then choose Min(N-POOL_SIZE, 
+                                     Max(1, FLOOR(N*MAX_REPLACEMENT_RATE)))
    messages from Q.  Transmit the selected messages.
 
 3. Repeat indefinitely.
