@@ -43,8 +43,8 @@
 % \and
 % The Free Haven Project
 % \email{\emailaddr{nickm@alum.mit.edu}}}
-\author{Name of Author(s)}
-\institute{Name of Institute(s)}
+\author{Authors Anonymous}
+\institute{}
 
 
 \maketitle
@@ -90,7 +90,7 @@ due to the liability involved in running a remailer node on the Internet,
 and part is due to the complexity of the current infrastructure ---
 it is fairly hard to add new experimental features to the current software.
 
-The Mixminion project aims to deploy a cleaner updated remailer design
+The Mixminion project aims to deploy a cleaner remailer design
 in the same spirit as Mixmaster, with the goals of expanding
 deployment, documenting our design decisions and how well they stand
 up to all known attacks, and providing a research base for
@@ -850,10 +850,9 @@ but his solution (which is proposed again in Babel\footnote{
   Actually, Babel is vulnerable to a much more direct timestamp attack:
   each layer of the onion is timestamped with ``the number of seconds
   elapsed since January 1, 1970 GMT, to the moment of message composition
-  by the sender.'' Since the number of people composing a message on
-  the same second will likely be small, an adversary owning a MIX at the
-  beginning of the path and another at the end could trivially recognize
-  a message.
+  by the sender.'' Few people will be composing a message on the same
+  second, so an adversary owning a MIX at the beginning of the path and
+  another at the end could trivially recognize a message.
 }) --- to include in each message a timestamp that describes when that message
 is valid --- also has problems. Specifically, it introduces a new class
 of \emph{partitioning} attacks, where the adversary can distinguish and
