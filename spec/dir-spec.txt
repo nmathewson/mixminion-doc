@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.15 2003/10/01 22:15:24 nickm Exp $
+$Id: dir-spec.txt,v 1.16 2003/10/03 22:32:39 nickm Exp $
 
 				Mix3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -128,7 +128,7 @@ Table of Contents
          inclusive, excluding ASCII 58, ASCII 91, ASCII 93.]
 
       OptValue ::= Value |
-      Value ::= NonSpaceValueChar | Value ValueChar
+      Value ::= NonSpaceValueChar | ValueChar Value
       NonSpaceValueChar ::= [Any character from ASCII 33 through ASCII
          126 inclusive.]
       ValueChar ::= NonSpaceValueChar | ' ' | '\t'
