@@ -9,6 +9,10 @@
 \renewcommand\url{\begingroup \def\UrlLeft{<}\def\UrlRight{>}\urlstyle{tt}\Url}
 \newcommand\emailaddr{\begingroup \def\UrlLeft{<}\def\UrlRight{>}\urlstyle{tt}\Url}
 
+% If an URL ends up with '%'s in it, that's because the line *in the .bib/.tex
+% file* is too long, so break it there (it doesn't matter if the next line is
+% indented with spaces). -DH
+
 %\newif\ifpdf
 %\ifx\pdfoutput\undefined
 %   \pdffalse
@@ -26,7 +30,7 @@
 %  \pdfpageheight=\the\paperheight
 %\fi
 
-\title{Mixminion: Design of a Type III Anonymous Remailer}
+\title{Mixminion: Design of a Type III Anonymous Remailer Protocol}
 
 % Removed for anonymous review
 % 
@@ -85,13 +89,13 @@ designs and proofs
 and discovered a variety of new attacks
 \cite{back-traffic-analysis,langos02,disad-free-routes,desmedt,mitkuro,raymond00},
 but the state of deployed remailers has changed remarkably little since
-Cottrell published his Mixmaster software \cite{mixmaster-attacks} in 1994. 
-Part of the difficulty in expanding the deployed remailer base is
+Cottrell published his Mixmaster software \cite{mixmaster-attacks,mixmaster-spec}
+in 1994.  Part of the difficulty in expanding the deployed remailer base is
 due to the liability involved in running a remailer node on the Internet,
 and part is due to the complexity of the current infrastructure ---
 it is fairly hard to add new experimental features to the current software.
 
-The Mixminion project aims to deploy a cleaner remailer design
+The Mixminion Project aims to deploy a cleaner remailer design
 in the same spirit as Mixmaster, with the goals of expanding
 deployment, documenting our design decisions and how well they stand
 up to all known attacks, and providing a research base for
@@ -103,7 +107,7 @@ design \cite{remailer-history}. By integrating reply capabilities into
 Mixminion, we can finally retire the Type I remailer network.
 
 We introduce link encryption with ephemeral keys to ensure forward
-anonymity for each message. We also provide flexible delivery schemes ---
+anonym\-ity for each message. We also provide flexible delivery schemes ---
 rather than just allowing delivery to mail or Usenet, we allow designers
 to add arbitrary modules to handle incoming and outgoing messages. By
 separating the core mixing architecture from these higher-level modules,
@@ -115,9 +119,9 @@ servers to track and distribute remailer availability, performance,
 and key information, and then describe in Section \ref{sec:nymservers}
 how to securely build higher-level systems such as nymservers using SURBs.
 
-Mixminion is a best-of-breed remailer that uses conservative design
+Mixminion is a best-of-breed remailer protocol that uses conservative design
 approaches to provide security against most known attacks. The overall
-Mixminion project is a joint effort between cryptography and anonymity
+Mixminion Project is a joint effort between cryptography and anonymity
 researchers and Mixmaster remailer operators. This design document
 represents the first step in peer review of the Type III remailer
 protocol.
@@ -167,8 +171,8 @@ service \cite{helsingius}, and by theoretical work on MIXes. Hughes wrote
 the first Cypherpunk anonymous remailer \cite{remailer-history}; Finney
 followed closely with a collection of scripts that used Phil Zimmermann's
 PGP to encrypt and decrypt remailed messages. Later, Cottrell implemented
-the Mixmaster system \cite{mixmaster}, or ``Type II'' remailers, which
-added message padding, message pools, and other MIX features lacking
+the Mixmaster system \cite{mixmaster,mixmaster-spec}, or ``Type II'' remailers,
+which added message padding, message pools, and other MIX features lacking
 in the Cypherpunk remailers. Note that Mixmaster does not include reply
 functionality, so deployed remailer systems still use the less secure
 long-term Cypherpunk reply blocks.
@@ -242,16 +246,16 @@ path through the network. She repeatedly ``onion'' encrypts her message,
 starting with the last
 MIX in her path, and sends the onion to the first MIX in her path. Each
 MIX unwraps a single layer of the onion, pads the message to a fixed
-length (32KB in our current design), and passes the result to the
+length (32 Kbytes in our current design), and passes the result to the
 next MIX. We describe the behavior of the last MIX in
 Section \ref{subsec:delivery-modules}.
 
 % A bit more detail about what is contained in the header: -George
 
-Headers addressed to each intermediate mix are encrypted using RSA
-%RSA-OAEP \cite{PKCS1}
-% IMO we should use OAEP+. -DH
-and are of 128 bytes each. They contain a secret addressed
+Headers addressed to each intermediate mix are encrypted using RSA.
+%RSA-OAEP \cite{PKCS1} and are of 128 bytes each.
+% IMO we should use OAEP+, and variable-length headers. -DH
+They contain a secret addressed
 to the node that can be used to generate padding and decrypt the rest
 of the message. They also contain the address of the next node to 
 which to message should be forwarded along with its expected signature 
@@ -305,111 +309,51 @@ much easier to trace, the Mixminion protocol makes reply messages
 indistinguishable from forward messages even for the MIX nodes. Thus
 forward and reply messages can share the same anonymity set.
 
-\subsection{Batching Strategy and Network Structure}
-\label{subsec:batching}
+\subsection{Tagging attacks}
+\label{subsec:tagging-attacks}
 
-[This subsection is draft/experimental/controversial. Don't pay much
-attention to it yet.]
-% This needs more work. I hadn't realised how close we were to the
-% deadline, but I'll commit it anyway for now. -DH
+At this point it is useful to describe an attack that works against some
+MIX-net protocols, including Mixmaster and Babel, in order to motivate
+some aspects of the Mixminion design.
 
-Ideal security for a MIX-net is achieved when each message leaving the
-network could correspond to any message entering the network during a
-period approximately equal to the maximum network latency, and vice-versa.
+A {\em tagging attack} is an active attack in which a message is
+modified by altering part of it (for example by flipping bits), so
+that it can be recognised later in the path.  A later MIX controlled by
+the attacker can recognise tagged messages because the header does
+not conform to the expected format when decrypted.  Also, the final
+recipient can recognise a tagged message for which the payload has
+been altered.
 
-This ideal is not achieved by protocols like Mixmaster that use random
-delays [[explain why]].
-If such networks also use free routes, they are subject to attacks
-described in \cite{disad-free-routes}. [[summarize them]]
+Note that checking the integrity of hop headers individually is not
+sufficient to prevent tagging attacks.  For example in Mixmaster,
+each hop header contains a hash of the other fields in that header
+\cite{mixmaster-spec}.
+Each MIX in the path checks the integrity of the header, and drops
+the message immediately if it has been altered.  However, it is still
+possible for an attacking MIX to alter a header that will be decrypted
+only after several more hops, and so tagging attacks are still possible.
 
-To both maximize anonymity sets and prevent the above attacks, we
-propose to use a strategy called {\em synchronous batching}.
-The network has a fixed {\em batch period}, $t_{batch}$, which is closely
-related to the maximum desired latency; a typical value could be 24 hours.
-Messages entering the network in each batch period are queued until
-the beginning of the next period. They are then sent through the MIX-net
-synchronously, at a rate of one hop per {\em hop period}. All paths are
-a fixed length $n$ hops, so that if no messages are dropped, the messages
-introduced in a given batch will progress through their routes in
-lock-step, and will all be transmitted to their final destinations $n$
-hop periods later.
-
-The latency is between $nt_{hop}$ and $t_{batch} + nt_{hop}$, depending
-on when the message was submitted.
-
-The set of messages sent to a node in a given hop period is called a
-mini-batch, to distinguish it from the set of messages being sent
-through the network as a whole. [[need better name?]]
-
-[[Messages are tied to a given time period so that they cannot be delayed.
-Explain why this prevents the attacks in [disad-free-routes], even
-for free-route networks. Also explain why we need to use a hybrid
-free-route/cascade approach (otherwise the anonymity set is limited by
-the bandwidth that can be handled by a single cascade).]]
-
-Define the {\em width}, $w$ of a MIX network using synchronous batching to
-be the number of nodes that simultaneously process messages in each
-hop period. (If this is not constant, we can still talk about the
-maximum, minimum and mean width.)
-
-An important constraint on the network structure is the maximum
-bandwidth (traffic in unit time) through any given node.
-Assume that sending a message over a single hop consumes a fixed
-amount of network traffic; we can then use that as the unit for
-traffic.
-
-Let $T_{batch}$ be the expected throughput in a single batch period,
-i.e. the number of messages that go through the network in a batch.
-
-We can give nodes the maximum opportunity to make use of the available
-bandwidth by setting $t_{hop} \simeq t_{batch}/n$.
-
-%If the available nodes were used optimally (this is a big if),
-%the bandwidth required through each node in this simplified case
-%will be $\frac{T_{batch}}{wt_{hop}} = \frac{nT_{batch}}{wt_{batch}}$.
-
-For any particular network structure, bandwidth constraints, and
-assumed traffic levels, it is straightforward to calculate the
-minimum width of the network, and therefore the maximum sizes of
-mini-batches.
-
-For example in the limiting case $w = 1$, the network consists of a
-single MIX cascade (this is the situation considered in Section 7.1
-of \cite{babel}).
-
-Let $N$ be the number of nodes in the network. An interesting case
-is $w = n = N$; in that case we could use a set of $N$ cascades
-arranged as a Latin square.\footnote{[[define Latin square]]}
-This ensures that all nodes make full use of the available bandwidth;
-however it gives users no choice in the set of nodes used.
-
-In practice, there are other considerations beside maximizing the
-size of mini-batches:
-
-\begin{enumerate}
-\item reliability
-\item giving users a choice of node sets?
-\item anything else?
-\end{enumerate}
-
-Further analysis of the trade-offs will be needed before choosing a
-final network structure. Note that a planned structure, where each
-users' software follows the plan consistently when constructing
-routes, will generally be able to achieve stronger and more easily
-analysed security properties than less constrained approaches.
+The most straightforward way to prevent tagging attacks is to
+authenticate the whole message at every hop.  For forward messages,
+this requires that when padding is added to a message, the padding is
+derived deterministically, so that it is possible to calculate
+authentication tags for the whole message at each hop.  However,
+the situation becomes more complicated when reply messages are
+introduced, because the message and the reply block are
+created by different users.
 
 \subsection{Replies}
 \label{subsec:replies}
 
 The rest of this section describes the mechanism for secure replies,
-including some new attacks and how we defeat them. Mixminion's reply
+including how we defeat tagging-related attacks. Mixminion's reply
 model is in part inspired by Babel \cite{babel}, as it requires the
 receiver of a reply block to keep no other state than its secret keys,
 in order to read the reply.  All the secrets that are required in
 order to strip the layers of encryption are derived from a master
-secret contained in the last header of the single use reply block that
-the creator of the block addresses to themselves and encrypt under
-their own public key.
+secret contained in the last header of the single use reply block, which
+the creator of the block addresses to itself and encrypts under its
+own public key.
 
 \subsection{Indistinguishable replies}
 \label{subsec:header-swap}
@@ -420,16 +364,12 @@ particular, if replies are infrequent relative to forward messages,
 an adversary who controls some of the MIXes can more easily trace the
 path of each reply.
 
-Having indistinguishable replies, however, creates new attacks.  In
-Mixmaster, senders ensure message integrity by including a hash of
-the entire message in each hop of the header.  Each MIX in the path
-checks the integrity of the header and payload, and drops the message
-immediately if it has been altered.  But in Mixminion, since the
-author of a reply block is not the one writing the payload, this
-hash checking can't be used in replies. Therefore, since we choose to make
-forward messages and replies indistinguishable, we cannot include
-hashes for forward messages either. This choice introduces a new class
-of attacks known as \emph{tagging attacks}, which we discuss in more
+Having indistinguishable replies, however, makes it more difficult to
+prevent tagging attacks.  Since the author of a reply block is not the
+one writing the payload, a hash of the entire message cannot be used.
+Therefore, since we choose to make forward messages and replies
+indistinguishable, we cannot include hashes for forward messages either.
+Our approach to defending against these attacks is discussed in more
 detail in Section \ref{subsec:tagging}.
 
 Mixminion allows Alice to send messages to Bob in one of three ways:
@@ -448,19 +388,13 @@ and unwrap messages received through those reply blocks. Other parties,
 such as those receiving forward messages and those sending direct reply
 messages, do not need to run new software. (For example, the quoting
 performed by ordinary mail software can be used to include the reply
-block in a direct reply; this is sent to a node at the SMTP Reply-To:
+block in a direct reply; this is sent to a node at the Reply-To:
 address, which extracts the reply block and constructs a properly
 formatted onion.)
 
-% Do we ever say how to send a reply without software? -Nick
-% Nope. We're just bluffing. Is that ok? -RRD
-% We're not bluffing.  George used to have a way, but we haven't
-%   mentioned it here.  Should we?  -Nick
-% We do now. -DH
-
 We divide a message's path into two \emph{legs}, and split the header
 into two equal-size subheaders, each corresponding to a single leg.
-Each hop contains a hash of the subheader it's a part of, so we can do
+Each hop contains a hash of the subheader it is a part of, so we can do
 integrity-checking of the path (but not the payload) within each leg.
 Each hop also contains a symmetric key, which is used to derive a
 decryption key for decrypting the rest of the message. The MIX also
@@ -487,25 +421,54 @@ the hash of the current payload, and then swaps the two subheaders. The
 swap operation is detailed in Figure 1 --- specifically, the normal
 operations done at every hop are those above the dotted line, and the
 special operations performed only by the crossover point are those below
-the dotted line. The encryption primitive that is used to blind the second 
-header and the payload needs to have certain properties: it should be an 
-All-or-nothing transform on the whole of the message; it should be impossible 
-to predict even a single bit of the decryption of a modified block, without 
-knowledge of the key. Finally we need the encryption and decryption 
-operations to be the same function.
+the dotted line. The encryption primitive, labelled ``LBC'', that is
+used to blind the second  header and the payload needs to have certain
+properties:
 
-To fulfill the above requirements we use a variable block size 
-block cipher named BEAR
-\cite{BEAR} as our encryption and decryption primitive.  BEAR offers
-the property that if any bit of the encrypted material is changed, the
-decryption will look like random bits. We can use BEAR in a mode where
-decryption and encryption are equivalent, by using the same key for
-both of its hash steps. See Section \ref{subsec:tagging} for a discussion of
+\begin{itemize}
+\item it is length-preserving;
+%\item it behaves like an all-or-nothing transform on the whole of
+%      the message;\footnote{Except that we need a keyed primitive,
+%      whereas an all-or-nothing transform is normally unkeyed, and
+%      not length-preserving.}
+%% I think that if we have the next item, we don't need this. -DH
+
+\item it should be impossible to recognize the decryption of a modified
+      block, without knowledge of the key;
+\item it should be equally secure to use the decryption operation
+      for encryption.
+\end{itemize}
+
+To fulfill the above requirements we use a large-block cipher; that
+is, a cipher that acts as a permution on a block the size of its
+input (a subheader or the payload).  Possible candidates
+include LIONESS \cite{BEAR-LIONESS} and SPC \cite{SPC}.
+The cryptographic property required is that of a super-pseudo-random
+permutation (a.k.a. strong pseudo-random permutation) or SPRP \cite{sprp}.\footnote{
+The weaker PRP property may be sufficient, given that preventing
+replays limits the number of oracle queries to 1; this will need
+further analysis.  In that case the simpler BEAR construction
+\cite{BEAR-LIONESS} could be used instead of LIONESS.}
+This ensures that if any bit of
+the encrypted material is changed, the decryption will look like random
+bits.  An SPRP is also equally secure in the encryption and decryption
+directions.  See Section \ref{subsec:tagging} for a
+discussion of how this approach helps protect against tagging.
+
+% BEAR isn't an SPRP; LIONESS is. I'm not sure that an SPRP is necessary,
+% but I'm sure that it is sufficient. We don't need encryption and
+% decryption to be the same. -DH
+
+%To fulfill the above requirements we use a variable block size block cipher
+%named BEAR [2] as our encryption and decryption primitive. BEAR offers the
+%property that if any bit of the encrypted material is changed, the decryption
+%will look like random bits. We can use BEAR in a mode where decryption and
+%encryption are equivalent, by using the same key for both of its hash steps.
+%
 % ``Both hash steps''?  We never mention Bear's hash steps... -Nick
 % True. Does adding 'its' help? -RRD
 % Adding 'of' helps more for me.  Also, doesn't George once have a
 % source for this? -Nick
-how this all-or-nothing encryption approach helps protect against tagging.
 
 
 \begin{figure}
@@ -519,8 +482,8 @@ how this all-or-nothing encryption approach helps protect against tagging.
 \subsection{Defenses against tagging attacks}
 \label{subsec:tagging}
 
-Without the crossover point, an adversary could mount a \emph{tagging
-attack} by modifying (``tagging'') the payload of a forward message as
+Without the crossover point, an adversary could mount a tagging
+attack by modifying the payload of a forward message as
 it leaves Alice, and recognizing it later when it reaches Bob.
 Specifically, if our encryption mechanism were an ordinary
 counter-mode cipher, he might alter a specific byte in the payload of
@@ -530,13 +493,13 @@ predictable PGP header material), the adversary can later observe
 messages exiting the MIX-net and look for payloads that have a
 corresponding anomaly at that byte.
 
-% BEAR is a pretty exotic mode, and CTR is the only alternative we
-% dismiss.  I think we shold point out =someplace= why we can't use
+% I think we shold point out =someplace= why we can't use
 % CBC or anything else that isn't symmetrically good for encryption
 % and decryption.  -Nick
 
-We use BEAR as our encryption primitive to minimize the amount of
-information an adversary can learn from tagging. If he tags a message
+We use a large-block cipher as described in the previous section, to
+minimize the amount of information an adversary can learn from tagging.
+If he tags a message
 leaving Alice, the payload will be entirely random when it reaches
 Bob.  Thus, an adversary who tags a message can at worst turn the
 corresponding payload into trash.  
@@ -562,17 +525,16 @@ the second subheader is unrecoverable, and so the adversary cannot
 learn the intended destination of the message. If the message is tagged
 during the second leg, then the first leg has already provided anonymity,
 and so the adversary cannot learn the sender.
-\item Direct reply messages: since the encryption algorithm is equivalent to
-decryption, the payload is effectively \emph{encrypted} at each step
-% Maybe this  should say, ``Since the decryption algorithm provides
-% secrecy equivalent to encryption''? -Nick
-along a reply block. Only the recipient can learn, after peeling off
-all layers of encryption, whether the message has been tagged. Thus
+\item Direct reply messages: since the decryption algorithm provides
+secrecy equivalent to encryption, the effect is similar to {\em encrypting}
+the payload at each step along a reply block. Only the recipient can learn,
+after peeling off all layers, whether the message has been tagged. Thus
 tagging attacks are useless against reply messages.
 \item Anonymized reply messages: as with forward messages, if the first leg
 is tagged the second subheader is unrecoverable --- so an adversary will
 never learn that the message was addressed to a reply block. And as with
-reply messages, only the recipient can learn if the second leg is tagged.
+direct reply messages, only the recipient can learn if the second leg is
+tagged.
 \end{itemize}
 
 While direct reply messages do not need a crossover point in the path
@@ -581,17 +543,15 @@ crossover point to prevent end-to-end tagging. But since the first leg
 either provides sufficient anonymity or destroys the information about
 the second leg, the second leg in a forward message can be very short.
 At the extreme, the first hop in the second subheader could directly
-specify the message recipient. But since the choice of crossover point
-can still reveal information about the intended recipient (for instance,
+specify the message recipient. However, the choice of crossover point
+can still reveal information about the intended recipient,\footnote{For instance,
 some MIXes may only allow outgoing mail to local addresses; if such a
 node gets a crossover message that has been trashed, it might guess
-that the recipient is one of the local addresses), we recommend that
-the second leg be at least a few hops long.
-% The parenthetical above resists my attempts to remove or shorten
-% it.  Can anybody else shorten or strike it? -Nick
+that the recipient is one of the local addresses.} and so we recommend
+that the second leg be at least a few hops long.
 
 Replies are indistinguishable at every hop from forward messages. Even the
-crossover point cannot know if it's processing a reply or forward message.
+crossover point cannot know whether it is processing a reply or forward message.
 The protocol doesn't allow a MIX to know its location in the path (other
 than the exit node), or the total length of the route.
 % FIXME we need to resolve this paragraph
@@ -615,7 +575,7 @@ look for resulting patterns.
 
 The adversary can only recognize a tag if he happens to own the crossover
 point that Alice chooses.
-Therefore, Alice picks $k$ crossover points for her $n$
+Therefore, Alice picks $k$ crossover points for her
 messages;\footnote{
   We can prevent the adversary from using divide-and-conquer on Alice's
   batches if Alice uses a hybrid path starting with a short cascade ---
@@ -695,11 +655,7 @@ asymmetric encryption techniques, so they are relatively fast.
 % or one of the the anon-server ones. (B) -Nick
 
 The purpose of link encryption is to provide forward secrecy: 
-% link-level, *not* link-layer. link-layer is a layer-2 OSI thing.
-% saying that our transport level protocol uses link-layer encryption
-% makes no sense. -RRD
-after the keys
-have been deleted, not even the
+after the keys have been deleted, not even the
 nodes that exchange messages can decrypt or recognize messages
 that might have been intercepted on the links. This makes it
 impossible to comply with decryption notices of past traffic 
@@ -721,7 +677,7 @@ analysis. Encrypted links between honest nodes prevent an adversary
 from recognizing even his own messages; but without link padding, he
 can still measure how much traffic is being transmitted.
 
-As a fringe benefit, using a separate link-level protocol makes it
+As a fringe benefit, using a separate link protocol makes it
 easier to deploy relay-only MIXes --- such nodes simply omit SMTP
 support.  (See Section \ref{subsec:delivery-modules} below.)
 % Credit for the above point goes to Len.
@@ -729,10 +685,10 @@ support.  (See Section \ref{subsec:delivery-modules} below.)
 \subsection{Message types and delivery modules}
 \label{subsec:delivery-modules}
 
-Once a Mixminion packet reaches the final MIX in its path, it must either
-be delivered to its intended recipient, dropped if it's an intra-network
-dummy message, or processed further if it is a remixed Type II packet.
-In order to support different kinds of
+Once a Mixminion packet reaches the final MIX in its path, it must
+either be delivered to its intended recipient, dropped if it is an
+intra-network dummy message, or processed further if it is a remixed
+Type II packet. In order to support different kinds of
 delivery, the header includes a type code for the action to be taken
 to deliver the message.  A few types --- such as `dummy', `SMTP', and
 `local delivery' --- are specified as a part of the Mixminion
@@ -898,23 +854,27 @@ statistical attacks.
 % approach. It's definitely a good thing to mention. I've uncommented the
 % below for now so readers can have a complete paper. -RRD
 
-Mixminion provides a compromise solution that hopefully avoids many of
-these problems while still providing forward anonymity. Messages don't
+A possible compromise solution that still provides forward anonymity
+is as follows:  Messages don't
 contain any timestamp or expiration information. Each MIX must keep
-hashes of the headers of all messages it's processed since the last time
+hashes of the headers of all messages it has processed since the last time
 it rotated its key. MIXes should choose key rotation frequency based on
 security goals and on how many hashes they want to store.
 
-Note that this solution doesn't entirely solve the partitioning problem
+Note that this solution does not entirely solve the partitioning problem
 --- near the time of a key rotation, the anonymity set of messages will
 be divided into those senders who knew about the key rotation and used
-the new key, and those who didn't.
+the new key, and those who did not.
 Also note that while key rotation and link encryption (see Section
 \ref{subsec:link-encrypt}) both provide forward security, their protection
 is not redundant. With only link encryption, an adversary running
 one MIX could compromise another and use its private key to decrypt
 messages previously sent between them. Key rotation limits the window
 of opportunity for this attack.
+
+A more complete solution to partitioning attacks may be possible by
+using the ``batch synchronous'' approach described in
+Section \ref{subsec:batching}; this will be a subject of our research.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -960,8 +920,7 @@ service as a part of our standard. Thus Mixminion provides protocols for
 MIXes to advertise their capability certificates to directory servers,
 and for clients to download \emph{complete} directories.\footnote{
   New advances in Private Information Retrieval \cite{malkin-thesis}
-  may down 
-  the
+  may down the
   road allow clients to efficiently and privately download a subset of
   the directory. We recommend against using the MIX-net to anonymously
   retrieve a random subset: an adversary observing the directory servers
@@ -1103,16 +1062,124 @@ Section \ref{subsec:multi-tagging} make the situation even more dangerous.
 A compromise approach is to pick a small number of paths and use them
 together. Still, if the messages are sent all at once, it seems clear
 we're going to need some really good cover traffic schemes before we
-can offer security.
+can offer security. The same problem, of maintaining anonymity when
+sending many Mixminion messages, comes up when the owner of a pseudonym
+is downloading his mail from a nymserver.
 
-\subsection{Long-term nyms: how to choose paths for reply blocks}
-\label{subsec:choosing-paths}
+\subsection{Batching Strategy and Network Structure}
+\label{subsec:batching}
 
-In fact, this same problem comes up when the owner of a pseudonym is
-downloading his mail from a nymserver.
+%[This subsection is draft/experimental/controversial. Don't pay much
+%attention to it yet.]
 
-Cue for David Hopwood's discussion, somewhere around here. Feel free
-to muck this section up however it seems best.
+How a MIX-net design groups messages into batches, and how paths are
+chosen, has a large effect on the degree of anonymity it can provide.
+A possible definition of ideal anonymity for a MIX-net is as follows:
+
+\begin{quote}
+Ideal anonymity is achieved when each message leaving (resp. entering)
+the network could correspond with uniform probability to any message
+entering (resp. leaving) the network, during a period approximately
+equal to the maximum network latency.
+\end{quote}
+
+This ideal is not achieved by protocols like Mixmaster that use random
+delays: if the maximum latency of such a network is $t$, then the
+anonymity set of a message leaving the network may be much smaller
+than all messages that entered over a time $t$.
+% This is handwaving, and the problem is more that the distribtion
+% isn't uniform rather than the actual size of the anonymity set.
+% It'll do for the time being. -DH
+
+Also, because Mixmaster is both {\em asynchronous} (messages can enter and
+leave the network at any time) and uses free routes, it is subject to
+the attacks described in Section 4 of \cite{disad-free-routes}.
+% Should really summarise them, but I don't have time :-(
+One possible approach that we want to explore using Mixminion is a
+strategy called {\em synchronous batching}, that prevents these
+attacks even when free routes are used, as well as improving the
+trade-off between latency and anonymity.
+
+The network has a fixed {\em batch period}, $t_{batch}$, which is closely
+related to the maximum desired latency; a typical value could be 3--6 hours.
+Messages entering the network in each batch period are queued until
+the beginning of the next period. They are then sent through the MIX-net
+synchronously, at a rate of one hop per {\em hop period}. All paths are
+a fixed length $\ell$ hops, so that if no messages are dropped, the messages
+introduced in a given batch will progress through their routes in
+lock-step, and will all be transmitted to their final destinations $\ell$
+hop periods later. Each hop header of a message would specify the hop
+period in which it must be received, so that it cannot be delayed by an
+attacker (which would be fatal for this design).
+
+The latency is between $\ell t_{hop}$ and $t_{batch} + \ell t_{hop}$, depending
+on when the message was submitted.
+Typically we would have $t_{hop} < t_{batch}/n$, so the latency is at
+most $2t_{batch}$, independent of the path length $\ell$.
+
+%The set of messages sent to a node in a given hop period is called a
+%mini-batch, to distinguish it from the set of messages being sent
+%through the network as a whole. [[need better name?]]
+
+%[[Messages are tied to a given time period so that they cannot be delayed.
+%Explain why this prevents the attacks in [disad-free-routes], even
+%for free-route networks. Also explain why we need to use a hybrid
+%free-route/cascade approach (otherwise the anonymity set is limited by
+%the bandwidth that can be handled by a single cascade).]]
+
+%Define the {\em width}, $w$ of a MIX network using synchronous batching to
+%be the number of nodes that simultaneously process messages in each
+%hop period. (If this is not constant, we can still talk about the
+%maximum, minimum and mean width.)
+
+%An important constraint on the network structure is the maximum
+%bandwidth (traffic in unit time) through any given node.
+%Assume that sending a message over a single hop consumes a fixed
+%amount of network traffic; we can then use that as the unit for
+%traffic.
+
+%Let $T_{batch}$ be the expected throughput in a single batch period,
+%i.e. the number of messages that go through the network in a batch.
+
+%We can give nodes the maximum opportunity to make use of the available
+%bandwidth by setting $t_{hop} \simeq t_{batch}/n$.
+
+%If the available nodes were used optimally (this is a big if),
+%the bandwidth required through each node in this simplified case
+%will be $\frac{T_{batch}}{wt_{hop}} = \frac{nT_{batch}}{wt_{batch}}$.
+
+%For any particular network structure, bandwidth constraints, and
+%assumed traffic levels, it is straightforward to calculate the
+%minimum width of the network, and therefore the maximum sizes of
+%mini-batches.
+
+%For example in the limiting case $w = 1$, the network consists of a
+%single MIX cascade (this is the situation considered in Section 7.1
+%of \cite{babel}).
+
+%Let $n$ be the number of nodes in the network. An interesting case
+%is $w = \ell = n$; in that case we could use a set of $n$ cascades
+%arranged as a Latin square.\footnote{[[define Latin square]]}
+%This ensures that all nodes make full use of the available bandwidth;
+%however it gives users no choice in the set of nodes used.
+
+In practice, several considerations have to be balanced when choosing
+a batching strategy and network structure:
+
+\begin{enumerate}
+\item maximising anonymity sets, i.e. both batch sizes through each
+      node, and the overall anonymity sets of users,
+\item bandwidth considerations,
+\item reliability,
+\item enabling users to choose nodes that they trust,
+\item interactions with the reputation system.
+\end{enumerate}
+
+Further analysis of the trade-offs will be needed before choosing a
+final network structure. Note that a planned structure, where each
+users' software follows the plan consistently when constructing
+routes, will generally be able to achieve stronger and more easily
+analysed security properties than less constrained approaches.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1183,7 +1250,7 @@ design to peripheral design choices, need more attention:
 tagging attack.
 \item We need more research on batching strategies that resist trickle
 and flooding attacks \cite{batching-taxonomy} as well as intersection
-free-route attacks \cite{disad-free-routes}.
+attacks on asynchronous free routes \cite{disad-free-routes}.
 % help, say that last phrase better -RRD
 \item We need a more thorough investigation of multiple-message tagging
 attacks, and an analysis of various ways of safely choosing paths when
@@ -1201,6 +1268,10 @@ to implementation and deployment of the Mixminion design.
 % the level that I'd want to without one.  -Nick 
 \end{itemize}
 
+%We invite anyone interested in participating or commenting on the design
+%of Mixminion to join the {\tt mixminion-dev} mailing list --- see
+%\url{http://archives.seul.org/mixminion/dev/}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %\section*{Acknowledgments} Removed for anonymous review.
@@ -1214,11 +1285,14 @@ to implementation and deployment of the Mixminion design.
 \end{document}
 
 % Style guide:
+%     U.S. spelling
+%     avoid contractions (it's, can't, etc.)
 %     'MIX', 'MIXes' (as noun)
 %     'MIX-net'
 %     'mix', 'mixing' (as verb)
-%     'Mixminion'
-%     'Mixmaster'
+%     'Mixminion Project'
+%     'Mixminion' (meaning the protocol suite or the network)
+%     'Mixmaster' (meaning the protocol suite or the network)
 %     'middleman'  [Not with a hyphen; the hyphen has been optional
 %         since Middle English.]
 %     'nymserver'
