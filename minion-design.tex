@@ -174,32 +174,32 @@ research community currently has no answer).
 %%
 %% Also, the writing here NEEDS to be cleaned up.  -NM
 %
-% What's a MIX-net?
-In a MIX-net, message senders achieve anonymity by routing their
-messages through a path of relay servers, or `MIXes.'  When Alice
-wants to send an anonymous message to Bob through the MIXes $M_1$,
+% What's a mix-net?
+In a mix-net, message senders achieve anonymity by routing their
+messages through a path of relay servers, or `mixes.'  When Alice
+wants to send an anonymous message to Bob through the mixes $M_1$,
 $M_2$, and $M_3$, she encrypts her message successively with the
 public keys of the mixes in reverse order, and includes routing
-information for each MIX, so that each MIX $M_i$ receives the address
+information for each mix, so that each mix $M_i$ receives the address
 of $M_{i+1}$ along with the payload intended for $M_{i+1}$, all
 encrypted with $M_i$'s public key.  
 % This is kind of unclear.  Maybe integrate the paragraph from below
-% that says 'mixminion uses the same general MIX-net paradigm...'
+% that says 'mixminion uses the same general mix-net paradigm...'
 % 
 % needs references, too
 
-% What do MIXes do?
-When a MIX receives a message, it decrypts it with its public key, 
+% What do mixes do?
+When a mix receives a message, it decrypts it with its public key, 
 and delays it according to some `batching rule' so that an observer
 cannot easily associate its outputs with its inputs.  It then sends
-extracts the address of the next MIX in the sequence from the
+extracts the address of the next mix in the sequence from the
 decrypted message, and delivers the contents of the message to the
-next MIX.
+next mix.
 
 % XXXX Mention how this provides any anonymity!
 
 % What's a reply block?
-When recipients want to achieve anonymity, some MIX-net designs allow
+When recipients want to achieve anonymity, some mix-net designs allow
 them to construct \empf{reply blocks} that allow others to send
 messages to them without knowing their identities.  A reply block
 contains only the routing portion of a message; the actual contents
@@ -207,7 +207,7 @@ are provided by the user that eventually sends a message to the
 recipient.
 
 % How does mixminion fit in?
-Mixminion's principal difference from earlier MIX-net designs is the
+Mixminion's principal difference from earlier mix-net designs is the
 mechanism it uses to support reply messages with the same processing
 machinery as non-reply messages, while at the same time resisting the
 attacks described below in REF.
@@ -218,7 +218,7 @@ attacks described below in REF.
 
 % Server requirements
 First of all, the system must be relatively simple to deploy.  Past
-systems have never found it easy to get a reliable pool of MIX
+systems have never found it easy to get a reliable pool of mix
 operators to run long-lived servers; Mixminion must add as few
 technical barriers as possible.  Thus, we require that our protocol
 require only loose clock synchronization (within a few minutes);
@@ -240,8 +240,8 @@ connections and offer them as much anonymity as possible.
 
 For an adversary model, we assume a well-funded attacker who can
 observe all or most traffic on the network, who can generate, modify,
-delete, or delay traffic on the network, who can operate MIXes of its
-own, and who can compromise some fraction of the MIXes on the network.
+delete, or delay traffic on the network, who can operate mixes of its
+own, and who can compromise some fraction of the mixes on the network.
 We assume that such an adversary is attempting to compromise users'
 anonymity by learning (or guessing with a reasonable probability) who
 is communicating with whom.
@@ -251,11 +251,11 @@ We want to resist
 
 replies: we want to avoid partitioning by having reply messages be
    indistinguishable from forward messages, and just as secure.  To the
-   extent possible, a MIX should not be able to learn any more from a
+   extent possible, a mix should not be able to learn any more from a
    message's contents than from the fact of the message's receipt.
 
 
-\subsection{Known attacks against MIX-nets}
+\subsection{Known attacks against mix-nets}
 
 The largest class of passive attacks against 
 
@@ -289,51 +289,51 @@ The largest class of passive attacks against
 \section{Related Work}
 \label{sec:related}
 
-\subsection{MIX-nets}
+\subsection{Mix-nets}
 
-Chaum introduced the concept of a MIX-net for anonymous communications
-\cite{chaum-mix}. A MIX-net consists of a group of servers, called
-MIXes (or MIX nodes), each of which is associated with a public
-key. Each MIX receives encrypted messages, which are then decrypted,
+Chaum introduced the concept of a mix-net for anonymous communications
+\cite{chaum-mix}. A mix-net consists of a group of servers, called
+mixes (or mix nodes), each of which is associated with a public
+key. Each mix receives encrypted messages, which are then decrypted,
 batched, reordered, and forwarded on without any information
-identifying the sender. Chaum demonstrates the security of MIXes
+identifying the sender. Chaum demonstrates the security of mixes
 against a \emph{passive adversary} who can eavesdrop on all
-communications between MIXes but is unable to observe the reordering
-inside each MIX.
+communications between mixes but is unable to observe the reordering
+inside each mix.
 
-Recent research on MIX-nets includes stop-and-go MIX-nets
-\cite{kesdogan}, distributed flash MIXes \cite{flash-mix} and their
-weaknesses \cite{desmedt}\cite{mitkuro}, and hybrid MIXes \cite{hybrid-mix}.
+Recent research on mix-nets includes stop-and-go mix-nets
+\cite{kesdogan}, distributed flash mixes \cite{flash-mix} and their
+weaknesses \cite{desmedt}\cite{mitkuro}, and hybrid mixes \cite{hybrid-mix}.
 
-One type of MIX hierarchy is a cascade.
+One type of mix hierarchy is a cascade.
 In a cascade network, users choose from a set of fixed paths through
-the MIX-net.
+the mix-net.
 Cascades can provide greater anonymity against a large adversary:
-free-route systems allow an adversary who owns many MIXes to use
+free-route systems allow an adversary who owns many mixes to use
 intersection attacks to reduce the set of possible senders or receivers
 for a given
 % still not quite worded well. -RRD
 message \cite{disad-free-routes}. On the other hand, cascades are more
 vulnerable \cite{batching-taxonomy} to trickle attacks, where an attacker
-targeting a specific message going into a MIX can manipulate the batch
-of messages entering that MIX so the only unknown message in the batch
+targeting a specific message going into a mix can manipulate the batch
+of messages entering that mix so the only unknown message in the batch
 is the target message \cite{mixmaster-attacks}\cite{babel}.
-MIX cascade research includes real-time MIXes \cite{realtime-mix} and
-web MIXes \cite{web-mix}. Even when not under attack cascades will
+Mix cascade research includes real-time mixes \cite{realtime-mix} and
+web mixes \cite{web-mix}. Even when not under attack cascades will
 provide smaller anonymity sets than networks since the least
 resourceful acts as a traffic bottleneck.
 
 \subsection{Deployed Remailer Systems}
 
-The first widespread public implementations of MIXes were produced by the
+The first widespread public implementations of mixes were produced by the
 Cypherpunks mailing list. These ``Type I'' \emph{anonymous remailers}
 were inspired both by the problems surrounding the {\tt anon.penet.fi}
-service \cite{helsingius}, and by theoretical work on MIXes. Hughes wrote
+service \cite{helsingius}, and by theoretical work on mixes. Hughes wrote
 the first Cypherpunk anonymous remailer \cite{remailer-history}; Finney
 followed closely with a collection of scripts that used Phil Zimmermann's
 PGP to encrypt and decrypt remailed messages. Later, Cottrell implemented
 the Mixmaster system \cite{mixmaster}\cite{mixmaster-spec}, or ``Type II'' remailers,
-which added message padding, message pools, and other MIX features lacking
+which added message padding, message pools, and other mix features lacking
 in the Cypherpunk remailers. Note that Mixmaster does not include replies,
 so deployed remailer systems still use the less secure
 long-term Cypherpunk reply blocks.
@@ -341,30 +341,30 @@ long-term Cypherpunk reply blocks.
 At about the same time, Gulcu and Tsudik introduced the Babel
 system \cite{babel}, a practical remailer design with many desirable
 features. While it provides replies, they are only indistinguishable
-from forward messages by passive observers; the MIX nodes can still
+from forward messages by passive observers; the mix nodes can still
 distinguish. Babel's reply addresses are multiple-use, making them less
 secure than forward messages due to replay vulnerabilities. Babel also
-introduces \emph{inter-MIX detours}, where nodes can rewrap a message
+introduces \emph{inter-mix detours}, where nodes can rewrap a message
 and send it through a few randomly chosen new hops --- so even the sender
-cannot be sure of recognizing his message as it leaves the MIX.
+cannot be sure of recognizing his message as it leaves the mix.
 
 %\subsection{Robustness}
 %
-%Previous work primarily investigates the \emph{robustness} of MIX-nets
-%in the context of a distributed MIX system \cite{flash-mix}. A MIX
+%Previous work primarily investigates the \emph{robustness} of mix-nets
+%in the context of a distributed mix system \cite{flash-mix}. A mix
 %is considered robust if it survives the failure of any $k$ of $n$
 %participating servers, for some threshold $k$. This robustness is
-%all-or-nothing: either $k$ servers are good and the MIX works, or they are
-%not good and the MIX likely will not work.
+%all-or-nothing: either $k$ servers are good and the mix works, or they are
+%not good and the mix likely will not work.
 %
 %Robustness has been achieved primarily via zero-knowledge proofs of
 %correct computation.  Jakobsson showed how to use precomputation to reduce
-%the overhead of such a MIX network to about 160 modular multiplications
+%the overhead of such a mix network to about 160 modular multiplications
 %per message per server \cite{flash-mix}, but the protocol was later
 %found to be flawed \cite{mitkuro} by Mitomo and Kurosawa.  Desmedt and
 %Kurosawa's alternate approach \cite{desmedt} requires many participating
-%servers. Abe's MIX \cite{abe} provides \emph{universal verifiability} in
-%which any observer can determine after the fact whether a MIX cheated,
+%servers. Abe's mix \cite{abe} provides \emph{universal verifiability} in
+%which any observer can determine after the fact whether a mix cheated,
 %but the protocol is still computationally expensive. Neff recently
 %made further efficiency improvements to universally verifiable mixing
 %\cite{shuffle}.
@@ -376,22 +376,22 @@ capabilities (such as what kinds of encryption the remailer supports)
 and remailer up-times (obtained by pinging the machines in question
 and by sending test messages through each machine or group of
 machines).  Such \emph{reputation systems} improve the reliability of
-MIX-nets by allowing users to avoid choosing unreliable MIXes. The
+mix-nets by allowing users to avoid choosing unreliable mixes. The
 Jack B Nymble 2 remailer client \cite{potato} and the Mixmaster 2.9
 remailer allow users to import statistics files and can then pick
 remailers according to that data. Users can specify minimum
 reliability scores, decide that a remailer should always or never be
 used, and specify maximum latency. Ongoing research on more powerful
 reputation systems includes a reputation system for free-route
-networks \cite{mix-acc} and another for MIX cascades \cite{casc-rep}.
+networks \cite{mix-acc} and another for mix cascades \cite{casc-rep}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{The MIX-net Design}
+\section{The Mix-net Design}
 \label{sec:design}
 
 Mixminion brings together the current best approaches for providing
-anonymity in a batching message-based MIX environment. We don't aim
+anonymity in a batching message-based mix environment. We don't aim
 to provide low-latency connection-oriented services like Freedom
 \cite{freedom} or Onion Routing \cite{goldschlag99} --- while those
 designs are more effective for common activities like anonymous web
@@ -401,19 +401,19 @@ restrict the set of options for users: we provide only one
 cipher suite, and we avoid extensions that would help an adversary
 divide the anonymity set.
 
-Mixminion uses the same general MIX-net paradigm as previous work
+Mixminion uses the same general mix-net paradigm as previous work
 \cite{chaum-mix}\cite{mixmaster-attacks}\cite{babel}. The sender Alice chooses a
 path through the network. She repeatedly ``onion'' encrypts her message,
 starting with the last
-MIX in her path, and sends the onion to the first MIX. Each
-MIX unwraps a single layer of the onion, pads the message to a fixed
+mix in her path, and sends the onion to the first mix. Each
+mix unwraps a single layer of the onion, pads the message to a fixed
 length (32 Kbytes in our current design), and passes the result to the
-next MIX. We describe the behavior of the last MIX in
+next mix. We describe the behavior of the last mix in
 Section \ref{subsec:delivery-modules}.
 
 % A bit more detail about what is contained in the header: -George
 
-Headers addressed to each intermediate MIX are encrypted using RSA.
+Headers addressed to each intermediate mix are encrypted using RSA.
 %RSA-OAEP \cite{PKCS1} and are of 128 bytes each.
 % IMO we should use OAEP+, and variable-length headers. -DH
 They contain a secret 
@@ -429,13 +429,13 @@ key fingerprint.
 
 % This last paragraph assumes that the audience already knows the
 % material well enough to know that Alice encrypts each layer with the
-% appropriate MIX's public key. Is this assumption safe -Nick
+% appropriate mix's public key. Is this assumption safe -Nick
 
 While Mixminion protects against known \emph{traffic analysis} attacks
 (where an adversary attempts to learn a given message's sender or
 receiver \cite{rackoff93cryptographic}\cite{raymond00}), we do not fully
 address \emph{traffic confirmation} attacks. In a traffic confirmation
-attack, the adversary treats the MIX network as a black box and
+attack, the adversary treats the mix network as a black box and
 observes the behavior of senders and receivers. Over time, he can
 intersect the set of senders and receivers who are active at certain
 times and learn who is sending and receiving which messages
@@ -469,7 +469,7 @@ intersection of both outgoing batches.  To prevent these replays,
 Mixminion therefore provides only \emph{single-use} reply blocks. Since
 replies may be very rare relative to forward messages, and thus
 much easier to trace, the Mixminion protocol makes reply messages
-indistinguishable from forward messages even for the MIX nodes. Thus
+indistinguishable from forward messages even for the mix nodes. Thus
 forward and reply messages can share the same anonymity
 set. Unfortunately reply blocks are fundamentally more dangerous than
 forward secure communications due to the fact that the adversaries have
@@ -480,11 +480,11 @@ decrypt until the originator is reached.
 \label{subsec:tagging-attacks}
 
 To motivate some aspects of the Mixminion design, we describe an attack
-that works against many MIX-net protocols, including Mixmaster and Babel.
+that works against many mix-net protocols, including Mixmaster and Babel.
 
 A {\em tagging attack} is an active attack in which a message is
 modified by altering part of it (for example by flipping bits), so
-that it can be recognized later in the path.  A later MIX controlled by
+that it can be recognized later in the path.  A later mix controlled by
 the attacker can recognize tagged messages because the header does
 not conform to the expected format when decrypted.  Also, the final
 recipient can recognize a tagged message for which the payload has
@@ -494,9 +494,9 @@ Checking the integrity of hop headers individually is not
 sufficient to prevent tagging attacks.  For example, in Mixmaster
 each hop header contains a hash of the other fields in that header
 \cite{mixmaster-spec}.
-Each MIX in the path checks the integrity of the header, and drops
+Each mix in the path checks the integrity of the header, and drops
 the message immediately if it has been altered.  However, 
-an attacking MIX can still alter a header that will be decrypted
+an attacking mix can still alter a header that will be decrypted
 only after several more hops, and so tagging attacks are still possible.
 
 The most straightforward way to prevent tagging attacks is to
@@ -529,11 +529,11 @@ own public key.
 \subsection{Indistinguishable replies}
 \label{subsec:header-swap}
 
-By making forward messages and replies indistinguishable even to MIXes,
+By making forward messages and replies indistinguishable even to mixes,
 we prevent an
 adversary from dividing the message anonymity sets into two classes. In
 particular, if replies are infrequent relative to forward messages,
-an adversary who controls some of the MIXes can more easily trace the
+an adversary who controls some of the mixes can more easily trace the
 path of each reply.
 
 Having indistinguishable replies, however, makes it more difficult to
@@ -578,10 +578,10 @@ a message's path into two \emph{legs}, and split the header section
 correspondingly into a main header and a secondary header. Each header
 is composed of up to 16 subheaders, one for each hop along the path.
 Each subheader contains a hash of the remainder of its header as
-seen by the appropriate MIX, so we can do
+seen by the appropriate mix, so we can do
 integrity-checking of the path (but not the payload) within each leg.
 Each subheader also contains a symmetric key, which is used to derive a
-decryption key for decrypting the rest of the message. The MIX also
+decryption key for decrypting the rest of the message. The mix also
 derives a padding seed from this master key. It uses this padding seed
 to place predictable padding at the end of the header, so the hash will
 match even though each hop must regrow the header to maintain constant
@@ -590,12 +590,12 @@ length.
 For forward messages, Alice provides both legs; for anonymous replies, Alice
 uses Bob's reply block as the second leg, and generates her own path
 for the first leg.  To send a direct reply, Alice can use an empty
-first leg, or send the reply block and message to a MIX that can wrap
+first leg, or send the reply block and message to a mix that can wrap
 them for her.
 
 When Alice creates her message, she encrypts the secondary header
 with a hash of her payload (in addition to the usual layered onion
-encryptions). Alice's message then traverses the MIX-net as normal (every
+encryptions). Alice's message then traverses the mix-net as normal (every
 hop pulls off a layer, verifies the hash of the current header,
 and puts some junk at the end of the header), until it gets to a
 hop that is marked as a \emph{crossover point}. This crossover point
@@ -673,10 +673,10 @@ attack by modifying the payload of a forward message as
 it leaves Alice, and recognizing it later when it reaches Bob.
 Specifically, if our encryption mechanism were an ordinary
 counter-mode cipher, he might alter a specific byte in the payload of
-a message entering the MIX-net. Since many of the outgoing messages
+a message entering the mix-net. Since many of the outgoing messages
 will be in part predictable (either entirely plaintext, or with
 predictable PGP header material), the adversary can later observe
-messages exiting the MIX-net and look for payloads that have a
+messages exiting the mix-net and look for payloads that have a
 corresponding anomaly at that byte.
 
 % I think we shold point out =someplace= why we can't use
@@ -689,7 +689,7 @@ If he tags a message
 leaving Alice, the payload will be entirely random when it reaches
 Bob.  Thus, an adversary who tags a message can at worst turn the
 corresponding payload into trash.  
-%%Thus if he tags more than one message in the entire MIX-net, he
+%%Thus if he tags more than one message in the entire mix-net, he
 %%learns only one bit from each tagged message, so he cannot distinguish
 %%the tagged messages. 
 % I think that the above sentence raises more objections than it 
@@ -739,17 +739,17 @@ the second leg, the second leg in a forward message can be very short.
 At the extreme, the first hop in the second header could directly
 specify the message recipient. However, the choice of crossover point
 can still reveal information about the intended recipient,\footnote{For instance,
-some MIXes may only allow outgoing mail to local addresses; if such a
+some mixes may only allow outgoing mail to local addresses; if such a
 node gets a crossover message that has been trashed, it might guess
 that the recipient is one of the local addresses.} and so we recommend
 that the second leg be at least a few hops long.
 
-No MIX except the crossover point can distinguish forward messages from
+No mix except the crossover point can distinguish forward messages from
 replies --- even the crossover point cannot be sure whether it is processing
 a reply or forward message, but it may be able to guess that crossover
 points are more frequent on forward paths than direct replies or
 anonymized reply paths.
-%The protocol doesn't allow a MIX to know its location in the path (other
+%The protocol doesn't allow a mix to know its location in the path (other
 %than the exit node), or the total length of the route.
 % [WE NEED TO SAY THIS SOMEWHERE SINCE IT IS AN IMPORTANT FEATURE! -GD]
 
@@ -889,7 +889,7 @@ from recognizing even his own messages; but without link padding, he
 can still measure how much traffic is being transmitted.
 
 As a fringe benefit, using a separate link protocol makes it
-easier to deploy relay-only MIXes --- such nodes simply omit SMTP
+easier to deploy relay-only mixes --- such nodes simply omit SMTP
 support.  (See Section \ref{subsec:delivery-modules} below.)
 % Credit for the above point goes to Len.
 
@@ -901,7 +901,7 @@ normal client side mixminion (which servers can also use). In
 particular, access to some shared key material and plug-in for
 infrastructure critical services. -GD]
 
-Once a Mixminion packet reaches the final MIX in its path, it must
+Once a Mixminion packet reaches the final mix in its path, it must
 either be delivered to its intended recipient, dropped if it is an
 intra-network dummy message, or processed further if it is a remixed
 Type II packet. In order to support different kinds of
@@ -953,10 +953,10 @@ in a variable-length annex to the final subheader.
 % someplace, perhaps in a different  document, we should explain why 
 % we don't.  -Nick
 
-The types each MIX supports are described in a \emph{capability block},
-which also includes the MIX's address, long-term (signing) public key,
+The types each mix supports are described in a \emph{capability block},
+which also includes the mix's address, long-term (signing) public key,
 short-term public key (for use in header encryption), remixing capability,
-and batching strategy. MIXes sign these capability blocks
+and batching strategy. Mixes sign these capability blocks
 and publish them on directory servers (see Section \ref{sec:dir-servers}).
 Clients download this information from the directory servers.
 
@@ -1029,8 +1029,8 @@ for the remailer network.
 Mixmaster offers rudimentary replay prevention by keeping a list of recent
 message IDs. To keep the list from getting too large, it expires entries
 after a server-configurable amount of time. But if an adversary records
-the input and output batches of a MIX and then replays a message after
-the MIX has forgotten about it, the message's decryption will be exactly
+the input and output batches of a mix and then replays a message after
+the mix has forgotten about it, the message's decryption will be exactly
 the same. Thus, Mixmaster does not provide the forward anonymity that we want.
 
 Chaum first observed this attack in \cite{chaum-mix},
@@ -1039,7 +1039,7 @@ but his solution (which is proposed again in Babel\footnote{
   each layer of the onion includes ``the number of seconds
   elapsed since January 1, 1970 GMT, to the moment of message composition
   by the sender.'' Few people will be composing a message on a given
-  second, so an adversary owning a MIX at the beginning of the path and
+  second, so an adversary owning a mix at the beginning of the path and
   another at the end could trivially recognize a message.
 }) --- to include in each message a timestamp that describes when that message
 is valid --- also has problems. Specifically, it introduces a new class
@@ -1056,8 +1056,8 @@ then release it and trace it through the network.
 One way of addressing this partitioning attack is to add dummy traffic
 so that it is less rare for messages to arrive near their expiration date;
 but dummy traffic is still not well-understood. Another approach would
-be to add random values to the expiration date of each MIX in the path,
-so an adversary delaying a message at one MIX cannot expect that it
+be to add random values to the expiration date of each mix in the path,
+so an adversary delaying a message at one mix cannot expect that it
 is now near to expiring elsewhere in the path; but this seems open to
 statistical attacks.
 
@@ -1072,9 +1072,9 @@ statistical attacks.
 
 A possible compromise solution that still provides forward anonymity
 is as follows:  Messages don't
-contain any timestamp or expiration information. Each MIX must keep
+contain any timestamp or expiration information. Each mix must keep
 hashes of the headers of all messages it has processed since the last time
-it rotated its key. MIXes should choose key rotation frequency based on
+it rotated its key. Mixes should choose key rotation frequency based on
 security goals and on how many hashes they want to store, and
 advertise it widely along with their public key information.
 
@@ -1086,7 +1086,7 @@ delaying attack still works.
 Also note that while key rotation and link encryption (see Section
 \ref{subsec:link-encrypt}) both provide forward security, their protection
 is not redundant. With only link encryption, an adversary running
-one MIX could compromise another and use its private key to decrypt
+one mix could compromise another and use its private key to decrypt
 messages previously sent between them. Key rotation limits the window
 of opportunity for this attack.
 
@@ -1100,7 +1100,7 @@ Section \ref{subsec:batching}; this is a subject for future research.
 \label{sec:dir-servers}
 
 The Mixmaster protocol does not specify a means for clients to learn the
-locations, keys, capabilities, or performance statistics of MIXes. Several
+locations, keys, capabilities, or performance statistics of mixes. Several
 \emph{ad hoc} schemes have grown to fill that void \cite{levien}; here
 % would be nice to cite some more. eg, are there key lists, etc? -RRD
 we describe Mixminion directory servers and examine the anonymity risks
@@ -1111,11 +1111,11 @@ node state.  It is important that these servers be synchronized and
 redundant:  we lose security if each client has different information
 about network topology and node reliability. An adversary who controls
 a directory server can track certain clients by providing different
-information --- perhaps by listing only MIXes it controls or only
-informing certain clients about a given MIX.
+information --- perhaps by listing only mixes it controls or only
+informing certain clients about a given mix.
 
 An adversary without control of a directory server can still exploit
-differences among client knowledge. If Eve knows that MIX $M$ is listed
+differences among client knowledge. If Eve knows that mix $M$ is listed
 on server $D_1$ but not on $D_2$, she can use this knowledge to link
 traffic through $M$ to clients who have queried $D_1$.  Eve can also
 distinguish traffic based on any differences between clients who use
@@ -1128,15 +1128,15 @@ of the directory.
 %difference can aid her traffic analysis. [[CAN WE HAVE A CITE HERE?]]
 
 So it is not merely a matter of convenience for clients to retrieve
-up-to-date MIX information.
+up-to-date mix information.
 % if some client software supports a static
 %list of servers while other software is dynamic, this difference can
 %help an attacker distinguish their traffic.
 We must specify a directory
 service as a part of our standard. Thus Mixminion provides protocols for
-MIXes to advertise their capability certificates to directory servers,
+mixes to advertise their capability certificates to directory servers,
 and for clients to download \emph{complete} directories.\footnote{
-  We recommend against using the MIX-net to anonymously retrieve a random
+  We recommend against using the mix-net to anonymously retrieve a random
   subset of the directory: an adversary observing the directory servers
   and given two hops in a message's path can take the intersection over
   recently downloaded directory subsets to guess the remaining hops in
@@ -1146,11 +1146,11 @@ and for clients to download \emph{complete} directories.\footnote{
 }
 Servers can work together to ensure correct and complete data by
 successively signing certificate bundles, so users can be sure that a
-given MIX certificate has been seen by a threshold of directory servers.
+given mix certificate has been seen by a threshold of directory servers.
 
 But even if client knowledge is uniform, an attacker can mount a
 \emph{trickle attack} by delaying messages from Alice at a compromised
-node until the directory servers remove some MIX $M$ from their listings
+node until the directory servers remove some mix $M$ from their listings
 --- he can then release the delayed messages and guess that any messages
 still using $M$ are likely to be from Alice. An adversary controlling
 many nodes can launch this attack very effectively. Thus clients
@@ -1160,7 +1160,7 @@ newly-published nodes. Dummy traffic to old nodes may also
 help thwart trickle attacks.
 
 Directory servers compile node availability and performance information by
-sending traffic through MIXes in their directories. In its basic form this
+sending traffic through mixes in their directories. In its basic form this
 can be very similar to the current ping servers \cite{levien}, but in the
 future we can investigate integrating more complex and attack-resistant
 reputation metrics.   Even this reputation information introduces
@@ -1189,9 +1189,9 @@ maintain a set of (mailbox, reply block) pairs to allow users to
 receive mail without revealing their identities. When mail arrives to
 \emailaddr{bob@nym.alias.net}, the nymserver attaches the payload to
 the associated
-reply block and sends it off into the MIX-net. Because these nymservers
+reply block and sends it off into the mix-net. Because these nymservers
 use the Type I remailer network, these reply blocks are \emph{persistent}
-or \emph{long-lived} nyms --- the MIX network does not drop replayed
+or \emph{long-lived} nyms --- the mix network does not drop replayed
 messages, so the reply blocks can be used again and again. Reply block
 management is much simpler in this model because users only need to
 replace a reply block when one of the nodes it uses stops working.
@@ -1272,7 +1272,7 @@ can perform this attack, since the Mixminion message size is small.)
 
 % Assuming Alice picks five nodes at random for
 %each path, at 28k of data per packet (assuming no redundancy or overhead)
-%an adversary owning only 1\% of the MIXes has a better than even chance
+%an adversary owning only 1\% of the mixes has a better than even chance
 %of identifying Alice as soon as she sends her fourteen packet. By the
 %time she sends message 92 (meaning her file is roughly 2.5 megabytes),
 %Alice has a less than 1\% chance of keeping her anonymity.
@@ -1297,10 +1297,10 @@ is downloading his mail from a nymserver.
 %[This subsection is draft/experimental/controversial. Don't pay much
 %attention to it yet.]
 
-A MIX-net design groups messages into batches and chooses paths; the
+A mix-net design groups messages into batches and chooses paths; the
 approaches it uses affect the degree of anonymity it can provide
 \cite{batching-taxonomy}.
-We might define ideal anonymity for a MIX-net to be when an attacker can
+We might define ideal anonymity for a mix-net to be when an attacker can
 gain no information about the linkage between messages entering and
 leaving the network, other than that the maximum time between them is
 equal to the maximum network latency.
@@ -1328,7 +1328,7 @@ trade-off between latency and anonymity.
 The network has a fixed {\em batch period}, $t_\mathrm{batch}$, which is closely
 related to the maximum desired latency; a typical value could be 3--6 hours.
 Messages entering the network in each batch period are queued until
-the beginning of the next period. They are then sent through the MIX-net
+the beginning of the next period. They are then sent through the mix-net
 synchronously, at a rate of one hop per {\em hop period}. All paths are
 a fixed length $\ell$ hops, so that if no messages are dropped, the messages
 introduced in a given batch will progress through their routes in
@@ -1353,7 +1353,7 @@ $\ell$.
 %free-route/cascade approach (otherwise the anonymity set is limited by
 %the bandwidth that can be handled by a single cascade).]]
 
-%Define the {\em width}, $w$ of a MIX network using synchronous batching to
+%Define the {\em width}, $w$ of a mix network using synchronous batching to
 %be the number of nodes that simultaneously process messages in each
 %hop period. (If this is not constant, we can still talk about the
 %maximum, minimum and mean width.)
@@ -1380,7 +1380,7 @@ $\ell$.
 %mini-batches.
 
 %For example in the limiting case $w = 1$, the network consists of a
-%single MIX cascade (this is the situation considered in Section 7.1
+%single mix cascade (this is the situation considered in Section 7.1
 %of \cite{babel}).
 
 %Let $n$ be the number of nodes in the network. An interesting case
@@ -1411,7 +1411,7 @@ analyzed security properties than less constrained approaches.
 %[Do something akin to pages 13-15 of
 %\url{http://freehaven.net/doc/casc-rep/casc-rep.ps}.]
 %
-%\subsection{MIX attacks}
+%\subsection{Mix attacks}
 %\label{subsec:mix-attacks}
 %
 %%\begin{description}
@@ -1439,18 +1439,18 @@ analyzed security properties than less constrained approaches.
 %\item \emph{Compromize a directory server.} Identical directory listings
 %  are served by a large group of servers, and signed by all.
 %\item \emph{Lie to a directory server.}  Signed capability blocks, and
-%  the fact that a MIX's signing key is its identity, prevent this
+%  the fact that a mix's signing key is its identity, prevent this
 %  attack.
 %\item \emph{Exploit differences in client directory knowledge.}  By
 %  only updating directory information nightly; by urging client
 %  software to pull updates as soon as possible after their release;
 %  and by 
-%\item \emph{Delay MIX packets until directory information changes.}
+%\item \emph{Delay mix packets until directory information changes.}
 %  The delay in clients' using new information, along with dummy
 %  traffic sent to de-listed destinations and expired keys, should
 %  mitigate this attack. However, a complete solution remains an
 %  open problem.
-%\item \emph{Flood the directories with nonfunctional MIX entries.}
+%\item \emph{Flood the directories with nonfunctional mix entries.}
 %  Availability statistics should mitigate this problem.  Nevertheless,
 %  it remains an area of active research. \cite{mix-acc,casc-rep}
 %[[WHAT OTHER DIRECTORY ATTACKS?]]
@@ -1505,8 +1505,8 @@ specification \cite{mixminion-spec}.
 % Style guide:
 %     U.S. spelling
 %     avoid contractions (it's, can't, etc.)
-%     'MIX', 'MIXes' (as noun)
-%     'MIX-net'
+%     'mix', 'mixes' (as noun)
+%     'mix-net'
 %     'mix', 'mixing' (as verb)
 %     'Mixminion Project'
 %     'Mixminion' (meaning the protocol suite or the network)
