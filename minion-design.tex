@@ -1308,11 +1308,11 @@ packet timing to become confident that they are communicating. Because
 Mixminion aims to defeat even a global passive adversary, we must address
 this end-to-end timing vulnerability.
 
-Further, because we have allowed our adversary to send and delay messages,
+Further, because our adversary can send and delay messages,
 he can manipulate the batch of messages entering a mix so the only message
 unknown to him in the batch is the target message. This approach is
 known as the \emph{blending attack} because the adversary blends his
-own messages with the honest messages in the batch
+own recognizable messages with the honest messages in the batch
 \cite{batching-taxonomy}. By repeatedly
 attacking each mix in the path, the adversary will link Alice and Bob.
 
@@ -1326,7 +1326,7 @@ the cost of the blending attack: because the number of messages coming
 out at each flush is always a fraction of the number waiting, it is
 impossible to arrange to completely flush the mix with high probability
 in one flush. Thus an adversary is forced to spend multiple intervals
-(and thus delay other messages for considerable time) both to flush
+(and thus delay other messages for considerable time) first to flush
 the original honest messages from the mix, and again to flush the
 target message from the mix. This delay will be noticed by the other
 mixes, because [nick? clarify here] they talk to each other over tcp so
@@ -1349,9 +1349,9 @@ by letting mixes address dummies to actual users. But each mix must
 know all the users in the system: if a mix only delivers dummies to a
 subset of the users, an adversary can distinguish with better than even
 probability between a dummy and a legitimate message. While there is
-some early research on the subject \cite{langos02}, we currently know no
+some initial research on the subject \cite{langos02}, we currently know no
 practical way to use dummies to provably help against the intersection
-attack. Thus Mixminion does not use dummies that reach users.
+attack. Thus Mixminion does not use dummies to or from users.
 
 Another use for dummies is to weaken the blending attack. Our timed
 dynamic-pool batching strategy increases the cost of the blending attack
@@ -1360,7 +1360,8 @@ messages are out; but once he has done so he can be certain that no
 honest messages remain. In the second phase of the attack, he again
 needs to flush until the target message comes out; but once it does, he
 can be certain of recognizing it. Thus Mixminion employs the following
-dummy policy, as suggested in \cite{andrei-claudia}: each time the mix
+dummy policy, as suggested in \cite{batching-taxonomy} and analyzed in 
+\cite{andrei-claudia}: each time the mix
 fires, it also sends out a number of dummies chosen from a geometric
 distribution. These dummies travel a number of hops chosen uniformly
 between $1$ and $4$. The blending attack is now harder --- the adversary
@@ -1368,29 +1369,24 @@ can no longer single out the target message in the outgoing batch, and so
 he must track each of the dummies along with the original target message.
 
 During normal traffic, these dummies affect anonymity very little. They
-aim to protect anonymity in times of low traffic --- either when it
-is low because there are actually few messages going through the mix,
+aim to protect anonymity in times of low traffic --- either when
+there are actually few messages going through the mix,
 or when there are the normal number of messages but most of them are
 created by the adversary.
 
 \subsection{Transmitting many messages}
 
 When Alice (the owner of a pseudonym) is downloading her mail from a
-nymserver, she will likely receive many separate messages.
-%
-%We would like to use Mixminion as a transport layer for higher-level
-%applications such as anonymous publication systems
-%\cite{freehaven-berk}, but much research remains before we can
-%provide security for users transferring large files over Mixminion.
-%
-%Alice wants to send a large file to Bob; thus she must send many Mixminion
-%messages.
+nymserver, she will likely receive many separate messages. Similarly, if
+Alice uses Mixminion as a transport layer for higher-level applications
+such as anonymous publication systems \cite{freehaven-berk}, sending a
+large file means sending many Mixminion messages.
 Conventional wisdom suggests that she should pick a different
 % can I get a \cite here? -RRD
 path for every message, but an adversary that owns all the nodes in
 \emph{any} of the paths could learn her identity --- without any work
 at all. Even an adversary owning a small fraction of the network
-can perform this attack, since each Mixminion payload is so small.
+can perform this attack, since each Mixminion payload is small.
 
 % Assuming Alice picks five nodes at random for
 %each path, at 28k of data per packet (assuming no redundancy or overhead)
@@ -1399,130 +1395,29 @@ can perform this attack, since each Mixminion payload is so small.
 %time she sends message 92 (meaning her file is roughly 2.5 megabytes),
 %Alice has a less than 1\% chance of keeping her anonymity.
 
-Alice thus seems most likely to maintain her unlinkability by sending all the
-messages over the same path. On the other hand, a passive adversary can
-watch the flood of messages traverse that path.
+Alice thus seems most likely to maintain her unlinkability by sending all
+the messages over the same path. On the other hand, a passive adversary
+can watch the flood of messages traverse that path.
 
-% We must make sure the
-%honest nodes will hide message streams enough to
-%foil these attacks.% The multiple-message tagging attacks described in
-%Section \ref{subsec:multi-tagging} make the situation even more dangerous.
+A compromise approach is to pick a small number of paths and use them
+together. By sending out the messages over time rather than all at once,
+and assuming more people than just Bob are receiving many messages,
+the pool mixes will create a large anonymity set of possible senders.
+However, a complete solution to the intersection attack remains an
+open problem.
 
-%A compromise approach is to pick a small number of paths and use them
-%together. Still, if the messages are sent all at once, it seems clear
-%we're going to need some really good cover traffic schemes before we
-%can offer security.
+%In practice, several considerations have to be balanced when choosing
+%a batching strategy and network structure. These include maximizing
+%anonymity sets (both batch sizes through each node and the overall
+%anonymity sets of users); bandwidth considerations; reliability;
+%enabling users to choose nodes that they trust; and interactions with
+%the reputation system.
 
-\subsection{Batching Strategy and Dummy Policy}
-\label{subsec:batching}
-
-%[This subsection is draft/experimental/controversial. Don't pay much
-%attention to it yet.]
-
-A mix-net design groups messages into batches and chooses paths; the
-approaches it uses affect the degree of anonymity it can provide
-\cite{batching-taxonomy}.
-We might define ideal anonymity for a mix-net to be when an attacker can
-gain no information about the linkage between messages entering and
-leaving the network, other than that the maximum time between them is
-equal to the maximum network latency.
-
-% Silly newbie mistake: the probability is the same as a priori, not
-% uniform. That's what I get for writing security definitions at 1:00
-% in the morning. -DH
-
-This ideal is not achieved by protocols like Mixmaster that use random
-delays: if the maximum latency of such a network is $t$, then the
-anonymity set of a message leaving the network may be much smaller
-than all messages that entered over a time $t$.
-% This is handwaving, and the problem is more that the distribution
-% isn't right rather than the actual size of the anonymity set.
-% It'll do for the time being. -DH
-Also, because Mixmaster is both {\em asynchronous} (messages can enter and
-leave the network at any time) and uses free routes, it is subject to
-the attacks described in \cite{disad-free-routes}.
-% Should really summarise them, but I don't have time :-(
-We would like to explore a
-strategy called {\em synchronous batching}. This approach seems to prevent
-these attacks even when free routes are used, and seems to improve the
-trade-off between latency and anonymity.
-
-The network has a fixed {\em batch period}, $t_\mathrm{batch}$, which is closely
-related to the maximum desired latency; a typical value could be 3--6 hours.
-Messages entering the network in each batch period are queued until
-the beginning of the next period. They are then sent through the mix-net
-synchronously, at a rate of one hop per {\em hop period}. All paths are
-a fixed length $\ell$ hops, so that if no messages are dropped, the messages
-introduced in a given batch will progress through their routes in
-lock-step, and will all be transmitted to their final destinations $\ell$
-hop periods later. Each subheader of a message specifies the hop
-period in which it must be received, so that it cannot be delayed by an
-attacker (which would be fatal for this design).
-
-The latency is between $\ell t_\mathrm{hop}$ and $t_\mathrm{batch} +
-\ell t_\mathrm{hop}$, depending on when the message is submitted.
-Typically we would have $t_\mathrm{hop} < t_\mathrm{batch}/\ell$, so the
-latency is at most $2t_\mathrm{batch}$ independent of the path length
-$\ell$.
-
-%The set of messages sent to a node in a given hop period is called a
-%mini-batch, to distinguish it from the set of messages being sent
-%through the network as a whole. [[need better name?]]
-
-%[[Messages are tied to a given time period so that they cannot be delayed.
-%Explain why this prevents the attacks in [disad-free-routes], even
-%for free-route networks. Also explain why we need to use a hybrid
-%free-route/cascade approach (otherwise the anonymity set is limited by
-%the bandwidth that can be handled by a single cascade).]]
-
-%Define the {\em width}, $w$ of a mix network using synchronous batching to
-%be the number of nodes that simultaneously process messages in each
-%hop period. (If this is not constant, we can still talk about the
-%maximum, minimum and mean width.)
-
-%An important constraint on the network structure is the maximum
-%bandwidth (traffic in unit time) through any given node.
-%Assume that sending a message over a single hop consumes a fixed
-%amount of network traffic; we can then use that as the unit for
-%traffic.
-
-%Let $T_{batch}$ be the expected throughput in a single batch period,
-%i.e. the number of messages that go through the network in a batch.
-
-%We can give nodes the maximum opportunity to make use of the available
-%bandwidth by setting $t_{hop} \simeq t_{batch}/n$.
-
-%If the available nodes were used optimally (this is a big if),
-%the bandwidth required through each node in this simplified case
-%will be $\frac{T_{batch}}{wt_{hop}} = \frac{nT_{batch}}{wt_{batch}}$.
-
-%For any particular network structure, bandwidth constraints, and
-%assumed traffic levels, it is straightforward to calculate the
-%minimum width of the network, and therefore the maximum sizes of
-%mini-batches.
-
-%For example in the limiting case $w = 1$, the network consists of a
-%single mix cascade (this is the situation considered in Section 7.1
-%of \cite{babel}).
-
-%Let $n$ be the number of nodes in the network. An interesting case
-%is $w = \ell = n$; in that case we could use a set of $n$ cascades
-%arranged as a Latin square.\footnote{[[define Latin square]]}
-%This ensures that all nodes make full use of the available bandwidth;
-%however it gives users no choice in the set of nodes used.
-
-In practice, several considerations have to be balanced when choosing
-a batching strategy and network structure. These include maximizing
-anonymity sets (both batch sizes through each node and the overall
-anonymity sets of users); bandwidth considerations; reliability;
-enabling users to choose nodes that they trust; and interactions with
-the reputation system.
-
-Further analysis is needed before we can choose a
-final network structure. Note that a planned structure, where each
-user's software follows the plan consistently when constructing
-routes, will generally be able to achieve stronger and more easily
-analyzed security properties than less constrained approaches.
+%Further analysis is needed before we can choose a
+%final network structure. Note that a planned structure, where each
+%user's software follows the plan consistently when constructing
+%routes, will generally be able to achieve stronger and more easily
+%analyzed security properties than less constrained approaches.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
