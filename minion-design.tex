@@ -205,8 +205,11 @@ of attacks known as \emph{tagging attacks}.
 \end{center}
 \end{figure}
 
+The ``header swap'' mechanism could be used in order to minimize the information leaked by \emph{tagging attacks}. Each mixminion packet, when created, has two headers: the first one contains a series of sub headers encrypted as an onion under the public keys of a sequence of nodes. Each of these sub headers contain some symmetric key and a hash to check the integrity of the header. The second header contains sub headers in the form of an onion as well but is also encrypted under the keys contained in the first header, as well as the hash of the payload. The second header could also be a single use reply block (SURB) provided by another party. The payload is finally encrypted using all the keys contained in the first header and the second if it is not a SURB.
 
+The packet travels through nodes that perform the operations illustrated on \emph{figure 1}. Each node decrypts the RSA sub header, retrieves the key and checks the integrity of the first header. If someone has tampered with it, the packet is discarded. If the header is correct, the secret is used to decrypt the second header and the payload. The is one special node, at the ``crossover point'', in the path that in addition to the standard operation, decrypts the second header using the hash of the payload and swaps the two headers.
 
+The primitive used for encryption and decryption is BEAR \cite{BEAR}, a variable block size block cipher. It offers the property that if any bit of the encrypted material is changed the decryption will look like random bits for anyone that does not know the key. Therefore we minimize an attackers benefit for tagging the message. It is impossible to tag the headers because any modification is detectable. It is also fruitless to modify the payload of the message: if it is modified before the crossover point, the second header will not be decryptable, and if it is modified afterward the first part of the path should offer enough anonymity. Of course in order to make this scheme as secure as if tagging attacks did not exist we should require users to choose the double path length for each message. In practice users might choose to select shorter paths, given that the tagging attack provides very little information and is very difficult to mount.
 
 \subsection{Approach two: the `distinguish replies' method}
 
@@ -445,6 +448,10 @@ nick?
 
 \section{Attacks and Defenses}
 \label{sec:attacks}
+
+\subsection{Tagging attacks on fixed routes}
+
+As described in ?? the ``header swap'' method reduces the potential for tagging attacks but making the second part of the route dependent on the payload. This reduces the effective path length of the attacked messages, which could lead to vulnerabilities. In particular if the same path is chosen for many packets, which presents traffic analysis related problems in itself, an attacker could discover the destination of a sequence of packets using a tagging attack on the first part of the route, then followed by an attack on the second part of the route to discover the destination of a sequence of packets. For this attack to work in addition to choosing fixed routes for many packets and attacker would need to control the node at which the crossover operation is performed. This attack is only possible against one victim at a time, and can only be performed by one attacker at a time.
 
 my aim here is to do something akin to pages 13-15 of
 http://freehaven.net/doc/casc-rep/casc-rep.ps
