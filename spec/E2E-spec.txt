@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.14 2003/10/30 17:32:18 weasel Exp $
+$Id: E2E-spec.txt,v 1.15 2003/10/31 05:28:24 arma Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -481,7 +481,7 @@ Table of Contents
    If more than one identity is exported at a time, the SURB-Identity
    blocks are concatenated.
 
-   Nickname comparisons SHOULD be done case in a case insensitive
+   Nickname comparisons SHOULD be done in a case insensitive
    manner.)
 
    To generate a SURB for a path of length PATH_LEN, using a long-term
