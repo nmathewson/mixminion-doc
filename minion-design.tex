@@ -1,5 +1,5 @@
-% \documentclass[10pt, twocolumn]{IEEEtran}
-\documentclass[final,inpress,inline]{ieee}
+
+\documentclass[final]{ieee}
 
 \usepackage{url}
 \usepackage{graphics}
@@ -40,9 +40,10 @@ Roger Dingledine and Nick Mathewson \\ The Free Haven Project \\ \emailaddr{{arm
 %The Free Haven Project
 %\email{\emailaddr{{arma,nickm}@freehaven.net}}}
 
+\pagestyle{titlepagestyle}
 \maketitle
-\pagestyle{plain} 
- 
+\pagestyle{empty}
+
 \begin{abstract}
 We present Mixminion, a message-based anonymous remailer protocol with
 secure single-use reply blocks. Mix nodes cannot distinguish
@@ -54,8 +55,8 @@ and we describe nymservers that provide long-term
 pseudonyms using single-use reply blocks as a primitive. Our design
 integrates link encryption between remailers to provide
 forward anonymity. Mixminion works in a real-world Internet environment,
-and requires little synchronization or coordination between nodes.
-Mixminion protects against known anonymity-breaking attacks as well
+requires little synchronization or coordination between nodes, and
+protects against known anonymity-breaking attacks as well
 as or better than other systems with similar design parameters.
 \end{abstract}
 
@@ -98,8 +99,7 @@ retire the Type I remailer network.
 transport. We use TLS over TCP for link encryption between remailers
 and use ephemeral keys to ensure forward anonymity for
 each message. Link encryption also blocks many active and
-passive attacks on the communication links, leaving the attackers with
-the sole option of subverting the nodes themselves.
+passive attacks on the communication links.
 
 % We also provide flexible delivery schemes ---
 %rather than just allowing delivery to mail or Usenet, we allow designers
@@ -108,18 +108,6 @@ the sole option of subverting the nodes themselves.
 %we can both limit their influence on the anonymity properties of the
 %system, and also extend the Mixminion network for uses other than
 %anonymous email.
-
-\item \textbf{Exit policies:} Exit abuse is a serious barrier to wide-scale
-remailer deployment: most Internet Service Providers (ISPs) do not
-tolerate systems that potentially 
-deliver hate mail, etc. While the original Mixmaster design provided no
-way for nodes to advertise their capabilities and roles (so node
-administrators either disallow outgoing messages, or maintain a list of
-blocked addresses by hand), 
-Mixminion allows each node to specify and advertise an exit policy. We
-further describe a protocol which allows recipients to opt out of receiving mail
-from remailers, but at the same time makes it difficult for an adversary
-to deny service to interested recipients.
 
 \item \textbf{Replay prevention and key rotation:} 
 If an adversary records the input and output batches of a mix and then
@@ -139,19 +127,35 @@ number of IDs a node needs to remember between key rotations is not
 % This is not very formal:
 too great a burden.
 
+\item \textbf{Exit policies:} Exit abuse is a serious barrier to wide-scale
+remailer deployment: most Internet Service Providers (ISPs) do not
+tolerate systems that potentially 
+deliver hate mail, etc.
+% While the original Mixmaster design provided no
+%way for nodes to advertise their capabilities and roles (so node
+%administrators either disallow outgoing messages, or maintain a list of
+%blocked addresses by hand), 
+Mixminion provides a consistent mechanism for each node to specify and
+advertise an exit policy. We
+further describe a protocol which allows recipients to opt out of receiving mail
+from remailers, but at the same time makes it difficult for an adversary
+to deny service to interested recipients.
+
 \item \textbf{Integrated directory servers:} Mixmaster uses several \emph{ad hoc}
 approaches to distribute information about remailer availability, performance, and
 keys. But the fact that users and remailers operate with
-different information introduces \emph{partitioning} attacks
-\cite{XXXX}.  Mixminion
+different information introduces \emph{partitioning} attacks.
+% \cite{XXXX}. is there a good cite for this? Searching on google, I
+% find no references to this term except Mixminion.
+Mixminion
 uses a small group of synchronized redundant directory servers
 to provide uniform information about the network.
 
-\item \textbf{Dummy traffic:} Cottrell briefly mentions dummy messages in
-\cite{mixmaster-attacks}, but they are not part of the specification
-\cite{mixmaster-spec}. Mixminion fully supports link padding, dummy
-traffic and uses a simple dummy policy to
-improve anonymity.
+\item \textbf{Dummy traffic:} Cottrell briefly mentions dummy messages
+in \cite{mixmaster-attacks}, but they are not part of the specification
+\cite{mixmaster-spec}. Mixminion currently uses a simple dummy policy to
+improve anonymity. Because we use our own transport, we fully support
+a variety of link padding and dummy traffic schemes.
 
 \end{itemize}
 
@@ -163,9 +167,8 @@ improve anonymity.
 We review mixes and mix-nets in Section \ref{sec:background},
 describe our goals and assumptions in Section \ref{sec:assumptions},
 and then address the above list of improvements in Sections
-\ref{sec:design}-\ref{sec:nymservers}. 
- We conclude with a summary of
-how our design stands up to known attacks, and a list of future work.
+\ref{sec:design}-\ref{sec:nymservers}. We then summarize how our design
+stands up to known attacks, and conclude with a list of open problems.
 
 %The Mixminion Project aims to deploy a cleaner remailer design
 %in the same spirit as Mixmaster, with the goals of expanding
@@ -501,6 +504,16 @@ next hop of the reply block until its originator is reached.}
 % XXX I explain this in detail in my paper in NordSec2002 on
 %     Forward Secure Mixes. Can add a ref if you wish... -GD
 
+Mixminion's reply model requires anonymous recipients to keep one secret
+for each nym they maintain. The final header of the SURB includes a seed
+(symmetrically encrypted to that nym's secret), from which the recipient
+can derive all the secrets needed to strip the layers of encryption from
+the received message. The recipient keeps a separate secret for each
+nym in order to block attacks to link the nyms. For example, if Alice
+is talking to Bob and Charlie and guesses they are the same person, she
+might reply to Bob's mail using Charlie's reply block; if Bob responds
+as normal, her guess would be confirmed.
+
 The rest of this section describes the mechanism for secure replies,
 its integration with the normal sender anonymous message delivery, and
 how we defeat tagging-related attacks.  
@@ -518,15 +531,6 @@ Mixminion allows Alice to send messages to Bob in one of three ways:
    remain anonymous.
 \end{enumerate}
 
-Mixminion's reply model is in part inspired by Babel \cite{babel}, as it
-requires the creator of a reply block to keep no other state than its public
-key in order to read the reply.  All the secrets that an anonymous recipient
-needs to strip the layers of encryption from a reply message are derived from
-a master secret contained in the last header of the single-use reply block,
-encrypted with the recipient's private key.
-% XXX this is no longer true. 
-% - fixed it -GD
-
 \begin{figure}
 \begin{center}
 \resizebox{8cm}{!}{\includegraphics{headerDiagram}}
@@ -534,20 +538,11 @@ encrypted with the recipient's private key.
 \end{center}
 \end{figure}
 
-% XXX Have already said this at the end of the previous section:
-By making forward messages and replies indistinguishable even to mixes,
-we prevent an
-adversary from partitioning the message anonymity sets into two classes. In
-particular, if replies are infrequent relative to forward messages,
-an adversary who controls some of the mixes might more easily trace the
-path of each reply.
-
-Having indistinguishable replies, however, makes it more difficult to
-prevent \emph{tagging attacks}. Since the author of a reply block,
-used for routing and conventionally checking the integrity of the
-message, is not the 
-one writing the message's contents, a hash of the entire message
-cannot be included in the SURB. 
+The fact that forward messages are indistinguishable from replies,
+however, makes it more difficult to prevent \emph{tagging attacks}.
+Since the author of a SURB cannot predict the message that will be
+attached to it, a hash of the entire message cannot be included in
+the SURB.
 Therefore, since we choose to make forward messages and replies
 indistinguishable, we cannot include hashes for forward messages either.
 Tagging attacks, and our approach to preventing them, are discussed in more
@@ -561,14 +556,16 @@ Each subheader contains a hash of the remainder of its header as seen
 by that mix, so we can do integrity-checking of the path (but not the
 payload) within each leg. Each subheader also contains a master secret,
 which is used to derive a symmetric key for decrypting the rest of the
-message. The mix appends an appropriate number of zero bits to the header
-after message decryption, and decrypts those also -- the decryption of
-the padding is predictable, and so the hash can match even though each
-hop must repad the header to maintain constant length. A proof for the
-security of this approach is given in \cite{BM:mixencrypt}.
+message. To make sure that the hash matches even though each hop
+must repad the header to maintain constant message length, we need to
+add predictable padding to the end of the header: the mix appends an
+appropriate number of zero bits to the header after message decryption,
+and decrypts those also. A security proof for a simplified version of
+this approach is given in \cite{BM:mixencrypt}.
 
 Each subheader also includes the address of the next node to which
-the message should be forwarded, along with its expected signature key
+the message should be forwarded, along with its expected signature
+(identity) key
 fingerprint --- the mix refuses to deliver the message until the next
 hop has proved its identity.
 
@@ -666,8 +663,6 @@ been altered.  Thus, an attacker can use tagging to trace a message from the
 point at which it is tagged to the point at which the corrupted output
 appears. 
 
-%XXXX Is this really true about Mixmaster? Check the source. -NM
-%       Yeah, I guess it is, at least as of 2.9beta23. -NM
 Checking the integrity of hop headers individually is not
 sufficient to prevent tagging attacks.  For example, in Mixmaster
 each hop header contains a hash of the other fields in that header
@@ -716,8 +711,8 @@ minimize the amount of information an adversary can learn from tagging.
 If he tags a message
 leaving Alice, the payload will be entirely random when it reaches
 Bob.  Thus, an adversary who tags a message can at worst turn the
-corresponding payload into trash, namely pseudo-random unpredictable
-and unpredictable for the attacker bit strings.
+corresponding payload into trash (pseudorandom bit strings entirely
+unpredictable to the attacker).
 
 %%Thus if he tags more than one message in the entire mix-net, he
 %%learns only one bit from each tagged message, so he cannot distinguish
