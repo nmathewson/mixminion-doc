@@ -98,7 +98,7 @@ up to all known attacks, and providing a research base for
 experimental features. We describe our overall design in Section
 \ref{sec:design}, including a new primitive called a \emph{single-use
 reply block} (SURB).  Mixmaster provides no support for replies, but
-instead relies on the older and less secure cypherpunk Type I remailer
+instead relies on the older and less secure Cypherpunk Type I remailer
 design \cite{remailer-history}. By integrating reply capabilities into
 Mixminion, we can finally retire the Type I remailer network.
 
@@ -161,17 +161,17 @@ web MIXes \cite{web-mix}.
 \subsection{Deployed Remailer Systems}
 
 The first widespread public implementations of MIXes were produced by the
-cypherpunks mailing list. These ``Type I'' \emph{anonymous remailers}
+Cypherpunks mailing list. These ``Type I'' \emph{anonymous remailers}
 were inspired both by the problems surrounding the {\tt anon.penet.fi}
 service \cite{helsingius}, and by theoretical work on MIXes. Hughes wrote
-the first cypherpunks anonymous remailer \cite{remailer-history}; Finney
+the first Cypherpunk anonymous remailer \cite{remailer-history}; Finney
 followed closely with a collection of scripts that used Phil Zimmermann's
 PGP to encrypt and decrypt remailed messages. Later, Cottrell implemented
 the Mixmaster system \cite{mixmaster}, or ``Type II'' remailers, which
 added message padding, message pools, and other MIX features lacking
-in the cypherpunk remailers. Note that Mixmaster does not include reply
+in the Cypherpunk remailers. Note that Mixmaster does not include reply
 functionality, so deployed remailer systems still use the less secure
-long-term cypherpunk reply blocks.
+long-term Cypherpunk reply blocks.
 
 At about the same time, Gulcu and Tsudik introduced the Babel
 system \cite{babel}, a practical remailer design with many desirable
@@ -282,7 +282,7 @@ times and learn who is sending and receiving which messages
 intersection attack, but for now it remains an open problem.
 
 We choose to drop packet-level compatibility with Mixmaster and the
-cypherpunk remailer systems, in order to provide a simple extensible
+Cypherpunk remailer systems, in order to provide a simple extensible
 design. We can retain minimal backwards compatibility by ``remixing''
 Type II messages to be Type III messages, thus increasing the anonymity
 set of the Type III network. Type II messages, when travelling between
@@ -293,7 +293,7 @@ it decrypts to reveal the Type II message.
 
 We also provide a new feature: a reply block mechanism that is as secure
 as forward messages.
-Reusable reply blocks, such as those in the cypherpunk remailer, are a
+Reusable reply blocks, such as those in the Cypherpunk remailer, are a
 security risk --- by their very nature they let people send multiple
 messages through them.  These multiple messages can easily be used to
 trace the recipient's path: if two incoming batches both include a
@@ -403,7 +403,7 @@ analysed security properties than less constrained approaches.
 
 The rest of this section describes the mechanism for secure replies,
 including some new attacks and how we defeat them. Mixminion's reply
-model is in part inspired by BABEL \cite{babel}, as it requires the
+model is in part inspired by Babel \cite{babel}, as it requires the
 receiver of a reply block to keep no other state than its secret keys,
 in order to read the reply.  All the secrets that are required in
 order to strip the layers of encryption are derived from a master
@@ -414,9 +414,10 @@ their own public key.
 \subsection{Indistinguishable replies}
 \label{subsec:header-swap}
 
-By making forward messages and replies indistinguishable, we prevent an adversary
-from dividing the message anonymity sets into two classes. In particular,
-if replies are infrequent relative to forward messages, an adversary who controls
+By making forward messages and replies indistinguishable, we prevent an
+adversary from dividing the message anonymity sets into two classes. In
+particular, if replies are infrequent relative to forward messages,
+an adversary who controls
 some of the MIXes can more easily trace the path of each reply:  even
 though the batches may be large, the number of replies in each batch
 will be quite small.
@@ -645,15 +646,15 @@ dropping them.  The crossover point in question simply doesn't deliver
 the message to the second leg. Therefore, if the adversary doesn't own
 most of the crossover points that Alice chooses, a successful
 multiple-message tagging attack seems infeasible.  We leave a security
-analysis of this multiple-paths approach to future work.
-% reference section \ref{sec:choosing-paths} when/if we write it -RRD
+analysis of this multiple-paths approach to future work; but see
+Section \ref{sec:maintaining-anonymity}.
 
 \section{Related design decisions}
 
-In this section we discuss how we are using
-link encryption with ephemeral keys to provide forward anonymity,
-message types and modules to handle different types of messages, and
-exit policies for advertising what delivery options a node will provide.
+%In this section we discuss how we are using
+%link encryption with ephemeral keys to provide forward anonymity,
+%message types and modules to handle different types of messages, and
+%exit policies for advertising what delivery options a node will provide.
 
 \subsection{Link encryption and what it gets us}
 \label{subsec:link-encrypt}
@@ -1075,6 +1076,7 @@ comfortable.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Maintaining anonymity sets}
+\label{sec:maintaining-anonymity}
 
 \subsection{Transmitting large files with Mixminion}
 
@@ -1227,5 +1229,5 @@ to implementation and deployment of the Mixminion design.
 %     'middleman'  [Not with a hyphen; the hyphen has been optional
 %         since Middle English.]
 %     'nymserver'
-%     'Cypherpunks Remailer'
+%     'Cypherpunk', 'Cypherpunks', 'Cypherpunk remailer'
 
