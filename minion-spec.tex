@@ -207,6 +207,10 @@ the next node's transport public key.
                    we generate new keys.
              -NM]
 
+[XXXX And by the way, how exactly do we compute a hash of a public
+  key? What encoding do we use?  Do we just use the modulus, or must
+  we include 'e' as well? -NM]
+
 A SWAP routing type tells the node to exchange headers as described below.
 
 The EMAIL field in the SMTP routing type should be a valid mailbox
@@ -650,7 +654,7 @@ MIX-to-MIX communications.
       side only), so we needn't worry. -NM]  
 
 X.509 certificates need not be signed; instead, they must contain
-a key matching that used in the KEYID portion of the header's routing
+a key matching that used in the KEYIDportion of the header's routing
 data.  
 
 Messages are sent from client to server; the client must send a
@@ -698,6 +702,13 @@ portions are non-normative descriptions of TLS.)
 [XXXX This seems to imply that MMTP implementations must stay
   backward compatible forever, or at least implement a contiguous set 
   of versions.  Is this really so? -NM]
+[XXXX On further thought, this situation is unacceptable.  I think that 
+  A must send a comma-sepaarated list of protocol versions.  Here's
+  why:
+        Suppose that we've published protocols 1.0, 1.1, and 1.2.  Suppose
+  that 1.2 is better than 1.0, and 1.1 has turned out to be horribly 
+  insecure.  A client should be able to say ``PROTOCOL 1.0,1.2'' so
+  that it can cleanly refuse to support 1.1. -NM] 
 [XXXX BTW, is NL 'LF' or is it 'CRLF'? -NM]
 
 * If B is not willing to use any protocol A supports, B closes the 
