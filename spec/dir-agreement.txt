@@ -63,7 +63,9 @@ Status
         a directory server.
   
       - The protocol should allow old directory servers to shut down,
-        and new directory servers to join, but should not allow
+        and new directory servers to join, but should not allow an
+        attacker to control the final directory by signing up a large
+        number of directory servers.
       
       - When the protocol succeeds, it should create a directory
         signed by a large quorum of directory servers.  If at least
@@ -147,6 +149,10 @@ Status
    Honest mix -- A mix is 'honest' if it tries to be reliable, and it
       does not attempt to attack the network or break users'
       anonymity.
+
+   Credible mix -- A mix is 'credible' to a directory server, if that
+      directory server thinks the mix is probably honest, so far as it
+      knows.
 
    Pinger -- a source of liveness and reliability information about
       mixes.
