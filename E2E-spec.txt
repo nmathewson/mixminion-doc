@@ -195,6 +195,10 @@ DECOMPRESS is not defined for every sequence of bytes.
 
   Does that sound reasonable?  How about the parameters? -NM]
 
+[XXXX As a first compromise, I'm going to change this requirement to
+  say that this checking happens *only when* using an exit method
+  (such as SMTP) that doesn't do its own bombing-prevention. -NM]
+
 BUILDING BLOCK: ERASURE CORRECTING ENCODING
 
 We define a primitive, FRAGMENT, that breaks a K-packet message into

@@ -650,21 +650,22 @@ Key: Value
                   of Y.
             X|Y: Either an occurrence of X, or an occurence of Y.)
 
-Descriptor = CRLF* Section+ 
+Descriptor = NL Section+ 
 
 Doctype = (<any printable character but '-'>)+
 
 Section = SectionLine EntryLine*
 
-SectionLine = '[' Word ']' CRLF+
+SectionLine = '[' Word ']' NL+
 
-EntryLine = Word ':' ' ' Data CRLF+
+EntryLine = Word ':' ' ' Data NL+
 
 Word = (<Any printable, non-space character but ':'>)+
 
-Data = (<any character but CR or LF>)*
+Data = (<Any printable character but NL>)*
 
-CRLF = CR LF
+[Note: For compatibility across different platforms, implementations must
+  accept all of CR, LF, and CR-LF style newlines.]
 
 \section{Mixminion descriptor blocks}
 
@@ -710,12 +711,15 @@ the entries:
      'Packet-Key': The public key used to encode encode subheaders for
          this server, encoded in ASN.1, represented in BASE64. 
 
-The digest of a descriptor block is computed by removing the contents
-of the digest and signature fields, and computing the SHA-1 digest of
-the result.  (That is, ``Digest: DATADATADATA...'' is replaced with
-``Digest:''.)  The signed digest is the OAEP/PCKS1 signature of the
-digest with the server's identity key.  This value is represented in
-BASE64.
+The digest of a descriptor block is computed by removing the contents of the
+digest and signature fields, and computing the SHA-1 digest of the resulting
+ASCII string.  (That is, ``Digest: DATADATADATA...'' is replaced with
+``Digest:''.)  The signed digest is the OAEP/PCKS1 signature of the digest
+with the server's identity key.  This value is represented in BASE64.
+
+[Note: before computing the digest, all implementations must normalize CR and
+CR-LF style newlines to a single NL, and remove any spaces and tabs that may
+have been introduced at the ends of lines.]
 
 If this server accepts incoming MMTP connections, it MAY have an
 'Incoming/MMTP' section, with the following entries:
@@ -786,33 +790,19 @@ the directory URL.
 
 A directory takes the following form:
 
-<mixminion-directory>
-  <version>1.0</version>
-  <identity>Base64-encoded public key, in ASN.1</identity>
-  <signature>Base64-encoded OAEP/PCKS1 signature of this document, with
-     the contents of this field removed.</signature>
-  <server>
-     (Server descriptor block)
-  </server>
-  <server>
-     (Server descriptor block)
-  </server>
-   .....
-</mixminion-directory>
-
-[XXXX I think I'm going to de-XML-ize this, so that it looks like:
-
  [Directory]
  Version: 1.0
+ Valid-After: YYYY/MM/DD HH:MM:SS
+ Valid-Until: YYYY/MM/DD HH:MM:SS
+ [Signature]
  Identity: Base64-encoded public key, in ASN.1
+ Digest: Digest of this document.
  Signature: Base64-encoded OAEP/PCKS1 signature of this document, with
      the contents of this field removed.
  [Server]
      (Server descriptor block)
  [Server]
      (Server descriptor block)
-
-   -NM]
 
 Directory servers change their directories only at midnight GMT.  Any
 client which has not downloaded a directory since before midnight GMT,
@@ -832,7 +822,15 @@ an active research project, we leave them for a later draft.
 [XXXX Issues include:  How do directory servers synchronize?
    What happens when they disagree?  How many servers must a client
    contact before he/she has enough information?  How do we catch
-   dishonest directory servers? -NM
+   dishonest directory servers? -NM]
+
+[XXXX We should also specify, perhaps, how directories are to order
+   the server descriptors; what uniqueness constraints there are, and so
+   on. -NM]
+
+[XXXX Also: statistics information. Also: we should think about
+   avoiding catastrophic failure modes if directories _do_ fail or
+   change. -NM]
 
 \section{Appendix: Pooling rule}
 
