@@ -12,13 +12,19 @@
 6. We should specify: are 'DROP'-type messages dropped before they go
     into the mix pool, or after they're pulled from the pool?
 
+  [Before. -NM]
+
 7. We should specify: what happens when a message is undeliverable?
+
+  [We retry for a while, then drop it. -NM]
 
 8. Specification for incoming SMTP interface.
 
-9. ``End-to-end'' issues (See Nick's mail of Sep2002)
+9. ``End-to-end'' issues
 
-9. K-of-N delivery, compression, and fragments.
+  [I've added a revised version of my E2E note to the repository. -NM]
+
+10. K-of-N delivery or fragments.
 
 
 \section{FUTURE ISSUES}
@@ -793,6 +799,20 @@ A directory takes the following form:
   </server>
    .....
 </mixminion-directory>
+
+[XXXX I think I'm going to de-XML-ize this, so that it looks like:
+
+ [Directory]
+ Version: 1.0
+ Identity: Base64-encoded public key, in ASN.1
+ Signature: Base64-encoded OAEP/PCKS1 signature of this document, with
+     the contents of this field removed.
+ [Server]
+     (Server descriptor block)
+ [Server]
+     (Server descriptor block)
+
+   -NM]
 
 Directory servers change their directories only at midnight GMT.  Any
 client which has not downloaded a directory since before midnight GMT,
