@@ -4,6 +4,7 @@
 
 \usepackage{url}
 \usepackage{graphics}
+\usepackage{amsmath}
 
 \newcommand{\workingnote}[1]{}        % The version that hides the note.
 %\newcommand{\workingnote}[1]{(**#1)}   % The version that makes the note visible.
@@ -255,17 +256,27 @@ delete, or delay traffic on the network, who can operate mixes of its
 own, and who can compromise some fraction of the mixes on the network.
 We assume that such an adversary is attempting to compromise users'
 anonymity by learning (or guessing with a reasonable probability) who
-is communicating with whom.
+is communicating with whom. In particular the adversary wants to use
+all information contained in the network traffic patterns to trace
+communication back or forth and gain additional knowledge about
+communicating partners.
 %What else is the adversary trying to do?
 
-We want to resist
+The mixminion network tries to make is as hard as possible for an
+adversary observing the network to gain any additional information
+about communicating partners beyond an \emph{a-priory} belief. It does
+this by providing very little information to outside observers, and
+intermediate nodes, to avoid intersection attacks. In particular even
+intermediary nodes are not aware of the actual route length, that can
+be as long as 32 hops, or their position in the network. Furthermore
+the processing for replies is exactly the same as for normal messages
+and it is therefore difficult to partition the anonymity sets by
+distinguishing between them. 
 
-replies: we want to avoid partitioning by having reply messages be
-   indistinguishable from forward messages, and just as secure.  To the
-   extent possible, a mix should not be able to learn any more from a
-   message's contents than from the fact of the message's receipt.
-
-
+% replies: we want to avoid partitioning by having reply messages be
+%   indistinguishable from forward messages, and just as secure.  To the
+%   extent possible, a mix should not be able to learn any more from a
+%   message's contents than from the fact of the message's receipt.
 \subsection{Known attacks against mix-nets}
 
 The largest class of passive attacks against 
@@ -1178,10 +1189,14 @@ from single-use reply blocks.
 In the first approach, nymservers keep a stock of reply blocks for
 each mailbox, and use a reply block for each incoming message. 
 
-\[(A) \rightarrow \mathrm{Nym}: \{\mathrm{Register} ,A', V_{A'}, (A)_1 \dots
-(A)_n\}_{S_{A'}}\]
-\[B \rightarrow \mathrm{Nym}: A', M\]
-\[\mathrm{Nym} \rightarrow (A)_i: M\]
+\begin{equation}
+\begin{aligned}
+(A) \rightarrow \mathrm{Nym}&: \{\mathrm{Register} ,A', V_{A'}, (A)_1 \dots
+(A)_n\}_{S_{A'}} \\ 
+B \rightarrow \mathrm{Nym}&: A', M \\ 
+\mathrm{Nym} \rightarrow (A)_i&: M \\
+\end{aligned}
+\end{equation}
 
 As long
 as the owner of the pseudonym keeps the nymserver well-stocked, no
@@ -1196,11 +1211,15 @@ messages arrive and queue at the nymserver, and the user periodically
 checks the status of his mail and sends a sufficient batch of reply
 blocks so the nymserver can deliver that mail.
 
-\[(A) \rightarrow \mathrm{Nym}: \{\mathrm{Register} ,A', V_{A'}\}_{S_{A'}}\]
-\[B \rightarrow \mathrm{Nym}: A', M\]
-\[(A) \rightarrow \mathrm{Nym}: \{\mathrm{Query} ,A', (A)_1 \dots
-(A)_n\}_{S_{A'}}\]
-\[\mathrm{Nym} \rightarrow (A)_i: M\]
+\begin{equation}
+\begin{aligned}
+(A) \rightarrow \mathrm{Nym}&: \{\mathrm{Register} ,A', V_{A'}\}_{S_{A'}}\\
+B \rightarrow \mathrm{Nym}&: A', M \\
+(A) \rightarrow \mathrm{Nym}&: \{\mathrm{Query} ,A', (A)_1 \dots
+(A)_n\}_{S_{A'}} \\
+\mathrm{Nym} \rightarrow (A)_i&: M
+\end{aligned}
+\end{equation}
 
 In this case, the nymserver doesn't need to store any reply blocks.
 The above flooding attack still works, but now it is exactly
