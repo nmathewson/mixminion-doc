@@ -291,14 +291,14 @@ Attacks against mix-nets aim to reduce the anonymity of users by
 linking anonymous senders with the messages they send, by linking
 anonymous recipients with the messages they receive, or by linking
 anonymous messages with one another \cite{raymond00}.  Attackers may
-try to trace messages through the network by observing network
+trace messages through the network by observing network
 traffic, compromising mixes, compromising keys, delaying messages
 so they stand out from other traffic, or altering messages
-in transit.  Attackers may attempt to learn a given message's destination
+in transit.  They may learn a given message's destination
 by flooding the network with messages, replaying multiple copies
 of a message, or shaping traffic to isolate the target message from
-other unknown traffic. Attackers may try to discourage users from
-using honest mixes by making them unreliable. They might analyze
+other unknown traffic. Attackers may discourage users from
+using honest mixes by making them unreliable. They may analyze
 intercepted message text to look for commonalities between otherwise
 unlinked senders.
 Finally, even if all other attacks are foiled, a passive adversary can
@@ -617,17 +617,19 @@ properties:
       block, without knowledge of the key;
 % XXXX what the heck does this mean? i don't know what 'the key' is. this is
 %probably too imprecise for us.
+% nonetheless, i think we're going to stick with it -RD
 \item it should be equally secure to use the decryption operation
       for encryption.
 \end{itemize}
 
 To fulfill the above requirements we use a variable length block
-cipher adapted to the length of the payload; that
+cipher adapted to the length of the payload, that
 is, a cipher that acts as a permutation on a block the size of its
 input (a header or the payload).  Possible candidates
 include LIONESS \cite{BEAR-LIONESS} and SPC \cite{SPC}.
 % ???? What can anybody tell me about SPC?  I get no google hits 
 %      except for this paper.-NM  
+% dunno. good thing we have another candidate. -RD
 The cryptographic property required is that of a super-pseudo-random
 permutation (a.k.a. strong pseudo-random permutation) or SPRP \cite{sprp}.\footnote{
 The weaker PRP property may be sufficient, given that preventing
@@ -671,7 +673,7 @@ To motivate the Mixminion design, we describe an attack
 that works against many mix-net protocols, including Mixmaster and Babel.
 
 A {\em tagging attack} is an active attack in which a message is
-modified by altering part of it (for example by flipping bits), so
+modified by altering part of it (for example by flipping bits) so
 that it can be recognized later in the path.  A later mix controlled by
 the attacker can recognize tagged messages because the header or the
 body does
@@ -683,7 +685,7 @@ Checking the integrity of hop headers individually is not
 sufficient to prevent tagging attacks.  For example, in Mixmaster
 each hop header contains a hash of the other fields in that header
 \cite{mixmaster-spec}.
-Each mix in the path checks the integrity of the header, and drops
+Each mix in the path checks the integrity of the header and drops
 the message immediately if it has been altered.  However, 
 an attacking mix can still alter a header that will be decrypted
 only after several more hops, and so tagging attacks are still possible.
@@ -711,7 +713,7 @@ headers is destroyed if the payload is modified by an adversary.
 If the Mixminion design did not require
 the crossover point, an adversary could mount a tagging
 attack by modifying the payload of a forward message as
-it leaves Alice, and recognizing it later when it reaches Bob.
+it leaves Alice and recognizing it later when it reaches Bob.
 Specifically, if our encryption mechanism were an ordinary
 counter-mode cipher, he might alter a specific byte in the payload of
 a message entering the mix-net. Since many of the outgoing messages
@@ -744,7 +746,7 @@ these tagging attacks; but that problem is as complex as the dummy
 traffic problem \cite{langos02}. Instead, we use the
 ``swap'' step at the
 crossover point to prevent the attacker from learning information from
-tagging attacks. The second header of the message, that contains the
+tagging attacks. The second header of the message, which contains the
 path to the final destination of the forward path, is encrypted by the
 sender with the hash of the payload that is to arrive at the mix. The
 mix then needs to perform the decryption and swap the first header for
@@ -793,7 +795,7 @@ and \emph{vice versa} makes sure that if the message is tagged in
 any way it will become entirely different from what was intended, and
 its contents
 will provide no information at all to an attacker. It is the
-first time, to our knowledge, that this property is achieved by
+first time, to our knowledge, that this property has been achieved by
 distributing the operation of a cipher across many nodes of a mix network.
 
 No mix except the crossover point can get any information distinguishing
@@ -846,7 +848,7 @@ dropping them.  The crossover point in question simply doesn't deliver
 the message to the second leg. Therefore, if the adversary doesn't own
 most of the crossover points that Alice chooses, a successful
 multiple-message tagging attack seems infeasible.  We leave a security
-analysis of the multiple-paths idea to future work; but see
+analysis of the multiple-paths idea to future work, but see
 Section \ref{sec:maintaining-anonymity}.
 
 \section{Related design decisions}
@@ -870,7 +872,7 @@ receiving node signs the ephemeral key. As soon as a session key
 has been established, the parties destroy their Diffie-Hellman keys
 and begin sending messages through the tunnel. After each message, the
 parties perform a standard key update operation to generate a fresh
-key, and delete the old key material.  Key updates don't require any
+key and delete the old key material.  Key updates don't require any
 asymmetric encryption techniques, so they are relatively fast.
 
 % Do we want to specify how much of the above happens with TLS
@@ -938,7 +940,7 @@ message delaying attacks.
 
 The encrypted channel offers only limited protection against traffic
 analysis. Encrypted links between honest nodes prevent an adversary
-from recognizing even his own messages; but without link padding, he
+from recognizing even his own messages, but without link padding, he
 can still measure how much traffic is being transmitted.
 
 As a fringe benefit, using a separate link protocol makes it
@@ -956,6 +958,7 @@ support.  (See Section \ref{subsec:delivery-modules} below.)
 %  infrastructure critical services. -GD]
 %[Most significantly IMO is that modules can be advertised via the
 %  regular capabilities mechanism. -NM]
+% i'll let you change around this subsec as necessary, nick -RD
 
 Once a Mixminion packet reaches the final mix in its path, it must
 either be delivered to its intended recipient, dropped if it is an
@@ -964,7 +967,7 @@ Type II packet. In order to support different kinds of
 delivery, the header includes a type code for the action to be taken
 to deliver the message.  A few types --- such as `dummy', `SMTP', and
 `local delivery' --- are specified as a part of the Mixminion
-standard.  Others may be added by future extensions, to
+standard.  Others may be added by future extensions to
 implement abuse-resistant exit policies (see Section
 \ref{subsec:exitpolicies}), to administer nymservers (see Section
 \ref{sec:nymservers}), to publish anonymously to Usenet, to relay
@@ -974,7 +977,7 @@ Nearly all delivery methods require additional information beyond the
 message type and its payload.  The SMTP module, for example, requires
 a mailbox.\footnote{A {\it mailbox} is the canonical form of the
 ``{\tt user@domain}'' part of an e-mail address. Mixminion uses only
-mailboxes in the protocol, because the display name and comment parts
+mailboxes in the protocol because the display name and comment parts
 of an e-mail address could potentially be different for senders who
 have obtained an address from different sources, leading to smaller
 anonymity sets.}
@@ -1056,7 +1059,7 @@ receiving mail is opt-in, an abuser can forge an opt-in request from
 his victim. Indeed, requiring recipients to declare their interest
 in receiving anonymous mail is risky --- human rights activists in
 Guatemala cannot both sign up to receive anonymous mail and also retain
-plausible deniability.%\footnote{
+plausible deniability. %\footnote{
 %  Compare with the 1965 U.S. Supreme Court case Lamont v. Postmaster
 %  General (381 U.S. 301), where the Post Office would detain mail it
 %  deemed to be `communist political propaganda' and instead send a form
@@ -1088,6 +1091,7 @@ number of available open exit nodes remains a limiting security parameter
 for the remailer network.
 
 \subsection{Replay prevention, message expiration, and key rotation}
+\label{subsec:replay}
 
 Mixmaster offers rudimentary replay prevention by keeping a list of recent
 message IDs. To keep the list from getting too large, it expires entries
@@ -1109,10 +1113,10 @@ is valid --- also has problems. Specifically, it introduces a new class
 of \emph{partitioning} attacks, where the adversary can distinguish and
 track messages based on timestamps. If messages have short lifetimes,
 meaning messages that take more than the average transit time through the
-mix expire before they reach the end of their path, then some legitimate
+network expire before they reach the end of their path, then some legitimate
 messages will be dropped. But if messages have long lifetimes, meaning
 almost no messages in the system will be close to expiring, then messages
-arriving near their expiration date will be rare. An adversary can exploit
+near their expiration date will be rare. An adversary can exploit
 this fact by intentionally delaying a message until near its expiration
 date and then releasing it. If he owns a mix later in the path he can
 recognize the message because it will stand out.
@@ -1120,7 +1124,7 @@ recognize the message because it will stand out.
 % need to read stop & go mix paper here. -RRD
 
 One way of addressing this partitioning attack is to add dummy traffic
-so that it is less rare for messages to arrive near their expiration date;
+so that it is less rare for messages to arrive near their expiration date,
 but dummy traffic is still not well-understood. Another approach would
 be to add random values to the expiration date of each mix in the path,
 so an adversary delaying a message at one mix cannot expect that it
@@ -1136,8 +1140,8 @@ statistical attacks.
 % approach. It's definitely a good thing to mention. I've uncommented the
 % below for now so readers can have a complete paper. -RRD
 
-A possible compromise solution that still provides forward anonymity
-is as follows:  Messages don't
+We use a compromise solution that still provides forward
+anonymity. Messages don't
 contain any timestamp or expiration information. Each mix must keep
 hashes of the headers of all messages it has processed since the last time
 it rotated its key. Mixes should choose key rotation frequency based on
@@ -1167,6 +1171,7 @@ of opportunity for this attack.
 %XXXX Motivate this a bit earlier; be explicit about why ad hoc
 %      schemes are unacceptable. (Not just because of partitioning,
 %      but also because of support for rotation.) I can write this. -NM
+% ok -RD
 
 The Mixmaster protocol does not specify a means for clients to learn the
 locations, keys, capabilities, or performance statistics of mixes. Several
@@ -1188,8 +1193,8 @@ differences among client knowledge. If Eve knows that mix $M$ is listed
 on server $D_1$ but not on $D_2$, she can use this knowledge to link
 traffic through $M$ to clients who have queried $D_1$.  Eve can also
 distinguish traffic based on any differences between clients who use
-directory servers and those who don't; between clients with up-to-date
-listings and those with old listings; and (if the directory is large
+directory servers and those who don't, between clients with up-to-date
+listings and those with old listings, and (if the directory is large
 and so is given out in pieces) between clients who have different subsets
 of the directory.
 %  In fact, even if Eve does not know the exact
@@ -1241,7 +1246,7 @@ trying to do traffic analysis
 can get more traffic by gaining a high reputation \cite{mix-acc}. We can
 defend against these attacks by building paths from a suitably large pool
 of nodes \cite{casc-rep} to bound the probability that an adversary will
-control an entire path; but there will always be a tension between giving
+control an entire path, but there will always be a tension between giving
 clients accurate and timely information and preventing adversaries from
 exploiting the directory servers to manipulate client behavior.
 
@@ -1272,7 +1277,7 @@ single-use. There are a number of approaches for building nymservers
 from single-use reply blocks.
 
 In the first approach, nymservers keep a stock of reply blocks for
-each mailbox, and use a reply block for each incoming message. 
+each mailbox and use a reply block for each incoming message. 
 Alice wants to register a pseudonym $\alpha$ with signature and
 verification keys $(S_\alpha,V_\alpha)$ with the Nym server in order
 to receive messages from Bob.
@@ -1323,7 +1328,7 @@ keep valid reply blocks on hand. The second case is in some sense more
 secure because the server need not store any reply blocks, but it also
 creates more liability because the server keeps mail for each recipient
 until it is retrieved. The owner of the pseudonym could provide a public
-key that the nymserver uses to immediately encrypt all incoming messages,
+key that the nymserver uses to immediately encrypt all incoming messages
 to limit the amount of time the nymserver keeps plaintext messages.
 
 The best implementation depends on the situations and preferences of
@@ -1407,9 +1412,9 @@ attack. Thus Mixminion does not use dummies to or from users.
 Another use for dummies is to weaken the blending attack. Our timed
 dynamic-pool batching strategy increases the cost of the blending attack
 because the adversary needs to keep flushing the mix until all honest
-messages are out; but once he has done so he can be certain that no
+messages are out, but once he has done so he can be certain that no
 honest messages remain. In the second phase of the attack, he again
-needs to flush until the target message comes out; but once it does, he
+needs to flush until the target message comes out, but once it does he
 can be certain of recognizing it. Thus Mixminion employs the following
 dummy policy, as suggested in \cite{batching-taxonomy}:
 %and analyzed in \cite{andrei-claudia}:
@@ -1426,10 +1431,10 @@ there are actually few messages going through the mix,
 or when there are the normal number of messages but most of them are
 created by the adversary.
 
-\subsection{Transmitting many messages}
-%XXXX Rename: ``choosing paths when transmitting many messages'' -NM
+\subsection{Choosing paths when transmitting many messages}
 \label{subsec:many-messages}
 %XXXX Mention large messages too. -NM
+% we do, right? -RD
 
 When Alice (the owner of a pseudonym) downloads her mail from a
 nymserver, she will likely receive many separate messages. Similarly, if
@@ -1523,7 +1528,7 @@ thus increasing the cost of an intersection attack. However, a complete
 solution remains an open problem \cite{langos02}.
 \item \emph{Textual analysis.} Mixminion provides location anonymity,
 not data anonymity. Users are responsible for making sure their messages
-do not reveal information.
+do not reveal identifying information.
 \end{description}
 
 \subsubsection{Exit attacks}
@@ -1548,7 +1553,7 @@ adversaries cannot monitor all exit nodes in the network.
 
 \begin{description}
 \item \emph{Compromise a directory server.} Identical directory listings
-are served by a small group of servers, and signed by all. We assume
+are served by a small group of servers and signed by all. We assume
 that a threshold of these directory servers will remain honest.
 \item \emph{Exploit differences in client directory knowledge.} By only
 updating directory information nightly, by designing client software to
@@ -1586,7 +1591,7 @@ particular the anonymity they provide during normal operation or
 under attack must be balanced with other properties such as latency
 and reliability.
 \item We need a more thorough investigation of multiple-message tagging
-attacks, and an analysis of how to safely choose paths when
+attacks and an analysis of how to safely choose paths when
 sending many messages. When a message to be sent is larger than the
 Mixminion payload size, we need a strategy to fragment
 it and reconstruct it at the recipient's end. 
@@ -1596,14 +1601,20 @@ correction codes to recover if some messages are lost.
 replies using a simpler design? We need to prove that our design provides
 unlinkability between the input bit-patterns of messages and the messages
 coming out of the network.
+\item A \emph{synchronous batching} approach, where messages have
+deadlines at each hop, may allow easier anonymity analysis, and may
+provide much larger anonymity sets because all messages entering the
+mix-net in a given time interval are mixed together. A cascade is the
+simplest example of this approach, but we should consider mechanisms for
+free-route synchronous mixes. We could greatly improve our protection
+against message delaying attacks and the partitioning attacks discussed
+in Section \ref{subsec:replay}. On the other hand, the cost is greater
+network synchronization and overhead, and less mix operator flexibility.
 \item We need stronger intuition about how to use dummy messages. Such
 messages can be inserted either between nodes as link padding, or as
 actual multi-hop Mixminion messages. We must develop a more rational
 approach to which parties send dummy messages, how many they send,
 and when they send them.
-%\item We intend to draw up a more complete specification, which can lead
-%to implementation and deployment of the Mixminion design.
-% XXXX Mention our spec?  Cite our spec? -NM
 \end{itemize}
 
 While many people have speculated about the benefits of dummy traffic,
@@ -1613,9 +1624,10 @@ out of the current design (other than their minimal use in Section
 \ref{subsec:batching}) until their effects on anonymity are better
 understood.
 
-We invite interested developers to join the {\tt mixminion-dev}
-mailing list and examine the more detailed Mixminion
-specification \cite{mixminion-spec}. We have working alpha code
+We have working code which implements most of the designs described
+in this paper. We invite interested developers to join the {\tt
+mixminion-dev} mailing list and examine the more detailed Mixminion
+specification \cite{mixminion-spec}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
