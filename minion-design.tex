@@ -240,10 +240,12 @@ length (32KB in our current design), and passes the result to the
 next MIX. We describe the behavior of the last MIX in
 Section \ref{subsec:delivery-modules}.
 
-% A bit more detail about waht is contained in the header: -George
+% A bit more detail about what is contained in the header: -George
 
-Headers addressed to each intermediate mix are encrypted using RSA-OAEP
- \cite{PKCS1} and are of 128 bytes each. They contain a secret addressed
+Headers addressed to each intermediate mix are encrypted using RSA
+%RSA-OAEP \cite{PKCS1}
+% IMO we should use OAEP+. -DH
+and are of 128 bytes each. They contain a secret addressed
 to the node that can be used to generate padding and decrypt the rest
 of the message. They also contain the address of the next node to 
 which to message should be forwarded along with its expected signature 
@@ -357,7 +359,7 @@ minimum width of the network, and therefore the maximum sizes of
 mini-batches.
 
 For example in the limiting case $w = 1$, the network consists of a
-single MIX cascade (this is the situation considered in Section ??
+single MIX cascade (this is the situation considered in Section 7.1
 of \cite{babel}).
 
 Let $N$ be the number of nodes in the network. An interesting case
@@ -397,9 +399,9 @@ their own public key.
 \subsection{Indistinguishable replies}
 \label{subsec:header-swap}
 
-By making forwards and replies indistinguishable, we prevent an adversary
+By making forward messages and replies indistinguishable, we prevent an adversary
 from dividing the message anonymity sets into two classes. In particular,
-if replies are infrequent relative to forwards, an adversary who controls
+if replies are infrequent relative to forward messages, an adversary who controls
 some of the MIXes can more easily trace the path of each reply:  even
 though the batches may be large, the number of replies in each batch
 will be quite small.
@@ -430,15 +432,17 @@ software.  Specifically, senders generating forward messages must be able
 to create onions, and receivers must be able to create reply blocks
 and unwrap messages received through those reply blocks. Other parties,
 such as those receiving forward messages and those sending direct reply
-messages, do not need to run new software.
+messages, do not need to run new software. (For example, the quoting
+performed by ordinary mail software can be used to include the reply
+block in a direct reply; this is sent to a node at the SMTP Reply-To:
+address, which extracts the reply block and constructs a properly
+formatted onion.)
 
 % Do we ever say how to send a reply without software? -Nick
 % Nope. We're just bluffing. Is that ok? -RRD
 % We're not bluffing.  George used to have a way, but we haven't
 %   mentioned it here.  Should we?  -Nick
-% The trick is to use the nym servers: you send a normal email to
-% the nym server which takes care of the messsage packaging and
-% injects it in the remailer network. -George
+% We do now. -DH
 
 We divide a message's path into two \emph{legs}, and split the header
 into two equal-size subheaders, each corresponding to a single leg.
@@ -653,6 +657,8 @@ asymmetric encryption techniques, so they are relatively fast.
 %  [*]My only reservation is doing key updates without assymetric
 %  encryption.  I need to doublecheck that such an operation is really 
 %  specified in the RFC.                               -Nick
+%  It is: the server can send a HelloRequest or the client a
+%  ClientHello at any time. -DH.
 
 
 % Also, do we want to specify a required level of encryption?  It
@@ -742,7 +748,7 @@ in a variable-length annex to the final header.
 % Should we say _why_ it's undesirable to force reply recipients to
 % run local nodes?  [My answer is (A) that some people (such as human
 % rights activists using internet cafes) want to get replies, but
-% don't have persistant net connections, (B) that Mixmaster
+% don't have persistent net connections, (B) that Mixmaster
 % supports it, and not doing so would be a step backwards, and (C)    
 % that there's not much reason not to.]    -Nick
 %%%%%%
@@ -997,7 +1003,8 @@ new reply blocks to send; indeed, under this approach, an attacker can
 launch a DoS attack by flooding the mailbox to exhaust the available
 reply blocks and block further messages from getting delivered.
 
-A more robust design uses a protocol similar to IMAP \cite{IMAP}:
+A more robust design uses a protocol inspired by e-mail retrieval
+protocols such as IMAP or POP \cite{IMAP,POP3}:
 messages arrive and queue at the nymserver, and the user periodically
 checks the status of his mail and sends a sufficient batch of reply
 blocks so the nymserver can deliver that mail. 
@@ -1009,7 +1016,7 @@ blocks so the nymserver can deliver that mail.
 % like pop. -RRD
 In this case, the nymserver doesn't need to store any reply blocks.
 The above flooding attack still works, but now it is exactly
-like flooding a normal IMAP mailbox, and the usual techniques (such as
+like flooding a normal IMAP or POP mailbox, and the usual techniques (such as
 allowing the user to delete mails at the server or specify which mails to
 download and let the others expire) work fine. The user can send a set
 of hashes or other indices to the server after successfully receiving
@@ -1142,8 +1149,9 @@ to implementation and deployment of the Mixminion design.
 \end{document}
 
 % Style guide:
-%     'MIX'
+%     'MIX', 'MIXes' (as noun)
 %     'MIX-net'
+%     'mix', 'mixing' (as verb)
 %     'Mixminion'
 %     'Mixmaster'
 %     'middleman'  [Not with a hyphen; the hyphen has been optional
