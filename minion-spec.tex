@@ -44,33 +44,19 @@ with the smallest building block.
 
   K1 and K3 are 160 bits long; K2 and K4 are 128 bits long.
 
-  For convenience, we write SPRP_ENC(K,P,M) to denote:
-       LIONESS_ENCRYPT(HASH(K|P|" (FIRST SUBKEY)"),
-                       HASH(K|P|" (SECOND SUBKEY)")[0:16],
- 	               HASH(K|P|" (THIRD SUBKEY)"),
- 	               HASH(K|P|" (FOURTH SUBKEY)")[0:16], P)
-[ XXXX That is really overkill! The keys k1 to k4 are going to go into
-       hash functions anyway so there is no need to protect the key
-       schedule using 4 hashes. It would be eough to do the following:
-	- K_(x+1) := K << (x*32 bytes) XOR H(x) for x=0 to 3
- I do not understand why we use P in the LIONESS at all.]
-[XXXX 1) The LIONESS paper claims that the keys should be 'independent';
-         can you elaborate more on your proposal?  Specifically,  what
-         is ``x''?  What's K(0)?
-      2) P is not the same as for OAEP; it's a parameter so we use
-         different keys for the header and the payload.  We were using
-         it already. -NM ]
-[XXXX I discussed the key shedule with Markus Kuhn and we seem to agree 
-     that since the subkeys are going to be input in hash functions there 
-     is no need to hash them before hand. They just need to be different 
-     from each other. The simplest way of doing that would be:
-		K1 = K XOR 0x00..01 
-		K2 = K XOR 0x00..02
-		K3 = K XOR 0x00..03
-		K4 = K XOR 0x00..04
-     	You can also XOR P into the subkeys if you want the cipher to be 
-	different for the headers and the payload.
-     -GD]
+  For convenience, we write SPRP_ENC(MS,P,M) to denote:
+       LIONESS_ENCRYPT(K1,K2,K3,K4,M)
+       where K=HASH(MS | P)
+             K1 = K
+             K2 = K[0:16] xor 0x00...01
+             K3 = K xor 0x00...02
+             K3 = K[0:16] xor 0x00...03
+
+  [XXXX This violates the constraint in the LION/BEAR paper that
+        requires the keys to be 'independant'.  Nonetheless, George
+	and Markus Kuhn believe it's safe, since all the keys
+        will be used as inputs to hash functions before anybody
+        uses them. -NM]
 
 - SPRP_DECRYPT(K1,K2,K3,K4,M) (Len(M) bytes) Inverts SPRP_ENCRYPT.
 
@@ -333,7 +319,7 @@ Process:
                   ``Construct a message'' here and ``create a single header''
                   above. -NM]
 	// Phase 2
-	H2 = SPRP_ENC(P, ``HIDE HEADER'', H2)
+	H2 = SPRP_ENC(SHA1(P), ``HIDE HEADER'', H2)
 
 	for i = N .. 1
 		H2 = SPRP_ENC(SK1_i, "HEADER ENCRYPT",H2)
@@ -361,7 +347,7 @@ PROCEDURE: Process a message M
 	if routing type is is DROP:
                 End.
 	if routing type is SWAP-FWD:
-		H2 = SPRP_DEC(P, ``HIDE HEADER'', H2)
+		H2 = SPRP_DEC(SHA1(P), ``HIDE HEADER'', H2)
 		Swap H1 and H2;
         if routing type is SWAP-FWD or FWD:
 	   	Put (H1, H2, P) in queue to be sent to A.
