@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.6 2003/07/24 03:33:21 nickm Exp $
+$Id: E2E-spec.txt,v 1.7 2003/08/09 02:51:53 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -216,7 +216,7 @@ Table of Contents
    
        Let M_SIZE = CEIL(LEN(M) / PS)
 
-       Let K = Min(16, 2**CEIL(Log2(M_SIZE)))
+       Let K = Min(32, 2**CEIL(Log2(M_SIZE)))
        Let NUM_CHUNKS = CEIL(M_SIZE / K)
    
        Let M = M | PRNG(Len(M) - NUM_CHUNKS*PS*K)
@@ -413,7 +413,8 @@ Table of Contents
    We specify a solution to 2 here.  When generating plaintext forward
    fragmented messages, the message generator uses a routing type of
    "FRAGMENT" (0x0103), an empty routing into, and prepends the
-   following fields to the message body before fragmenting it:
+   following fields to the message body before compressing and
+   fragmenting it:
 
          RS Routing size    2 octets
          RT Routing type    2 octets
