@@ -129,18 +129,12 @@ corrupt nodes for most attacks.
 \item \textbf{Exit policies:} Exit abuse is a serious barrier to wide-scale
 remailer deployment: most ISPs do not tolerate users who potentially
 deliver hate mail, etc. While the original Mixmaster design provided no
-way for mixes to advertise their capabilities and roles (so in practice nodes
-either allowed all outgoing messages or none), 
-%assumed all
-%nodes have identical capabilities and roles (and thus messages can exit
-%from any node),
+way for nodes to advertise their capabilities and roles (so in practice nodes
+either allow any outgoing messages or none), 
 Mixminion allows each node to specify and advertise an exit policy. We
-describe a protocol which allows recipients to opt out of receiving mail
+further describe a protocol which allows recipients to opt out of receiving mail
 from remailers, but at the same time makes it difficult for an adversary
 to deny service to interested recipients.
-% XXXX Actually, Mixmaster allows nodes to -have- different policies:
-%      there's just not a good way to advertise your policies beyond 
-%      simple capabilities. -NM
 
 \item \textbf{Replay prevention and key rotation:} 
 If an adversary records the input and output batches of a mix and then
@@ -292,6 +286,7 @@ and other mix features lacking in the Cypherpunk remailers.
 
 \subsection{Known attacks against mix-nets}
 % ???? Move this subsection to the end of section 3?
+% what, the whole subsection? -RD. what would it be doing in sec 3?
 
 Attacks against mix-nets aim to reduce the anonymity of users by
 linking anonymous senders with the messages they send, by linking
@@ -421,10 +416,10 @@ the anonymity set. These assumptions lead to the following design goals.
 First of all, the system must be relatively simple to deploy. Past systems
 have never found it easy to get a reliable group of mix operators to
 run long-lived servers. Mixminion must add as few technical barriers as
-possible. Thus our protocol uses only loose clock synchronization (within
-a few minutes), achieves acceptable performance on commodity hardware,
-requires little coordination between servers, and can automatically
-handle servers joining and leaving the system.
+possible. Thus our protocol uses clock synchronization only to notice
+when a mix's key has expired; achieves acceptable performance on
+commodity hardware; requires little coordination between servers; and
+can automatically handle servers joining and leaving the system.
 
 % Client requriements
 Furthermore, software adoption has also been a barrier to past
@@ -479,6 +474,7 @@ distinguishing between them.
 
 \section{The Mix-net Design}
 % ???? Rename to 'The Mixminion Design'? -NM
+% no, because the mixminion design is more than just this section. -RD
 \label{sec:design}
 
 Mixminion uses a free-route mix-net just like \cite{mixmaster-spec}
@@ -1579,32 +1575,28 @@ Type III remailer protocol. Many of the ideas, ranging from the core
 design to peripheral design choices, need more attention:
 
 \begin{itemize}
-\item We need more research on batching strategies that resist trickle
-and flooding attacks \cite{batching-taxonomy} as well as intersection
+\item We need more research on batching strategies that resist blending
+attacks \cite{batching-taxonomy} as well as intersection
 attacks on asynchronous free routes \cite{disad-free-routes}. In
-particular the anonymity they provide during normal operation or under
-attack has to be balanced with other properties such as latency and
-queue sizes on the mix servers.
+particular the anonymity they provide during normal operation or
+under attack must be balanced with other properties such as latency
+and reliability.
 \item We need a more thorough investigation of multiple-message tagging
 attacks, and an analysis of how to safely choose paths when
 sending many messages. When a message to be sent is larger than the
-Mixminion payload size there is a need for a strategy to fragment
-it and reconstruct it at the recipient's end. In case some of the
-messages are lost retransmission strategies or forward error
-correction codes can be used to recover the message. 
-\item We claim that we use conservative techniques,
-% XXXX Oops!  We no longer claim this.  What to say here instead?-NM
-but an all-or-nothing
-variable-length block cipher is pushing it. Can we keep indistinguishable
-forward messages and replies using a simpler design? It would be
-relieving if the design can be proven to provide unlinkability between
-the input bit-patterns of messages and the messages coming out of the
-network. 
-\item We need stronger intuition about how to use
-dummy messages. Such messages can be inserted either at the link layer
-or the actual Mixminion layer, and defend against different attacks. A
-more rational approach needs to be developed on who and when to insert
-such dummy messages.
+Mixminion payload size, we need a strategy to fragment
+it and reconstruct it at the recipient's end. 
+We can use retransmission strategies or forward error
+correction codes to recover if some messages are lost.
+\item Can we keep the indistinguishability of forward messages and
+replies using a simpler design? We need to prove that our design provides
+unlinkability between the input bit-patterns of messages and the messages
+coming out of the network.
+\item We need stronger intuition about how to use dummy messages. Such
+messages can be inserted either between nodes as link padding, or as
+actual multi-hop Mixminion messages. We must develop a more rational
+approach to which parties send dummy messages, how many they send,
+and when they send them.
 %\item We intend to draw up a more complete specification, which can lead
 %to implementation and deployment of the Mixminion design.
 % XXXX Mention our spec?  Cite our spec? -NM
