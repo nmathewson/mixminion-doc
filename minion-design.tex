@@ -299,7 +299,6 @@ against traffic analysis. Encrypted links between honest nodes prevent
 an adversary from recognizing even his own messages; but without
 link padding, he is still able to measure how much traffic is being
 transmitted.
-%and its recipient.
 
 \subsection{Message types and delivery modules}
 
@@ -324,7 +323,7 @@ in a variable-length annex to the final header.  \footnote{It must be
 in the header, since putting delivery information in the payload would
 prevent people from creating SURBs that delivered by SMTP.  On the one
 hand, under the ``header swap'' method described in
-\ref{subsec:header-swap), the all-or-nothing property of BEAR prevents
+\ref{subsec:header-swap}, the all-or-nothing property of BEAR prevents
 generator of a reply block from putting any information in the
 payload.  On the other hand, under the ``distinguish replies'' method
 in \ref{subsec:distinguish-replies}, the delivery information would
@@ -360,7 +359,7 @@ exit node he had compromised by advertising that node as supporting a
 rare but desirable delivery method.
 
 We claim that these attacks do not provide an argument against
-extensibility _per se_, but rather argue against the proliferation
+extensibility \emph{per se}, but rather argue against the proliferation
 of redundant extensions, and against the use of rare extensions.  
 
 \subsection{Exit policies and abuse}
@@ -394,8 +393,8 @@ plausible deniability.\footnote{
 by forging an opt-out request from a legitimate user. We might instead
 keep the mail at the exit node and send a note to the recipient
 informing telling them how to collect their mail; but this increases
-server liability by storing messages (see \ref{sec:nymservers} below),
-and also doesn't really solve the problem.
+server liability by storing messages (see Section \ref{sec:nymservers}
+below), and also doesn't really solve the problem.
 
 Of course, a mixture of open and restricted exit nodes will allow the
 most flexibility for volunteers running servers. But while a large number
@@ -411,91 +410,78 @@ for the remailer network.
 \section{Directory Servers}
 \label{sec:dir-servers}
 
-Although the current Mixmaster protocol does not specify a means for
-clients to learn the locations, keys, capabilities, or performance
-records of participating mixes, several schemes have been implemented
-\cite{mix-stats} and adopted by some clients.  As an adjunct the
-Mixminion protocol, we specify such a system.
+The Mixmaster protocol does not specify a means for clients to learn the
+locations, keys, capabilities, or performance statistics of mixes. Several
+\emph{ad hoc} schemes have grown to fill that void \cite{levien}; here
+% would be nice to cite some more. eg, are there key lists, etc?
+we describe Mixminion directory servers and examine the anonymity risks
+of such information services.
 
-We begin by discussing some attacks that system of directory servers
-must address, and then propose a secure but inefficient design.
+A group of redundant directory servers serve current node state. We lose
+security if each client has different information over time about network
+topology and node reliability. An adversary who controls a directory
+server could track certain clients by providing different information,
+perhaps by listing only MIXes it controls or only informing certain
+clients about a given MIX.
 
-\subsection{Directory-related attacks}
-\label{subsec:dir-server-attacks}
-
-A fairly broad category of vulnerabilities stems from the fact that
-knowledge among clients changes over time, and an adversary's ability
-to create or exploit such changes.
-
-In the most simple attack, an adversary who controls a directory
-server can provide a different information to clients it wishes to
-track.  For example, the compromised server might only list MIXes
-controlled by the adversary; or only inform certain clients about a
-given MIX. 
-
-Even without control of the a directory server, an adversary can still
-exploit differences among client knowledge.  If Eve knows that MIX M
-is listed on server D1 but not on D2, she can use this knowledge to
-link traffic through M to clients who have queried D2.  Eve can also
+An adversary without control of a directory server can still exploit
+differences among client knowledge. If Eve knows that MIX $M$ is listed
+on server $D_1$ but not on $D_2$, she can use this knowledge to link
+traffic through $M$ to clients who have queried $D_2$.  Eve can also
 distinguish traffic based on any differences between clients who use
-directory servers and those who don't; between clients who have
-up-to-date listings and those who have old listings; and (if the
-directory is partitioned) between clients who have different subsets
-of a complete directory.  In fact, even if Eve does not know the exact
-difference between Alice's knowledge and Bob's, the presence of such a
-difference can aid her traffic analysis. [[CAN WE HAVE A CITE HERE?]]
+directory servers and those who don't; between clients who have up-to-date
+listings and those who have old listings; and (if the directory is large
+and so is given out in pieces) between clients who have different subsets
+of the directory.
+%  In fact, even if Eve does not know the exact
+%difference between Alice's knowledge and Bob's, the presence of such a
+%difference can aid her traffic analysis. [[CAN WE HAVE A CITE HERE?]]
 
-Even with no differences in client knowledge, an attacker can mount a
-more subtle attack by delaying messages in a comprimised MIX.  If
-Alice sends a message at noon to a MIX controlled by Mallory, and he
-delays the message until directory servers remove some MIX M from
-their listings, he can conclude that any messages that are still
-addressed to M are likely to have originated from Alice's message.  If
-Mallory controls a large set of nodes, and can arrange for a large
-number of them to become unlisted, he can mount this attack with a
-fair probability of success. [[CAN WE DOCUMENT THIS?]]
+So it is not merely a matter of convenience for clients to retrieve
+up-to-date MIX information: if some client software supports a static
+list of servers while other software is dynamic, this difference can
+help an attacker distinguish their traffic. We must specify a directory
+service as a part of our standard. Thus Mixminion provides protocols for
+MIXes to advertise their capability certificates to directory servers,
+and for clients to download \emph{complete} directories.\footnote{
+  New advances in Private Information Retrieval \cite{PIR} may down the
+  road allow clients to efficiently and privately download a subset of
+  the directory. We recommend against using the mix-net to anonymously
+  retrieve a random subset: an adversary observing the directory servers
+  and given two hops in a message's path can take the intersection over
+  recently downloaded directory subsets to guess the remaining hops in
+  the path.}
+Servers can work together to ensure correct and complete data by
+successively signing certificate bundles, so users can be sure that a
+given mix certificate has been seen by a threshold of directory servers.
 
-\subsection{A Directory Service for Mixminion}
-\label{subsec:dir-server-design}
+But even with if client knowledge is uniform, an attacker can mount a
+\emph{trickle attack} by delaying messages from Alice at a compromised
+node until the directory servers remove some MIX $M$ from their listings
+--- he can then release the delayed messages and guess that any messages
+still using $M$ are likely to be from Alice. An adversary controlling
+many nodes can launch this attack very effectively. Thus clients
+should download new information regularly, but information regularly,
+but wait for a given time threshold (say, an hour) before using any
+newly-published nodes. Dummy traffic to old nodes may also be able to
+help thwart trickle attacks.
 
-As we describe above, it is not merely a matter of convenience for
-clients to retrieve up-to-date MIX information; if some client
-software supports a static list of servers while other software is
-dynamic, this difference can help an attacker distinguish their
-traffic.  Thus, we must specify a directory service as a part of our
-standard.
+Directory servers compile node availability and performance information by
+sending traffic through MIXes in their directories. In its basic form this
+can be very similar to the current ping servers \cite{levien}, but in the
+future we can investigate integrating more complex and attack-resistant
+reputation metrics. But even this reputation information introduces
+vulnerabilities: for example, an adversary trying to do traffic analysis
+can get more traffic by gaining a high reputation \cite{mix-acc}. We can
+defend against these attacks by building paths from a suitably large pool
+of nodes \cite{casc-rep} to bound the probability that an adversary will
+control an entire path; but there will always be a tension between giving
+clients accurate and timely information and preventing adversaries from
+exploiting the directory servers to manipulate client behavior.
 
-In the most basic design, we provide protocols for MIXes to advertise
-themselves to directory servers, and for clients to download
-\emph{complete} directories,
-  \footnote{We have considered, and rejected for performance reasons, 
-            PIR-based \cite{PIR} approaches that would allow clients
-            to retrieve a subset of the directory without the
-            server learning which subset.} 
-either directly or anonymously.  To prevent differences in client
-knowledge, servers must synchronize with one another, and must only
-update their exported data nightly.
-
-To mitigate the effects of changeover, clients should download new
-information regularly, but wait for a given time threshold (say, an
-hour) before using any newly-published nodes.  To address delaying
-attacks, clients should continue sending dummy traffic to de-listed
-nodes. [[IS THIS RIGHT?]]
-
-Directory servers compile availability information by sending traffic
-through MIXes in their directories. [[NEED TO SAY MORE.]] Future
-designs may include more sophisticated measures of reliability.
-
-We do not currently specify a means to detect and blacklist
-misbehaving directory servers.  Because the set of such servers is
-smaller and more static than the set of nodes, we have some hope for
-out-of-band detection.  Additionally, servers can work together to
-ensure correct and complete data by successively signing certificate
-bundles, so users can be sure that a given mix certificate has been
-seen by a threshold of directory servers.
-
-
-% See http://archives.seul.org/mixminion/dev/Apr-2002/msg00002.html
+%We do not currently specify a means to detect and blacklist misbehaving
+%directory servers. Because the set of such servers is smaller and more
+%static than the set of nodes, we have some hope for out-of-band detection.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -563,7 +549,7 @@ while more, I think.
 
 http://archives.seul.org/mixminion/dev/Apr-2002/msg00031.html
 
-\subsection{key rotation, message expiration, and replay attacks}
+\subsection{key rotation, message expiration, and replay prevention}
 
 Mixmaster offers rudimentary replay prevention by keeping a list of recent
 message IDs. To keep the list from getting too large, it expires entries
