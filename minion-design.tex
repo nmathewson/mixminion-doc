@@ -200,6 +200,7 @@ to be distinguished but provides better overall security.
 
 
 \subsection{Approach one: the `header swap' method}
+\label{subsec:header-swap}
 
 Making forwards and replies indistinguishable prevents an adversary from
 dividing the message anonymity sets into two classes. In particular, if
@@ -262,6 +263,7 @@ given that the tagging attack provides very little information and is
 very difficult to mount.
 
 \subsection{Approach two: the `distinguish replies' method}
+\label{subsec:distinguish-replies}
 
 %David? :)
 
@@ -301,19 +303,68 @@ transmitted.
 
 \subsection{Message types and delivery modules}
 
-This one is decided as well. Just needs to be written up.
+Once a Mixminion packet reaches the final MIX in its path, it must be
+dropped (if it is a dummy message), or delivered to its intended
+recipient (if it is not).  In order to support different kinds of
+delivery, each header contains a type code for the action to be taken
+to deliver the message.  A few types--such as DUMMY, SMTP, and LOCAL
+DELIVERY--are specified as a part of the Mixminion standard.  Others
+may be added by future extensions, in order to implement
+abuse-resistant exit policies (see \ref{subsec:exitpolicies}), to
+administer nymservers (see \ref{subsec:nymservers}), to publish
+anonymously to USENET, or to support other protocols.
 
-One issue: delivery information in header or in payload?
-There are tradeoffs to each. Describe both and we'll pick one down the
-road. (-Roger)
+% We never reached a consensus (afaik) on whether 'FORWARD' and 'DROP'
+% were types or not.  Are they? -Nick
 
-Aaaaarg, no!  It NEEDS to be in the header, else nobody can receive
-reply messages without running a server for local delivery. -Nick.
+Nearly all delivery methods require additional information beyond the
+message type and its payload.  The SMTP module, for example, requires
+an email address.  In our current design, this information is placed
+in a variable-length annex to the final header.  \footnote{It must be
+in the header, since putting delivery information in the payload would
+prevent people from creating SURBs that delivered by SMTP.  On the one
+hand, under the ``header swap'' method described in
+\ref{subsec:header-swap), the all-or-nothing property of BEAR prevents
+generator of a reply block from putting any information in the
+payload.  On the other hand, under the ``distinguish replies'' method
+in \ref{subsec:distinguish-replies}, the delivery information would
+create a portion of the payload that the final node {\it could}
+distinguish from random garbage, thus allowing a tagging attack
+against the reply block.}
+% See my messages of April 9 and 10 titled ``SMTP service'' for a more
+% detailed version of the above argument. -Nick
+%
+% Should we say _why_ it's undesirable to force reply recipients to
+% run local nodes?  [My answer is (A) that some people (such as human
+% rights activists using internet cafes) want to get replies, but
+% don't have persistant net connections, (B) that Mixmaster
+% supports it, and not doing so would be a step backwards, and (C)    
+% that there's not much reason not to.]    -Nick
 
-Make sure to describe capability blocks, and mention that they're
-certified.-Nick
+The types each MIX supports are described in a \emph{capability
+block}, which also includes the MIX's address, long-term (signing)
+public key, short-term key (for use in header encryption), and
+forwarding strategy (if any).  MIXes sign these capability blocks, and
+publish them on directory servers (see \ref{sec:dir-servers}).
+Clients download this information from the directory servers.
+
+% Is all of the stuff above really in the caps block?  Or do we break
+% the volatile part (short-term key) from the nonvolatile part? -Nick
+
+The possibility of multiple delivery methods doesn't come free: their
+presence may fragment the anonymity set.  For example, if there were 5
+ways to send a SMTP message to Bob, an attacker could partition Bob's
+incoming mail by assuming that one of those ways was Alice's favorite.
+Furthermore, an active attacker Mallory could lure users into using an
+exit node he had compromised by advertising that node as supporting a
+rare but desirable delivery method.
+
+We claim that these attacks do not provide an argument against
+extensibility _per se_, but rather argue against the proliferation
+of redundant extensions, and against the use of rare extensions.  
 
 \subsection{Exit policies and abuse}
+\label{subsec:exitpolicies}
 
 One important entry in a node's capability block is its \emph{exit
 policy}. Exit abuse is a serious barrier to wide-scale remailer deployment
@@ -586,6 +637,7 @@ textual analysis, etc
 %\end{description}
 
 \subsection{Tagging attacks on fixed routes}
+[This isn't in the right format. -Nick]
 
 As described in ?? the ``header swap'' method reduces the potential
 for tagging attacks by making the second part of the route dependent
@@ -602,7 +654,12 @@ performed. This attack is only possible against one victim at a time,
 and can only be performed by one attacker at a time.
 
 
+\subsection{Exit-based attacks}
+\label{subsec:mix-attacks}
+Attack: use delivery method to partition anon set.
+Attack: use caps to get partition anon set.
 
+[Need to expand this-Nick]
 
 \subsection{Directory-based attacks}
 \label{subsec:attacks-dirbased}
