@@ -151,7 +151,7 @@ to provide uniform information about the network.
 \item \textbf{Dummy traffic:} Cottrell briefly mentions dummies in
 \cite{mixmaster-attacks}, but they are not part of the specification
 \cite{mixmaster-spec}. Mixminion uses a simple dummy policy which provably
-improves anonymity. % compared to the absence of dummies.
+improves anonymity.
 
 \end{itemize}
 
@@ -162,9 +162,10 @@ improves anonymity. % compared to the absence of dummies.
 
 We review mixes and mix-nets in Section \ref{sec:background},
 and then address the above list of improvements in Sections
-\ref{sec:design}-\ref{sec:nymservers}. We conclude with a list of future
-work (tasks which we should do next and feel confident we can complete),
-followed by a list of open questions (unresolved issues for which the
+\ref{sec:design}-\ref{sec:nymservers}. We conclude with a summary of how
+our design stands up to known attacks; a list of future
+work (tasks which we should do next and feel confident we can complete);
+and finally a list of open questions (unresolved issues for which the
 research community currently has no answer).
 
 %The Mixminion Project aims to deploy a cleaner remailer design
@@ -192,14 +193,15 @@ of these encrypted messages, decrypts them, and delivers them. Because
 a decrypted message looks nothing like the original encrypted message,
 and because the mix collects a batch of messages and then sends out the
 decrypted messages in a new order, an observer cannot learn which incoming
-message corresponds to which outgoing message. Chaum demonstrated the
+message corresponds to which outgoing message. Chaum showed the
 security of a mix against a \emph{passive adversary} who can eavesdrop on
 all communications but is unable to observe the reordering inside the mix.
 
 However, trusting a single mix is dangerous: the mix itself could be
 controlled by the adversary. Therefore users send their messages through
 several mixes: if some of the mixes are honest (not run by the adversary),
-anonymity will be preserved. In most schemes, the sender chooses the
+anonymity will be preserved. In some schemes, such as Mixmaster
+\cite{mixmaster-spec} and Babel \cite{babel}, the sender chooses the
 mixes that will make up her message's path. Specifically, when Alice
 wants to send an anonymous message to Bob through mixes $M_1$, $M_2$,
 and $M_3$, she encrypts her message successively with the public keys of
@@ -211,20 +213,24 @@ Recent research on mix networks (mix-nets) includes stop-and-go mix-nets
 %distributed flash mixes \cite{flash-mix} and their weaknesses
 %\cite{desmedt}\cite{mitkuro}, and hybrid mixes \cite{hybrid-mix}.
 
-A mix network where Alice chooses her route freely from all mixes is known
-as a \emph{free-route} mix-net. Another approach is a \emph{cascade}
-network, where users choose from a set of fixed paths through the
+A mix network where Alice chooses her route freely from all mixes is
+called a \emph{free-route} network. Another approach is a \emph{cascade}
+network, where senders choose from a set of fixed paths through the
 mix-net. Cascades can provide greater anonymity against an adversary
 who owns many mixes \cite{disad-free-routes}, but they are also more
 vulnerable to blending attacks \cite{batching-taxonomy} (see Section
 \ref{subsec:batching}). Further, cascade networks arguably have lower
-maximum anonymity because the number of people Alice might be confused
-with (her \emph{anonymity set}) is limited to the number of messages
-the weakest node in her cascade can handle; a free-route network on
-the other hand can create a very high anonymity set because 
+maximum anonymity because the number of people Alice can hide among (her
+\emph{anonymity set}) is limited to the number of messages the weakest
+node in her cascade can handle; a free-route network on the other hand
+can create a very high anonymity set because all the traffic does not
+need to go through each mix. Mix cascade research includes real-time
+mixes \cite{realtime-mix} and web mixes \cite{web-mix}.
 
-Mix cascade research includes real-time mixes
-\cite{realtime-mix} and web mixes \cite{web-mix}.
+there are also more complex designs like flash mixes and provable shuffles
+(cite flash, ron and markus's recent paper, abe's and neff's provable
+shuffle stuff). but it's harder to use this stuff because it makes lots
+of assumptions about mix coordination and who the participants are.
 
 % What's a reply block?
 When recipients want to achieve anonymity, some mix-net designs allow
@@ -1350,7 +1356,7 @@ created by the adversary.
 
 \subsection{Transmitting many messages}
 
-When Alice (the owner of a pseudonym) is downloading her mail from a
+When Alice (the owner of a pseudonym) downloads her mail from a
 nymserver, she will likely receive many separate messages. Similarly, if
 Alice uses Mixminion as a transport layer for higher-level applications,
 sending a large file means sending many Mixminion messages.
