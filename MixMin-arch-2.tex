@@ -1,0 +1,732 @@
+The MixMinion architecture
+
+HISTORY:
+
+ 6 March 2002 (Nick: Re-wrapped to be readable in Unix)
+14 March 2002 (George: Reworked to reflect discussion)
+
+Abstract
+Introduction
+
+[Roger is reworking the introduction]
+
+Requirements
+
+MixMinion is a classic store and forward mix design. A number of high
+level requirements have been identified, and guided the its design:
+
+     "The system must be resistant against passive traffic analysis." -
+
+We define traffic analysis as the following: Given that an adversary
+sees a message sent or received he/she tries to respectively find who
+has received or sent the message. Resistance to traffic analysis means
+that the cost of doing so is impractically large. Passive traffic
+analysis involves an adversary that has the power to observe all the
+network links. This must be true even if a subset of the mixes is
+colluding with the adversary.
+
+     "The system must be resistant against active traffic analysis." - 
+
+In that case an adversary has the ability to delete, inject, or replay 
+any message into the system. We should try to make any attempt to
+introduce malformed messages into the network fruitless. We should
+also try to avoid techniques that could amplify active attacks to
+become denial of service attacks.
+
+
+     "The system must make traffic confirmation expensive." -
+ 
+Traffic confirmation involves confirming or rejecting with some degree
+of confidance the hypothesis that two parties are communicating with
+each other. We should aim for MixMinion to provide at least Plausible 
+Deniability. Attackers should not be able to convince theselves or a
+court that two people are corresponding with each other "beyond
+reasonable doubt". If possible there should be "safe" modes that would 
+make traffic confirmation as difficult as traffic analysis, at the
+expence of latency and bandwidth.
+
+     "The system should be secure against a fraction of corrupt 
+     collaborating mix servers"
+
+For this reason we aim at making intermediate servers unaware of 
+the full route of the message, its destination or the sender. We
+should also aim at making the length of the full route and their
+particular position undetectable except in particular documented
+cases. 
+
+     "The system should provide forward security where possible, be
+     designed in such a way that it is possible to build forward
+     secure systems on top of it".
+
+We use forward secure channels between mixes. 
+
+     "The system should support feature that provide a certain degree
+      of unobservability." -
+
+That can be archived by adding dummy traffic and traffic shaping but
+is unlikely to be needed or used by all users. MixMinion should take
+into account that some of the traffic's only purpose is to act as
+cover traffic and manage it efficiently.
+
+     "The system should be modular, and allow for different types of
+     applications to be built on top of it." -
+
+The basic transport mechanism is common for all applications. The
+protocol itself includes as little as possible application level
+details. Some basic multiplexing is included in MixMinion to direct
+the message to the appropriate application module, since multiplexing
+at the TCP layer would be observable reducing the anonymity sets
+provided by the system.
+
+     "The design of the system should minimize the potential for
+     Denial of Service attacks." -
+
+The design should be careful to avoid resources being used or reserved
+for a long time. The two mechanisms that could affect the performance
+of classical mixes are replay prevention and return addresses
+state. MixMinion should use techniques that make sure to minimize the
+amount of data and the time the data is kept on the mix nodes. 
+
+     "The design should be easy to be adapted to run on crypto
+     hardware. This could be done for efficiency or security reasons."
+     -
+
+The computational bottleneck in a mix is likely to be the asymmetric
+cryptographic operations. A hardware co-processor could be useful if
+one want to design high-throughput systems. The tamper-resistance
+offered by some crypt-processors can also be used to secure the mix
+against adversaries that want to get the private keys out. If such a
+box is programmed to only decrypt each message once and never reveal
+the key it cannot be used to trace past or future traffic.
+
+     "The design and implementation should be friendly towards formal
+     specification, formal evaluation or specification." -
+
+Formal evaluation could be used to make sure that mixes adhere to
+particular protection profiles, such as the ones proposed by Kai and ?
+[PP for Mixes]. The protocols and formats used by the Mixes should
+also be friendly to formal specification and analysis.
+
+     "Only clients that benefit from the system properties should be
+     obliged to know how it works, or to have specialized tools to use
+     it"
+
+This will allow an easier and therefore wider deployment of the
+system, and ease of integration with other products.
+
+     "The cryptographic components of the system should be well
+     understood and standardized where possible."
+
+We use the PKCS#1 RSA-OAEP, RSA-PSS standard, SHA-1 Standard and
+Rijendal in counter mode. 
+
+Rejected design decisions:
+
+- Logs
+- Extensions
+- Receipts
+- Fancy ElGamal Schemes + verifiable mixing.
+- Connection oriented mixes (Onion routing)
+- Multiple inter-mix communication schemes.
+
+Specifications
+
+{The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
+NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED",  "MAY", and
+"OPTIONAL" in this document are to be interpreted as described in
+RFC 2119.} Need to correct the document to comply with 2117.
+
+Overview 
+
+The main areas that need to be defined in order to have an
+implementable system are the basic packet formats and how to process
+them, the transport protocols and the administrative functions such as
+key and capability discovery. 
+
+The packet format
+
+The message format of MixMinion packets is divided in
+2 parts. The Main Header (MH), contains information encrypted under 
+the public key of the mix it is addressed to. The second part is the 
+payload that contains the message to be forwarded to the next hop or 
+to the local application. The Payload is encrypted using a symmetric 
+encryption method.
+
+The exact format of the Master Header is:
+
+Master Header:
+
+- Major Version      - 1 byte
+- Minor Version      - 1 byte
+- Master Secret (MS) - 16 bytes
+- Timestamp          - 8 bytes
+- Size               - 2 bytes
+- Type               - 2 bytes
+- Return Level       - 1 byte
+- Reuse Level        - 2 bytes
+- Address Type       - 2 bytes
+- Next Address       - 16 bytes
+- Dest. Port         - 2 bytes
+- Expected Key       - 20 bytes
+
+Total size: 73 bytes
+
+In the rest of the document we will refer to these fields as:
+
+Major Version, Minor Version: V [2 bytes]
+Master Secret: MS [16 bytes]
+Timestamp: T [8 bytes]
+Size: S [2 bytes]
+Type: Tp [2 bytes]
+Return Level: Rt [1 byte]
+Reuse Level: Ru [2 bytes]
+Address Type, Next Address, Dest. Port, Expected Key: A [20bytes]
+
+We denote a particular Header composed of the above elements as:
+
+MH(V, MS, T, S, Tp, Rt, Ru, A)
+
+The Master Header MUST be encrypted using the RSAEP-OAEP method with
+an RSA key of modulus 1024 bits as described in the PKCS#1
+standard. The size of the encrypted header block is 128 bytes. The
+OAEP transform is applied using SHA-1 and the MGF1 Mask 
+generation function as described in the PKCS#1 standard, and the 
+parameter P is fixed to [what]. This construction 
+makes sure that any modification of the Master Header is detectable by 
+the mix, and MUST result in the packet being discarded.
+
+The Major and Minor Versions are present in the header to help the mix
+server interpret the rest of the packet. If the server does not recognize
+the major or the Minor Version it MUST drop the packet (and check
+its policy files to see if they are clear about the versions supported).
+
+The Master Secret is a shared secret between the user and the mix. It SHOULD 
+be forgotten as soon as the processing of the packet has ended. It SHOULD 
+never be used directly for any operation. Instead it is hashed with 
+particular strings to extract keys or seeds for the random number generators.
+
+The timestamp SHOULD be at a coarse granularity (a day) so that it cannot
+be used by corrupt mixes to link messages together. It SHOULD refer to GMT
+time worldwide so that a corrupt mix cannot guess in which time zone 
+the sender is. [What format exaclty do we want it to be?]
+
+Each packet generates a unique signature that is stored on the mix to avoid 
+processing the same packet twice. The signature is computed by hashing the
+encrypted Master Header of the message (first 128 bytes). It MUST be kept for
+as long as the message has not expired.
+
+All the conversions from integer to byte array or the other way MUST
+follow the procedures I2OSP and OS2IP described in PKCS#1. The length
+of Packet field SHOULD contain a fixed value of 62kb (62*1024 bytes) when 
+the packet is transiting through the network. Another value N (smaller than
+ 62kb) MAY be specified if the message is to be processed locally on the mix. In 
+that case only the N first bytes of the body are to be given to the application.
+The size of 62kb has been chosen to fit into the maximum size UDP packet 
+although UDP is not by default used for transport.
+[Is 64kb a bit large for each packet? This is much more than the
+average email and even with 20 hops (which should cover most of the
+plannet anonymity set wise) you still have around 60kb remaining. What
+about going down to 32kb or 16kb?]
+
+The type field of the header allows unobservable multiplexing of applications 
+using anonymous communications. Some values have special meaning. Type 0 means 
+that the packet is not to be processed by any module and MUST be sent to the 
+address specified in the header. For any other value the body of the packet SHOULD
+given to a module taking care of packets of this category. The values
+1 to 255 are reserved for management functions defined by MixMinion standards 
+such as deletion of cover traffic and packet reconstruction. The values from 256 
+to 32767 should be registered and well known. Values greater than 32767 can be 
+used freely but could result in clashes.
+
+The reuse level allows an intermediary mix to let through the same headers many
+times. It is important to observe that multiple use return blocks offer much 
+weaker anonymity than one use return blocks. They allow the server to know that
+the address is reused and link messages together. Server can
+know where it is on the path. They also allow servers to perform message tagging 
+in order to detect the message later on the path if it goes through another
+corrupt server. Multiple use reply blocks should be avoided is the
+functionality can be implemented in another way. The Reuse level is
+set to zero if the message is not a multiple use return address. 
+
+The return level field SHOULD be used on the last header of a return block 
+(usually addressed to the creator of the block) to remind them how many levels 
+of encryption are to be stripped.
+
+The Address Type field MUST be used to specify what address type is 
+following. It SHOULD be full of zero valued bytes in case the message is to
+be processed locally. The usual type of address should be IPv4 (using up 4 
+bytes) but "ephemeral address" schemes MAY also be supported to provide return 
+addresses with forward security. The Address field is 16 bytes long to 
+accommodate long addresses used by IPv6. The Port Number specifies the TCP port 
+that listens for MixMinion messages. The hash of the signature key of the next 
+hop MAY also be included in the header. If it does not match the signature 
+retuned by the next address the message MUST be dropped. If the hash is not 
+specified it should be filled with zero valued bytes, and that signifies 
+that there SHOULD NOT be a check against the recipients key.
+
+Encoding and decoding messages:
+
+A client should get hold, using some method, of a list of mixes along with 
+their capabilities and public keys. Special protocols should be defined to 
+perform these administrative operations, so that they do not leak any 
+information about potential routes, therefore compromising anonymity.
+
+The client then chooses a number of mixes M_0 to M_(N-1) with keys K_0 to 
+K_(N-1) and makes sure that consecutive pairs of them have policies that 
+allow to communicate with each other. Assume that the message M is to 
+be sent to final address M_0. M is of length L bytes and MUST have a 
+maximum length of:
+
+L < 62kb - N*128 + 1
+
+The client also needs to choose the final type of the message to guide 
+how M_0 should treat the message.
+
+Define:
+- if B is a byte array B[i:j] (j bytes) is sub array starting at 
+  byte i with length j.
+- R(n) (n bytes) Generates n random bytes 
+- Z(n) (n bytes) Generates n zero bytes
+- Len(M) (2 bytes) is the length of message M (* bytes)
+- x|y (Len(x)+Len(y) bytes) denotes x concatenated with y.
+- PAD(M,L) (L bytes) pads the message M (Len(M) <= L) to a length L
+
+- H(M) (20 bytes) is the SHA-1 hash of M (* bytes)
+
+- RSA_OAEP_Encrypt(K,M) (128 bytes) the encryption of M (73 bytes) 
+  using the public key K as described in PKCS#1. 
+- RSA_OAEP_Decrypt(K,M) (73 bytes) Gives the decryption of the message 
+  M (128 bytes) under the private key corresponding to K.
+
+- Encrypt(K,M) (Len(M) bytes) Rijendal in Counter mode encryption 
+  of message M using key K. 
+- Decrypt(K,M,i,j) (j bytes) Rijendal counter mode decryption 
+  using the key material byte i to j. Len(M) = j.
+
+The inputs are a list of Mixes (M_0 to M_(N-1)) and their public keys 
+(K_0 to K_(N-1)), and the final type of the message (TP). The message 
+to be sent is M.
+
+Encoding for final mix: 
+
+MMEncode(M_0...M_(N-1), K_0...K_(N-1), TP, M)
+- Let M' = M.
+- S_0 = R(16).
+- T is the date GMT rounded to the current day.
+- LS = Len(M)
+- Construct H_0 = MH(V,S_0,T,LS,TP,0,0,0)
+- Construct B_0 = Encrypt(H(S_0|"SECRECY_MODE")[0:16],PAD(M,62k-128*N))
+- H' = RSA_OAEP_Encrypt(K_0,H_0)|B_0
+
+- For x = 1 to N-1
+o S_x = R(16)
+o H_x = MH(V, S_x, T, 62kb, 0, 0, 0, M_(x-1))
+o H' = RSA_OAEP_Encrypt(K_x, H_x)|
+     Encrypt(H(S_x,"SECRECY_MODE")[0:16]|H')
+- The final message is (M_(N-1), T, H')
+
+
+Encoding a return address to be route to M_0 through M_(N-1) to M_1. (The 
+keys are K_0 to K_(N-1). The message arriving on M_0 should be of type TP.
+
+MMReplyBlock(M_0...M_(N-1), K_0...K_(N-1), TP)
+- MS = R(16)
+- GK = H(MS[0:16]|"MASTER_DISTRIBUTION_MODE")
+- T is the date GMT that the return block should be valid rounded to the day.
+- L = 62*1024 - N*128
+- Construct H_0 = MH(V,MS,T,L,Tp,Rt,0,0)
+- H' = RSA_OAEP_Encrypt(K_0,H_0)
+- for x = 1 to N-1
+  o S_x = H(GK|x)[0:16]
+  o H_x = MH(V,S_x,T,62*1024,TP,0,0,M_(x-1))
+  o H'= RSA_OAEP_Encrypt(K_x, H_x)| 
+    Encrypt(H(S_x|"SECRECY_MODE")[0:16],H')
+- The return block is (M_(N-1), T, H')
+
+The reply block may be encoded in a variety of ways depending on the
+module that uses it, but it should contain all nessassary information
+to sned a message back to the creator: The address of the first mix,
+the timestamp for which it is valid, and the reply block itself.
+
+The standard decoding for an incoming packet is as follows:
+If the public key of the mix is K_x and the message received is M.
+
+MMProcess(K_x, M)
+- MH(V,MS,T,S,Tp,Rt,Ru,A) = RSA_OAEP_Decrypt(K_x,M[0:128])
+- Check that the OAEP structure is intact.
+- Check that protocol version V is supported.
+- Check T to make sure the message is valid.
+- Calculate US = H(M[0:128]) and check that it has not been seen before.
+- Store US.
+- If Tp = 0
+  o Check that S = 62kb
+  o D=Decrypt(H(MS|"SECRECY_MODE")[0:16],M[128:62kb-128],0,62kb-128)
+  o J=Encrypt(H(MS|"JUNK_GENERATION_MODE")[0:16], Z(128))
+  o Output message (A,D|J).
+- Else
+  o Check that A = 0
+  o if Rt>0 
+    * GK = H(MS[0:16]|"MASTER_DISTRIBUTION_MODE")
+    * D = M[128:62kb-128]
+    * for x = 1 to Rt-1
+    * S_x = H(H(GK|x)[0:16]
+    * D = Decrypt(H(S_x,"SECRECY_MODE"),D, x*128, Len(D)- (x-1)*128)
+    * Return (Tp, H(MS,"MODULE_MODE"),D[0:62kb-(N-1)*128]) to application
+  o else
+    * D=Decrypt(H(MS|"SECRECY_MODE")[0:16],M[128:62kb-128],0,S)[0:S]
+    * Return (Tp, H(MS,"MODULE_MODE"),D) to application
+
+Notes:
+
+If any of the checks and invariants fail then an error message SHOULD be logged 
+and the packet SHOULD be dropped. The error messages that occur before the 
+mixing phase MUST be reported as input errors log, while the errors after the 
+mix stage MUST be reported in the output errors logs.
+
+For reasons relating to the efficient and stateless engineering of return 
+addresses Rijendal in Counter Mode [AppliedC] is used to perform the 
+encryption and decryption operations. The encryption and decryption
+equations for Counter Mode are:
+
+Ci = Ek(i + IV) XOR Pi  : To do the encryption.
+Pi = Ek(i + IV) XOR Ci  : To do the decryption.
+
+IV = Z(16)
+
+Where Ci is the ith block of cipher text, and Pi is the ith block of
+plaintext. Ek is the encryption operation under key k or a block. IV
+is an initialization vector set to zero.
+
+The advantage of this mode is that both the encryption and decryption
+functions provide secrecy. It is also easy to do random access
+decryption that is going to be used to construct stateless return
+addresses. Since each key should be different there is no need for an
+IV, so we set it to zero. 
+
+Transport issues
+
+In order to minimize the benefit the benefit from eavesdropping on the links 
+between mix servers a forward secure transport protocol, MMTP, is used. 
+Clients SHOULD implement this protocol if they wish to send anonymous 
+messages or receive messages using anonymous reply blocks.
+
+Definition of the MixMinion Transfer Protocol (MMTP)
+
+[SSL option: All this section goes if we use SSL! (I hope we do)]
+
+SSL does not nedd to be modified in any way to provide forward secure
+communications. We will use a mix of ephemeral Diffie Hellman (DH)
+keys and key updating to archive our protocol goals.
+
+Outline for SSL based protocol:
+
+- A invents a DH key and makes a certificate for it using its signing key.
+- It then initiates the SSL Handshake protocol with B.
+- B invents a DH key and makes a certificate using its signing key.
+- The SSL handshake protocol proceeds as normal until a session key
+  has been established. All communications are then encrypted using
+  this master key.
+
+- A sends "INIT",H(M,"INIT") to B.
+- B sends "OK", H(H(M,"INIT"),"OK")
+- A sends "SEND", M
+- B sends "RECEIVED", H(M,"RECEIVED")
+
+- A sends a handshake renegotiation message.
+  (and does not accept to reuse the same keys)
+
+[/SSL]
+
+A special channel should be established between mixes that provides forward 
+secrecy making it impossible to recognize or decrypt any message that went 
+through it in the past. In order to establish this channel one of the two mixes 
+initiates the connection but at the end of the key exchange protocol the channel 
+is bi-directional.
+
+We define the following:
+
+A       - The full address of the initiating mix. (40 bytes)
+B       - The full address of the responding mix. (40 bytes)
+
+          These contain the same 4 address elements as the in the
+          header of the MixMinion packet.
+
+Nx      - A nonce (160 bits)
+p       - a large prime (1024 bits)
+g       - a generator of p. (1024 bits) 
+Sx      - the public RSA signature key of x. (2048 bits)
+{M}Sx   - denotes that (M) is signed using the signature Sx.
+          The RSASSA-PSS scheme described in PKCS#1 standard is used.
+          It results in a length of Len(M)+128 bytes
+          The Output is (M, signature)
+H(M)    - denotes that (M) is hashed using SHA-1. (20 bytes)
+{M}ESKx - denotes that (M) is appended with a Hash derived from key 
+          Kx and encrypted using Rijendal in Counter mode with a key
+          derived from Kx and a fresh IV. (provides secrecy and integrity).
+
+	  Choose a random IV = R(16);
+          Define Ks = H(Kx| "SECRECY_SK")[0:16]
+                 Ki = H(Kx| "INTEGRITY_SK")[0:16]
+		 
+	    Output: IV,Encrypt(IV,Ks,M|H(Ki|M))
+
+          Resulting length is Len(M)+20+16
+g^Nx    - Denotes exponentiation of g by Nx modulo p. (128 bytes)
+M       - M is the MixMinion message to be sent.
+x,y     - denotes concatenation (as "|" earlier)
+
+We also define the following 1 byte constants:
+
+0x00 Ex1 (Exchange message request)
+0x01 Ex2 (Exchange message reply)
+0x10 Pc1 (Pre communication messages request)
+0x11 Pc2 (Pre communication messages reply)
+0x20 C1 (Communication messages request)
+0x21 C2 (Communication messages reply)
+0x30 U1 (Update request)
+0x31 U2 (Update reply)
+
+The messages exchanged between A and B then are:
+
+Key exchange:
+
+A generates N1 and Na.
+A->B: {Ex1, A, B, N1, p, g, g^Na, SA}SA
+
+B generates N2 and Nb.
+B->A: {Ex2, B, A, N1, N2, g^Nb, SB}SB
+
+A and B compute:
+   KA0 = H(A, B, N1, N2, g^(Na*Nb), A)
+   KB0 = H(A, B, N1, N2, g^(Na*Nb), B)
+A and B DELETE N1, N2, Na, Nb.
+
+Message Exchange:
+
+A->B: Pc1,{Pc1, H(M,"INIT")}ESKA0
+B->A: Pc2,{Pc2, H(H(M,"INIT"),"OK")}ESKB0
+
+A->B:C1, {C1,M}ESKA0
+B->A:C2, {C2,H(M)}ESKB0
+
+A and B compute
+KA0 = H(A, B, KA0)
+KB0 = H(A, B, KB0)
+A and B DELETE the old KA0 and KB0.
+
+Key Update:
+
+A generates a random Nja
+A->B: U1,{U1,H(KB0),Nja}ESKA0
+
+B generates a random Njb
+B->A: U2,{U2, H(KA0), Nja, Njb}ESKB0
+
+A and B compute:
+	KA0 = H(A, B, Nja, Njb, KA0)
+      KB0 = H(A, B, Nja, Njb, KB0)
+A and B DELETE the old KA0 and KB0.
+
+Notes:
+
+A connection to a mix with which no keys are shared should start 
+with the key exchange messages Ex1 and Ex2. This establishes two 
+shared secret keys, one used for communications encrypted by A 
+and the other by B. 
+
+When a message is to be sent between A and B the Message Exchange 
+protocol should be used. This sub protocol always does key updating 
+at the end of the message exchange to make sure that the same key is 
+never used again. If any of the messages are corrupted or do not
+arrive after some timeout the keys MUST be destroyed. 
+
+Nodes might want to perform some key updating periodically. This 
+makes sure that an opponent that somehow knows the shared keys 
+need to be intercepting traffic all the time to follow how the 
+key is updated.
+
+In case any of the messages' signature or MAC does not check all 
+the keys MUST be immediately deleted. It is valid at any 
+time for any of the communicating parties to initiate the key 
+exchange sub-protocol.
+
+It is important that implementations do not store keys on the Hard 
+disk. When a key is deleted from memory it SHOULD be overwritten 
+with other values, to avoid in some environments that its destruction 
+is delayed (until garbage collection for example).
+
+Administrative Issues
+
+Mix nodes need to advertise their address and keys so that nodes can
+use them. The format that should be used when describing a mix node
+should be the following:
+
+Encoding of Mix Public Keys:
+
+Content-Type: text/mixminion-ServerKey
+Address: [The server address] <LFCR>
+Expires: [The date the key expires] <LFCR>
+Capabilities: [The capabilities of the mix node] <LFCR>
+RSA-E-e: [ I2OSP converted "e" value of the RSA public Encryption 
+           key encoded using base64].<LFCR>
+RSA-E-n: [ I2OSP converted "n" value of the RSA public Encryption 
+           key encoded using base64].<LFCR>
+RSA-S-e: [ I2OSP converted "e" value of the RSA public Signature 
+           key encoded using base64].<LFCR>
+RSA-S-n: [ I2OSP converted "n" value of the RSA public Signature 
+           key encoded using base64].<LFCR>
+Signature: [The signed SHA-1 of all the previous fields using the 
+            mix key in base64]. <LFCR>
+
+The address field can contain more than one addresses separated by
+white spaces. The capabilities refer to modules. Clients should not 
+send messages relying on capabilities that a mix does not advertise.
+
+The Signature keys MUST NOT be used to encrypt or decrypt material.
+
+We assume that the key exchange happens out of band and we will not
+describe a particular protocol to perform it. It is very important
+that the key exchange and mix discovery protocols do not break the
+security properties of the MixMinion system.
+
+Logging format permitted
+
+No public logging at all is to be performed.
+
+Security Considerations
+
+The principal aim of a mix network is
+to deliver messages that cannot be linked to a sender or a
+recipient. The attacks bellow either try to reduce the unlinkability
+provided by the system, or the reliability of the system. Some
+attacks concern particular mixes, others concern the mix network as a
+whole.
+
+Classic mix attacks - [chaum]
+
+Linkability by Size - If the size of input and output messages can be
+used to link particular messages then the mix fails. MixMaster use
+fixed length messages and pads the messages after processing.
+
+Linkability by Content - If the content of the message provides any
+way of linking the input with the output messages then the mix
+fails. This attacks has both a passive variant, but also an active
+variant in which an attacker modifies a message to make it
+traceable. MixMaster should act as a random function for anyone that
+does not know the private key of the server, except the users whose
+anonymity is protected. The user that constructs the message headers
+knows the secrets used to encrypt and pad the messages and can
+therefore link the messages together.
+
+Linkability by order or timing - If the routing strategy for
+outputting of the messages provides a way of linking them with
+incoming messages then the mix fails. MixMaster does not provide any
+guidance but a simple mix using Chaums original proposal in order to
+mix the messages: Each mix waits for a batch of valid messages to
+arrive, decrypts them and then outputs them in some random
+order. Other strategies can be implemented such as pool mixes and
+delay mixes.
+
+Linkability by repetition - If a message is processed more than once,
+and its decryption and routing is deterministic, then it is obvious to
+whom the message is addressed and therefore the message can be
+traced. MixMaster implements some duplicates detection
+mechanisms. These rely on signature and timestamp to
+detect messages that have been processed before, and at the same time
+minimize the resources used by to system.
+
+N-1 Attack - [BABEL]
+
+The n-1 attacks can be considered generally as a "fake cover traffic
+attack". The opponent tricks the mix to think that it has enough cover
+traffic to hide the correspondence of the inputs and output, but has
+in fact a way of distinguishing the cover traffic messages form the
+real ones. This has as an effect that the anonymity set of the
+messages is greatly reduced, and at the limit when only one valid
+message is processed the unlinkability of this message is totally
+compromised. The standard way of performing this attack is by flooding
+the mix, with messages after each valid message it receives. MixMinion
+does not provide as a protocol any way of avoiding this
+attack. Particular node can introduce cover
+traffic to guarantee a minimum size anonymity set (if the output batch
+size is always greater than the input, then the opponent cannot know
+the exact correspondence of the single input message). The fact the
+MixMinion messages expire may also discourage an attacker from trying
+this technique if he is "shy", and does not want to be detected.
+
+Traffic analysis attacks - Pfitzmann
+
+Position in MIX route attack - Is a mix is able to know its own
+position in the route of a message it can use this information in
+order to partition the batches of messages. This attack assumes that
+the attacker controls a large number of mixes and is able to trace the
+messages that are travelling for a particular number of hops, and select
+them as the only potential outputs. MixMinion does not impose a fixed
+route to be followed by messages but at the same time mixes should not
+be able to know where they are in the path. This makes the attack less
+realistic, since we should assume that a majority, or at least a large
+number of mixes is honest. A cascade strategy can also be implemented
+so that this attack is not possible.
+
+Determining the next MIX when multiple messages are sent using the
+same path - If two messages are sent along the same path an attacker
+can use the intersection of their anonymity sets in order to find the
+route they traveled and the final recipient. Using the same path is
+discouraged, unless a safe strategy such as cascade mixing is
+implemented. 
+
+Message blocking - If an attacker knows that a message is going to be
+sent to him, as part of a larger data stream, and wants to detect the
+sender, he may block messages until some expected messages are
+missing. This is more of a "traffic confirmation" attack, and
+MixMinion does not attempt to address it.
+
+Traffic Analysis attacks - Freedom IH2001
+
+Some of the attacks presented in [IH2001 - Freedom] concern
+Onion-routing type systems, and do not directly affect MixMinion. The
+packet counting attack only affects onion routing services with
+first-come first-served routing policies. The attacks on traffic
+shaping are very close to the n-1 attacks an underline the need for a
+shaping strategy that always has some dummy traffic on the
+links. MixMinion is not concerned with this and should work with or
+without such strategies (although it would be weaker if it does not
+implement them). The Latency attacks should not work very well if a
+tight expiry date is set on the packets since the stream is simply
+going to be dropped, which would probably terminate any persistent
+connections. This is a traffic confirmation attack that cannot be
+completely avoided. The clogging attacks are also a "traffic
+confirmation attack" by which one sends traffic along the suspected
+route of a stream to see the results in its latency. If the stream
+under observation has its latency characteristics changed, then it is
+inferred that the guess was correct.
+
+Traffic confirmation attacks
+
+As described in many cases above traffic confirmation attacks are
+performed when there is already a suspicion that a particular user is
+associated with some communication. These attacks are very difficult
+to defend against. The most crude way of performing these attacks is
+to disconnect the the suspect to see if the communication stream stops.
+
+Reputation and path selection attacks
+
+The current MixMaster network and some recent proposals rely on the
+fact that statistics of reliability are compiled for mixes, so that
+reliable routes are selected. If Denial of Service attacks can
+influence these reputation systems, it may be the case that an
+attacker could influence its victim to choose a compromised route
+through the network.
+
+Legal attacks
+
+GAK legislation can be used to compel mixes to decrypt traffic or give
+their keys. Logs can be seized, but should do not contain any
+information that would compromise the anonymity of users.
+
+Issues not addressed
+
+Key distribution, revocation infrastructure
+
+Conclusions
+References
