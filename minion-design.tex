@@ -31,7 +31,7 @@
 
 \title{Mixminion: Design of a Type III Anonymous Remailer}
 \author{George Danezis\inst{1} \and Roger Dingledine\inst{2} \and David Hopwood\inst{3}
-        \and Nick Mathewson\inst{2}}
+        \and Nick Mathewson\inst{4}}
 \institute{Cambridge
 \email{\emailaddr{george.danezis@cambridge}}
 \and
@@ -41,6 +41,9 @@ The Free Haven Project
 Independent consultant
 \email{\emailaddr{david.hopwood@zetnet.co.uk}}
 }
+\and
+The Free Haven Project
+\email{\emailaddr{nickm@alum.mit.edu}}
 \maketitle
 \pagestyle{empty} 
   
@@ -52,6 +55,9 @@ provide forward anonymity. We include designs for directory servers and
 nymservers that work with these single-use reply blocks. Because many of
 our design choices impact anonymity in surprising ways, we also include
 careful discussion of the anonymity implications of each step.
+
+% Mention conservativism of design to avoid reader let-down when they
+% find out we aren't Tarzan? -Nick
 
 % We include justification
 %for various design decisions and a detailed description of attacks and
@@ -105,6 +111,9 @@ Many of our design decisions impact anonymity in surprising ways. Herein
 we document and analyze some of these influences to provide more intuition
 to developers and users.
 
+% Mention that Mixminion spec is on track for adoption as Mixmaster v3?
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Related Work}
@@ -148,6 +157,9 @@ added message padding, message pools, and other MIX features lacking
 in the cypherpunk remailers. At about the same time, Gulcu and Tsudik
 introduced the Babel system \cite{babel}, which also created a practical
 remailer design (although one that never saw widespread use).
+
+% Mention that Type-I is vulnerable to replays, and Type II has no replies?
+% -Nick
 
 \subsection{Robustness}
 
@@ -232,14 +244,15 @@ remailer systems, in order to provide a simple extensible design. At
 the same time, we provide a new feature: a reply block mechanism that
 is as secure as forward messages.
 
-Reusable reply blocks are security risks --- by their very nature they
-let people send multiple messages to them. These multiple messages can be
-used to very quickly trace the recipient's path: if two incoming batches
-both include a message to the same reply block, then the next hop must
-be in the intersection of both outgoing batches. Mixminion thus uses
-single-use reply blocks to prevent these replays. Further, the Mixminion
-protocol makes reply messages indistinguishable from forward messages,
-allowing all messages to share the same anonymity set.
+Reusable reply blocks, such as those in the cipherpunk remailer, are a
+security risk --- by their very nature they let people send multiple
+messages to them. These multiple messages can be used to very quickly
+trace the recipient's path: if two incoming batches both include a
+message to the same reply block, then the next hop must be in the
+intersection of both outgoing batches. Mixminion thus uses single-use
+reply blocks to prevent these replays. Further, the Mixminion protocol
+makes reply messages indistinguishable from forward messages, allowing
+all messages to share the same anonymity set.
 
 The rest of this section describes the mechanism for secure replies,
 including some new attacks and how we defeat them. We also discuss using
@@ -293,6 +306,8 @@ and unwrap messages received through those reply blocks. Other parties,
 such as those receiving forward messages and those sending direct reply
 messages, do not need to run any new software.
 
+% Do we ever say how to send a reply without software? -Nick
+
 We divide a message's path into two \emph{legs}; thus the header is
 split into two equal-size subheaders as well. Each hop contains a hash
 of the subheader it's a part of, so we can do integrity-checking of the
@@ -319,6 +334,7 @@ the property that if any bit of the encrypted material is changed the
 decryption will look like random bits. We can use BEAR in a mode where
 decryption and encryption are equivalent, by using the same key for
 both hash steps. See Section \ref{subsec:tagging} for a discussion of
+% ``Both hash steps''?  We never mention Bear's hash steps... -Nick
 how this all-or-nothing encryption approach helps protect against tagging.
 
 \begin{figure}
@@ -334,6 +350,8 @@ and generates her own path for the first leg.
 
 \subsection{Defenses against tagging attacks}
 \label{subsec:tagging}
+
+% We never define what a tagging attack is. -Nick
 
 The crossover point is critical to preventing tagging attacks. Without
 it, an adversary could tag the payload of a forward message when it
@@ -433,8 +451,9 @@ to future work; but see Section \ref{subsec:choosing-paths}.
 \section{Related design decisions}
 
 \subsection{Link-level encryption and what it gets us}
+\label{subsec:link-encrypt}
 
-Unlike remailer Types I and II that used SMTP as their underlying 
+Unlike remailer Types I and II that used SMTP as their underlying
 transport mechanism, Mixminion clients and nodes communicate using a
 forward secure encrypted channel based on TLS \cite{TLS}.  TLS allows
 the establishment of an encrypted tunnel using ephemeral
@@ -444,15 +463,15 @@ ephemeral key could be signed by the receiving node. As soon as a
 session key has been established the Diffie-Hellman keys are destroyed
 and messages start being sent through the tunnel. After each message a
 standard key update operation is performed to generate a fresh key and
-the old key material is deleted. Key updates don't use any asymmetric
-encryption techniques, so they are fast.
+the old key material is deleted. Key updates don't require any
+asymmetric encryption techniques, so they are relatively fast.
 
 The above scheme offers forward secrecy in the sense that after the keys
 have been deleted even the
 nodes that exchange messages are not able to decrypt or even recognize
 messages that might have been intercepted on the links. This makes it
 impossible to comply with decryption notices that might be served in
-some jurisdiction.  It also makes it necessary for an adversary to
+some jurisdictions.  It also makes it necessary for an adversary to
 corrupt and control nodes in order to have enough information to trace
 back a forward anonymous communication by requesting nodes to decrypt
 it. (Reply blocks can still be used for this purpose.)  Even if an
@@ -479,9 +498,6 @@ may be added by future extensions, in order to implement
 abuse-resistant exit policies (see Section \ref{subsec:exitpolicies}),
 to administer nymservers (see Section \ref{sec:nymservers}), to publish
 anonymously to Usenet, or to support other protocols.
-
-% We never reached a consensus (afaik) on whether 'FORWARD' and 'DROP'
-% were types or not.  Are they? -Nick
 
 Nearly all delivery methods require additional information beyond the
 message type and its payload.  The SMTP module, for example, requires
@@ -550,9 +566,10 @@ potentially deliver hate mail to the U.S. President.
 
 On one end of the spectrum are \emph{open exit} nodes that will
 deliver anywhere; on the other end are \emph{middle-man} nodes that
-only relay traffic to other remailer nodes. More generally, nodes can
-set individual exit policies to declare which traffic they will let
-exit from them, such as traffic for local users or other authenticated
+only relay traffic to other remailer nodes and \emph{private exit}
+nodes that only deliver locally. More generally, nodes can set
+individual exit policies to declare which traffic they will let exit
+from them, such as traffic for local users or other authenticated
 traffic \cite{onion-discex00}.
 
 Preventing abuse of open exit nodes is an unsolved problem. If
@@ -583,14 +600,14 @@ network's exit nodes and looks for timing or packet correlations). The
 number of available open exit nodes remains a limiting security parameter
 for the remailer network.
 
-\subsection{Key rotation, message expiration, and replay prevention}
+\subsection{Message expiration, and replay prevention, and key rotation}
 
 Mixmaster offers rudimentary replay prevention by keeping a list of recent
 message IDs. To keep the list from getting too large, it expires entries
 after a user-configurable amount of time. But if an adversary records
 the input and output batches of a MIX and then replays a message after
 the mix has forgotten about it, the message's decryption will be exactly
-the same. Mixmaster does not provide the forward anonymity that we want.
+the same. Thus, Mixmaster does not provide the forward anonymity that we want.
 
 Chaum first observed this attack in \cite{chaum-mix}, but his solution
 --- include in each message a timestamp that describes when that message
@@ -627,6 +644,15 @@ Note that this solution doesn't entirely solve the partitioning problem
 --- near the time of a key rotation, the anonymity set of messages will
 be divided into those senders who knew about the key rotation and used
 the new key, and those who didn't.
+
+Also note that while key rotation and link-layer encryption (see Section
+\ref{subsec:link-encrypt}) both provide forward security, their
+protection is not redundant.  Even with link-layer encryption, an
+attacker who has compromised a MIX M1 could later compromise M2, and
+use M2's private key to decrypt messages sent from M1 to M2.  Key
+rotation, however, limits the window of opportunity for this attack.
+
+% This last paragraph could be put better. -Nick
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
