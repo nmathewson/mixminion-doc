@@ -1,6 +1,15 @@
 <?xml version="1.0"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<!-- *******************************************************
+     $Id: index.html,v 1.3 2003/07/14 19:27:45 nickm Exp $
+
+     This file is maintained in CVS; edit the version in the
+     repository.
+     *******************************************************
+  -->
+
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <title>Mixminion: a Type III anonymous remailer</title>
@@ -12,22 +21,27 @@
 
 <body>
 
+<h1>Mixminion: A Type III Anonymous Remailer</h1>
+
 <p>
-Mixminion is the standard implementation of the Type III anonymous
-remailer protocol.
+Mixminion is the reference implementation of the Type III Anonymous
+Remailer protocol.
 </p>
 
-<p>The Design Document gives our justifications and security analysis
-for the Mixminion design:</p>
+<h2>Documentation</h2>
+
+<p>The <span class="heading">Design Document</span> gives our justifications 
+and security analysis for the Mixminion design:</p>
 <ul>
 <li><a href="minion-design.ps">PostScript version</a></li>
 <li><a href="minion-design.pdf">PDF version</a></li>
-<li><a href="minion-design.tex">Latex source</a></li>
+<li><a href="minion-design.tex">LaTeX source</a></li>
+<li><a href="minion-design.bib">BibTeX file</a></li>
 <li><a href="http://freehaven.net/doc/defcon02/slides-dc02.pdf">Roger's design overview slides (PDF)</a></li>
 </ul>
 
-<p>The Spec aims to give developers enough information to build
-a compatible version of Mixminion:</p>
+<p>The <span class="heading">Specification</span> aims to give
+developers enough information to build a compatible version of Mixminion:</p>
 <ul>
 <li><a href="minion-spec.txt">Part 1: Mix Protocol Specification</a></li>
 <li><a href="E2E-spec.txt">Part 2: End-to-end Encoding and Delivery </a></li>
@@ -39,12 +53,16 @@ href="http://freehaven.net/anonbib/topic.html#Anonymous_20communication">these
 papers</a> (especially the ones in boxes) to get up to speed on remailer
 design and anonymous communication in general.</p>
 
-<p>The <b>mixminion-dev mailing list</b> is where a lot of the discussion
+<h2>Resources</h2>
+
+<p>The <span class="heading">mixminion-dev mailing list</span> is where 
+a lot of the discussion
 happens. Please <a href="http://archives.seul.org/mixminion/dev/">look
 at its archives</a> and consider subscribing. There's also a list for
 <a href="http://archives.seul.org/mixminion/cvs/">cvs commits</a>.</p>
 
-<p>And you can browse the Minion cvs:</p>
+<p>And you can browse the Mixminion <span class="heading">CVS 
+repository</span>:</p>
 <ul>
 <li><a href="http://cvs.seul.org/cgi-bin/viewcvs.cgi/?cvsroot=minion">ViewCVS</a></li>
 <li><a href="cvs/">Regularly updated cvs sandbox</a></li>
@@ -55,20 +73,25 @@ at its archives</a> and consider subscribing. There's also a list for
 </ul></li>
 </ul>
 
-<p>You can see current network reliability/uptime stats <a
-href="http://outel.org/mix/minion/">here</a> and 
-<a href="http://www.cside.dyndns.org/minion.html">here</a>. 
+<p>You can see current network 
+  <span class="heading">reliability/uptime stats</span> 
+  <a href="http://outel.org/mix/minion/">here</a> and 
+  <a href="http://www.cside.dyndns.org/minion.html">here</a>. 
 We've got quite a few nodes already!
 </p>
 
-<p><b>June 12, 2003 00:43 EST</b>
+<h2>News</h2>
+
+<p class="date">June 12, 2003 00:43 EST</p>
+<p class="news">
   Mixminion 0.0.4 is, at last, available.
   You can <a href="./dist/Mixminion-0.0.4.tar.gz">download the code
   </a> 
   or <a href="./dist/README-0.0.4">read the release notes</a>.
   <em><a href="./dist/Mixminion-0.0.4.tar.gz.asc">{Signature}</a></em></p>
 
-<p><b>June 10, 2003 10:41 EST</b>
+<p class="date">June 10, 2003 10:41 EST</p>
+<p class="news">
   Mixminion 0.0.4rc4 is available for testing! 
   In this release are numerous critical bugfixes and cosmetic improvements 
   identified over the last week of testing.
@@ -81,7 +104,8 @@ We've got quite a few nodes already!
   or <a href="./dist/README-0.0.4rc4">read the release notes</a>.
   <em><a href="./dist/Mixminion-0.0.4rc4.tar.gz.asc">{Signature}</a></em></p>
 
-<p><b>June 6, 2003 04:48 EST</b>
+<p class="date">June 6, 2003 04:48 EST</p>
+<p class="news">
   Mixminion 0.0.4rc3 is available for testing! 
   In this release are numerous critical bugfixes and cosmetic improvements 
   identified over the last week of testing.
@@ -94,7 +118,8 @@ We've got quite a few nodes already!
   or <a href="./dist/README-0.0.4rc3">read the release notes</a>.
   <em><a href="./dist/Mixminion-0.0.4rc3.tar.gz.asc">{Signature}</a></em></p>
 
-<p><b>May 30, 2003 03:37 EST</b>
+<p class="date">May 30, 2003 03:37 EST</p>
+<p class="news">
   Mixminion 0.0.4rc2 is available for testing!
   Thanks to three hours experience of testing Mixminion 0.0.4rc1, we
   finally tracked down a critical bug that's been crashing people's servers 
@@ -104,7 +129,8 @@ We've got quite a few nodes already!
   or <a href="./dist/README-0.0.4rc2">read the release notes</a>.
   <em><a href="./dist/Mixminion-0.0.4rc2.tar.gz.asc">{Signature}</a></em></p>
 
-<p><b>May 30, 2003 00:04 EST</b>
+<p class="date">May 30, 2003 00:04 EST</p>
+<p class="news">
   Mixminion 0.0.4rc1 is avaialable for testing!  Directories are more
   automated, servers are more stable, key rotation is in, keys are longer,
   MMTP is better, key generation is automatic, server statistics are 
@@ -116,14 +142,16 @@ We've got quite a few nodes already!
   or <a href="./dist/README-0.0.4rc1">read the release notes</a>.
   <em><a href="./dist/Mixminion-0.0.4rc1.tar.gz.asc">{Signature}</a></em></p>
 
-<p><b>February 20, 2003 13:32 EST</b>
+<p class="date">February 20, 2003 13:32 EST</p>
+<p class="news">
   Mixminion 0.0.3 is finally out!
   You can <a href="./dist/Mixminion-0.0.3.tar.gz">download the code
   </a> 
   or <a href="./dist/README-0.0.3">read the release notes</a>.
   <em><a href="./dist/Mixminion-0.0.3.tar.gz.sig">{Signature}</a></em></p>
 
-<p><b>February 17, 2003 11:31 EST</b>
+<p class="date">February 17, 2003 11:31 EST</p>
+<p class="news">
   The second release candidate for Mixminion 0.0.3 is available.
   Everyone should upgrade
   and look for bugs before the real release is out.
@@ -132,7 +160,8 @@ We've got quite a few nodes already!
   or <a href="./dist/README-0.0.3rc2">read the release notes</a>.
   <em><a href="./dist/Mixminion-0.0.3rc2.tar.gz.sig">{Signature}</a></em></p>
 
-<p><b>February 13, 2003 06:47 EST</b>
+<p class="date">February 13, 2003 06:47 EST</p>
+<p class="news">
   The first release candidate for Mixminion 0.0.3 is available.
   Reply blocks and client side pooling are implemented.
   <b>This release breaks backward compatibility</b>; everyone should upgrade
@@ -142,7 +171,8 @@ We've got quite a few nodes already!
   or <a href="./dist/README-0.0.3rc1">read the release notes</a>.
   <em><a href="./dist/Mixminion-0.0.3rc1.tar.gz.sig">{Signature}</a></em></p>
 
-<p><b>January 10, 2003 17:02 EST</b>
+<p class="date">January 10, 2003 17:02 EST</p>
+<p class="news">
   There's another bugfix release in the 0.0.2 series: Mixminion
   0.0.2.2.  If you are running a server, you'll want to upgrade.  If
   not, this version changes nothing for you. 
@@ -151,7 +181,8 @@ We've got quite a few nodes already!
   or <a href="./dist/README-0.0.2.2">read the release notes</a>.
   <em><a href="./dist/Mixminion-0.0.2.2.tar.gz.sig">{Signature}</a></em></p>
 
-<p><b>January 7, 2003 23:18 EST</b> 
+<p class="date">January 7, 2003 23:18 EST</p>
+<p class="news">
   Released a bugfix patch as mixminion version 0.0.2.1. 
   If you are running a server, you <em>will</em> want to upgrade.
   You can <a href="./dist/Mixminion-0.0.2.1.tar.gz">download the code
@@ -159,7 +190,8 @@ We've got quite a few nodes already!
   or <a href="./dist/README-0.0.2.1">read the release notes</a>.
   <em><a href="./dist/Mixminion-0.0.2.1.tar.gz.sig">{Signature}</a></em></p>
 
-<p><b>January 7, 2003 00:43 EST</b> 
+<p class="date">January 7, 2003 00:43 EST</p>
+<p class="news">
   Mixminion version 0.0.2 is available for bigger
   fun and tougher
   testing!  You can <a href="./dist/Mixminion-0.0.2.tar.gz">download the code
@@ -167,10 +199,11 @@ We've got quite a few nodes already!
   or <a href="./dist/README-0.0.2">read the release notes</a>.
   <em><a href="./dist/Mixminion-0.0.2.tar.gz.sig">{Signature}</a></em></p>
 
-<p><b>December 16, 2002</b> Mixminion version 0.0.1 is available for fun and
+<p class="date">December 16, 2002</p>
+<p class="news">
+  Mixminion version 0.0.1 is available for fun and
   testing!  You can <a href="./dist/Mixminion-0.0.1.tar.gz">download the code
   </a>, or <a href="./dist/README-0.0.1">read the release notes</a>.</p>
 
 </body>
 </html>
-
