@@ -73,6 +73,11 @@ with the smallest building block.
         could violate the all-or-nothing properties of LIONESS,
         we use the same keyed-hash construction for all 4 keys. -NM]
 
+  [XXXX From a security point of view I think that what you do if
+        optimal. On the other side it imposes 2 additional Hash
+        operations per encryption/decryption. I will think about it a
+        bit more -GD]
+
 - SPRP_DECRYPT(K1,K2,K3,K4,M) (Len(M) bytes) Inverts SPRP_ENCRYPT.
 
   We also define SPRP_DEC(K,P,M) as the inverse of SPRP_ENC.
@@ -158,6 +163,8 @@ subheader.
       headers.  Instead, let me suggest that the extended headers be
       hashed along with the rest of the header, and encrypted with the 
       same key.  (See changes below, marked with XXXX-EXT) -NM ]
+[XXXX This is very important, both for correctness and tagging
+      prevention. I checked the code and it also seems fine -GD]
 
 We will formally refer to the subheader structure as:
 SHS(V, SK, D, F, A)
@@ -199,6 +206,9 @@ the next node's tranport public key.
 [XXXX That's not what I meant:  Is a server's RSA key that it uses 
       for decrypting headers, the same RSA key as key it uses for
       MMTP (as hashed in KeyID.)?  I still say yes... -NM]
+[XXXX The hashed KEY ID is the verification key that is used to sign
+      both the MMTP Ephemeral keys and (if we want) the long term
+      decryption keys of the mix. -GD]
 
 A SWAP routing type tells the node to exchange headers as described below.
 
@@ -218,9 +228,8 @@ reply block.)
 with the LOCAL field but I would prefer to have it specified as a
 separate type in the standard. 
 
-0x0101 RTRN  (HOPS: 1 byte , KEY: 20 bytes) : 21 bytes
+0x0101 RTRN  (HOPS: 1 byte , KEY: 20 bytes) : 21 bytes -GD]
 
--GD]
 [XXXX Hm.  I'd rather not have 2 types that do exactly the same thing.
       Perhaps RTRN should behave differently, or LOCAL should have a
       type field of its own.
@@ -229,6 +238,12 @@ separate type in the standard.
       either of SMTP or LOCAL; neither is more "returny" than the other.
 
       Would it solve your concerns to add a type field to LOCAL? -NM]
+[XXXX Ok, here is my real concern: I do not want every differen client
+      to implement their own version of the stateless reply block, in
+such a way that they cannot interoperate. So I would rather have some 
+standard fields containing the HOPS and KEY information along with any
+other variable information. -GD]
+
  
 \subsection{The header structure}
 
@@ -299,6 +314,7 @@ return H_1;
    to be sound, or simplify it, that would be keen.
 
       -NM]
+  [XXXX Looks good -GD]
 
 \subsection{The Payload of messages}
 
@@ -320,7 +336,7 @@ The payload of a Mixminion message has a fixed length of 32 kb
      and only the final receipient can decrypt it (need to include a
      nonce and a digest in the body of the payload as well). BUT we
      have the problem that the key can be changed by the adversary in
-     the reply block ...]
+     the reply block ... -GD Any comments?]
 
 Size:   2 bytes
 Data:   (Variable)
@@ -384,6 +400,7 @@ message M = (H1, H2, P) performs the following operations:
 	H2 = SPRP_DEC(SK, ``HEADER ENCRYPT'',H2);
         ....
         Will this work? -NM]
+[XXXX I think it should work. -GD]
 
 PROCEDURE: Process a message M
 	SHS(V, SK, D, F, A) = PK_Decrypt(PK,H1[0:128]);
@@ -408,6 +425,10 @@ PROCEDURE: Process a message M
 		Give (A, H(SK,``APPLICATION KEY''), (H1, H2, P)) to
 		Module manager. 
                   [XXXX Why does the application need H1 and H2? - NM]
+		[XXXX In the previous designs the application needed
+                H1 to find out if it was a reply or a forward
+                message. With the new design A, and P should be
+                enough. -GD]
 
 \section{Single Use Reply Block exchange formats}
 
@@ -549,7 +570,9 @@ Address and names: IP Address, TCP Port, Name of Owner, e-mail of
 RSA Long Term Verification Public Key of server: e, n, timestamp,
                    hash(e, n, IP, Port). (next key hash)
 RSA Short Term Encryption Public Key: e, n, timestamp, Hash(...)
-Network Services: SMTP Support flag, address restrictions.
+Network Services: MixMinion Protocols supported.
+		  MMTP Protocols supported.
+	          SMTP Support flag, address restrictions.
                   LOCAL Support flag, mailbox restrictions.
 	          IP addresses it will accept and send to.
 Modules: Modules supported, configurations.
