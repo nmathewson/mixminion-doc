@@ -148,14 +148,25 @@ with the smallest building block.
 - Len(M) (2 bytes) is the length of message M (* bytes).
 - x|y (Len(x)+Len(y) bytes) denotes x concatenated with y.
 
+- Symbolic constants:
+
+   OAEP_OVERHEAD=42.   The number of bytes added by OAEP padding,
+   using SHA-1 as the digest primititive.
+
+   RSA_LEN=256.   We require that all RSA keys be 256 bytes long
+   (2048 bits).
+
+   MAX_RSA=RSA_LEN - OAEP_OVERHEAD = 214.
+
 - PAD(M,L)=M|Z(L-Len(M)) (L bytes) pads the message M (Len(M) <= L)
   to length L using zeroes.
 - HASH(M) (20 bytes) is the SHA-1 hash of M (* bytes).
-- PK_Encrypt(K,M) (128 bytes) The RSA-encryption of a header M 
+- PK_Encrypt(K,M) (RSA_LEN bytes) The RSA-encryption of a header M 
   using the public key K.  M is padded using RSA-OAEP, and encoded
   with PKCS1.
-- PK_Decrypt(K,M) (up to 86 bytes) Gives the decryption of the
-  message M (128 bytes) under the private key corresponding to K.
+- PK_Decrypt(K,M) (up to RSA_LEN-OAEP_OVERHEAD=MAX_RSA=214 bytes) 
+  Gives the decryption of the message M (256 bytes) under the private
+  key corresponding to K.
 - Encrypt(K,M) (Len(M) bytes) Rijndael encryption (in Counter mode,
   with 128-bit blocksize) of message M using key K.  (All Rijndael
   operations use 128-bit blocks.)  The Initial Vector (IV) is Z(16).
@@ -168,11 +179,6 @@ with the smallest building block.
   permutation to encrypt M with keys K1-K4.  Specifically, we use LIONESS,
   as described in XXXXCITE, with ENCRYPT(K,m) as our stream cipher,
   and the keyed-SHA1 construction specified in the LIONESS paper.
-
-  [XXXX I think we can get away with BEAR instead.  See my email of
-    September 6. -NM I agree -GD]
-  [XXXX Okay.  Whose approval were we waiting for to get final
-    verification of this?  Was it David Hopwood? -NM]
 
   K1 through K4 are 160 bits long.
 
@@ -216,8 +222,8 @@ All RSA encryption uses the public exponent 65537.
 
 A subheader contains all the information that a mix needs to check the
 integrity of a message and route it through the Internet. The subheader
-is encrypted using RSA after having been padded using OAEP, using a 1024
-bit key. This results in an encrypted block of 128 bytes.
+is encrypted using RSA after having been padded using OAEP, using a 2048
+bit key. 
 
 A subheader contains the following fields:
 
@@ -231,6 +237,9 @@ RS  Routing Size:    2 bytes
 RT  Routing Type:    2 bytes [total 42 bytes]
 RI  Routing Info:    [Routing Size] bytes
 
+   (We use the symbolic constant MIN_SH=42 below to indicate the
+   length of the invariant part of a subheader.)   
+
 * The Version is used to manage concurrent versions of the
 protocol. If a packet is received with a version that is not supported
 it must be discarded. Nodes must advertise in their status blocks what
@@ -240,9 +249,12 @@ versions of the protocol they support; see below.
 other keys for the operations the node performs on the packet. It must be
 kept secret and discarded as soon as the packet has been processed. 
 
-* The Digest contains an integrity check of the remainder of the current
-header (128*15 bytes in total). The digest does not cover the current
-subheader: modifications to it are detected because of the OAEP padding.
+We will formally refer to the subheader structure as:
+SHS(V, SK, D, RS, RT, RI)     [MIN_SH+Len(RI)) bytes] 
+
+* The Digest contains an integrity check of the remainder of the
+  current header. The digest does not cover the current subheader:
+  modifications to it are detected because of the OAEP padding.
 
 * The Routing Type defines how the mix should deliver or relay the
   message. If a mix receives a routing type it does not recognize,
@@ -251,30 +263,35 @@ subheader: modifications to it are detected because of the OAEP padding.
   Most routing methods require additional addressing information.
   The Routing Size field indicates the total size of the Routing
   Information. If the information is too long to fit in a single
-  subheader (more than 86-42=44 bytes), then one or more additional
-  Routing Extension blocks have to be added. These additional blocks
-  must be 128 bytes each and should have the following structure:
- 
-  Routing Extension:
-
-    Address Data:     Variable
-    Padding:          Variable
+  subheader (more than RSA_LEN - OAEP_OVERHEAD - MIN_SH = 172 bytes), 
+  then additional data is added after the subheader.
 
 * The address data length is specified by the "Routing Size" field
   contained in the subheader.
-* The final Routing Extension block is padded with zeroes so it is
-  exactly 128 bytes.
 
-The Routing Extension(s) corresponding to a particular subheader are
-appended to the subheader, and encrypted along with the rest of the
-subheaders.
+Thus, when adding a new subheader SH to a partial header H, there are
+two possibilities:
 
-We will formally refer to the subheader structure as:
-SHS(V, SK, D, RS, RT, RI)     [MIN(86, 42+Len(RI)) bytes] 
-And to the RSA-OAEP encrypted portions of the subheader structure as:
-ESHS(PK, V, SK, D, RS, RT, RI)   [128 bytes]
-And to the extension blocks for a given subheader as:
-EXT(RI)                       [Ceil((Len(RI)-44)/128) * 128 bytes]
+   1. If the subheader is less than MAX_RSA bytes long, it fits into a
+      single RSA encryption, and we include some of the data from the
+      rest of the header:
+   
+     Before: (S is the new subheader, H is the existing header material)
+      SSSSSSSSSS   HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH.....
+
+     After: 
+      (Encrypted with RSA)   (Encrypted with AES)
+      SSSSSSSSSSHHHHHHHHHH   HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH.....
+
+   2.  Otherwise, the subheader won't fit into a single RSA
+       encryption, so we spill some of it over:
+
+     Before:
+      SSSSSSSSSSSSSSSSSSSSSSSSS   HHHHHHHHHHHHHHHHHHHHHHHHHHH.....
+
+     After:
+      (Encrypted with RSA)   (Encrypted with AES)
+      SSSSSSSSSSSSSSSSSSSS   SSSSSHHHHHHHHHHHHHHHHHHHHHHHHHHH.....
 
 \subsection{Routing information}
 
@@ -320,12 +337,13 @@ See appendices for more information about SMTP and MBOX delivery.
 Each type III message has two headers with identical structure. These
 headers are swapped at the crossover point.
 
-A header is 16*128 bytes long and contains up to 16
+A header is HEADER_LEN=2048 bytes long and contains up to
+2048/(OAEP_OVERHEAD+MIN_SH)=24.
 subheaders. Starting with N subheaders SH_0..SH_N containing secrets
 SK_0..SK_N (and placing routing extension blocks directly after their
 respective subheaders), the header is constructed by appending 
 random padding to achieve a total size
-of 128*16 bytes. Then, each subheader key is used to create a key
+of 2048 bytes. Then, each subheader key is used to create a key
 Hash(SharedSecret | "HEADER SECRET KEY") with which the part of the
 header after the subheader (but including its routing extension) is
 encrypted using counter-mode AES.
@@ -333,6 +351,75 @@ encrypted using counter-mode AES.
 We construct the subheaders from last to first, so that each can contain
 a digest of the subsequent subheaders and padding data.
 
+PROCEDURE: Create a single header.
+
+Inputs: RI_1..RI_n, RT_1..RT_N (addresses of intermediate nodes), 
+        PK_1 .. PK_N (Public keys of intermediate nodes),
+        SK_1 .. SK_N (Secret keys to be shared with intermediate nodes),
+        R Routing type and information of last header (FWD, DROP, SWAP, etc.)
+Output: H (The header)
+
+Process: 
+  // Calculate the sizes of the subheaders.
+  for i = 1 .. N
+        // OAEP Padding plus invariant parts plus routing info.
+        SIZE_i = MIN_SH + OAEP_OVERHEAD + Len(RI_i)
+        JUNK_KEY_i = HASH(SK_i | "RANDOM JUNK")[0:16]
+        K_i = HASH(SK_i | "HEADER SECRET KEY")[0:16]
+  end
+
+  PADDING_LEN = 2048-SUM(SIZE_1 ... Size_N)
+
+  // Calculate the Junk that will be appended during processing.
+  // J_i is the junk that node i will append, and node i+1 will see.
+  J_0 = "";
+  for i = 1 .. N
+        J_i = J_(i-1) | PRNG(JUNK_KEY_i, SIZE_i)
+        Stream_i = PRNG(K_i, 2048 + SIZE_i);
+        // Before we encrypt the junk, we encrypt all the data, and all
+        // the initial padding, but not the RSA-encrypted part.
+        //    OFFSET = PADDING_LEN + SUM(SIZE_1 ... SIZE_i) - 256
+        //           = 2048-256 + SUM(SIZE_1 ... Size_i)
+        //                      - SUM(SIZE_1 ... Size_N)
+        //           = PADDING_LEN + Len(J_i) - 256
+        OFFSET = PADDING_LEN + Len(J_i) - 256
+        J_i = J_i XOR Stream_i[OFFSET:Len(J_i)];
+  end
+
+  // Create the Header, starting with the padding.
+  H_(N+1) = Rand(PADDING_LEN)
+
+  for i = N .. 1
+        IF i = N (set appropriate routing type and A_i)
+
+        // Decide whether to spill RI out of the RSA-encrypted chunk
+        // (unlikely), or to include some of the rest of the header
+        // in the RSA-encrypted chunk (likely).
+        if Len(RI_(i+1)) > MAX_RSA-MIN_SH then
+             RI_SPILL_LEN = Len(RI) - MAX_RSA + MIN_SH
+             H_INCL_LEN = 0
+        else
+             RI_SPILL_LEN = 0
+             H_INCL_LEN = MAX_RSA - MIN_SH - Len(RI_(i+1))
+        endif
+
+        REST = RI_(i+1)[Len(RI_(i+1)) - RI_SPILL_LEN : RI_SPILL_LEN]
+               | H_(i+1)[H_INCL_LEN : Len(H_(i+1))-H_INCL_LEN]
+
+        EREST = Encrypt(K, REST)
+        DIGEST = HASH(EREST | J_i-1)
+
+        SH = SHS(V, SK_i, DIGEST, len(RI_(i+1)), RT_(i+1), RI(i+1))
+        ESH = PK_ENCRYPT(PK_i, 
+                         SH[0:Len(SH)-RI_SPILL_LEN] |
+                         H[0:H_INCL_LEN]) 
+        H_i = ESH | EREST
+  end
+
+return H_1;
+
+============================================================
+[XXXXXX THIS IS THE OLD ONE.
 PROCEDURE: Create a single header.
 
 Inputs: A_1 .. A_N (addresses of intermediate nodes), 
@@ -370,6 +457,8 @@ Process:
   end
 
 return H_1;
+
+XXXXXXXXXXXXXXXXXXXX END OLD HEADER GENERATION. ]
 
 \subsection{The Payload of messages}
 
@@ -423,6 +512,36 @@ III transport protocol (see below) or email.  A node with private key
 PK receiving message M = (H1, H2, P) performs the following operations:
 
 PROCEDURE: Process a message M
+        PK_PART = PK_Decrypt(PK,H1[0:256]);
+        If there is any problem with the OAEP padding discard the message.
+
+        If Len(PK_PART) != MAX_RSA, discard the message.
+
+        SHS(V, SK, D, RS, RT, ..) = <extract from PK_PART[0:MIN_SH]>
+        Check that D = HASH(H1[256:2048-256]), and discard if not.
+
+        If RS > MAX_RSA-MIN_SH then 
+            // RI is incomplete.
+            RI = PK_PART[MIN_SH:MAX_RSA-MIN_SH]
+            MISSING_RI_LEN = RS - (MAX_RSA-MIN_SH)
+            EXTRA_H = ""
+        else
+            RI = PK_PART[MIN_SH:RS]
+            MISSING_RI_LEN = 0
+            EXTRA_H = PK_PART[MIN_SH+RS:Len(PK_PART)-MIN_SH-RS]
+        endif
+
+        JUNK_KEY = HASH(SK | "RANDOM JUNK")[0:16]
+        H1 = H1[RSA_LEN : 2048-RSA_LEN] | 
+             PRNG(JUNK_KEY, OAEP_OVERHEAD + MIN_SH +RS)
+        HEADER_KEY = HASH(SK | "HEADER SECRET KEY")[0:16]
+        H1 = H1 XOR PRNG(HEADER_KEY, Len(H1))
+        RI = RI | H[0:MISSING_RI_LEN]
+        H1 = EXTRA_H | H1[MISSING_RI_LEN:2048-MISSING_RI_LEN]
+        H2 = SPRP_DEC(SK, "HEADER ENCRYPT",H2);
+        P = SPRP_DEC(SK, "PAYLOAD ENCRYPT",P);
+
+ [XXXXXXXXX OLD!!!!!!
         SHS(V, SK, D, RS, RT, RI) = PK_Decrypt(PK,H1[0:128]);
         If there is any problem with the OAEP padding discard the message.
         Check that D = HASH(H1[128:15*128]), and discard if not.
@@ -435,6 +554,7 @@ PROCEDURE: Process a message M
         H1 = H1[128*n_extra:128*16]
         H2 = SPRP_DEC(SK, "HEADER ENCRYPT",H2);
         P = SPRP_DEC(SK, "PAYLOAD ENCRYPT",P);
+  XXXXXXXXXXX END OLD]
 
         if routing type is DROP:
                 End.
