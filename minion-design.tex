@@ -47,7 +47,8 @@ The Free Haven Project
 
 We present Mixminion, a message-based anonymous remailer protocol that
 supports secure single-use reply blocks. Mixminion reply messages are
-indistinguishable from forward messages, allowing all messages to share
+indistinguishable from forward messages, allowing forward and reply
+messages to share
 the same anonymity set. We add directory servers that allow users to
 learn public keys and performance statistics of participating remailers,
 and we describe nymservers that allow users to maintain long-term
@@ -137,10 +138,12 @@ weaknesses \cite{desmedt,mitkuro}, and hybrid MIXes \cite{hybrid-mix}.
 
 One type of MIX hierarchy is a cascade.
 In a cascade network, users choose from a set of fixed paths through
-the MIX-net. Cascades can provide greater anonymity against a large
-adversary, by resisting attacks to free-route systems where an 
-adversary who owns many of the MIXes uses intersection attacks to
-reduce the set of possible senders or receivers for a given
+the MIX-net.
+Cascades can provide greater anonymity against a large adversary:
+free-route systems allow an adversary who owns many MIXes to use
+intersection attacks to reduce the set of possible senders or receivers
+for a given
+% still not quite worded well. -RRD
 message \cite{disad-free-routes}. On the other hand, cascades are more
 vulnerable \cite{batching-taxonomy} to trickle attacks, where an attacker
 targeting a specific message going into a MIX can manipulate the batch
@@ -253,15 +256,14 @@ receiver \cite{rackoff93cryptographic,raymond00}), we do not fully
 address \emph{traffic confirmation} attacks. In a traffic confirmation
 attack, the adversary treats the MIX network as a black box and
 observes the behavior of senders and receivers. Over time, he can
-intersect the set of senders and receivers who are on-line at certain
-% Not 'on-line;' 'active'.  The salient feature is that set S1 sends
-% at T, and set R1 receives before T+delta.  Who's logged in doesn't
-% matter.  Right? -Nick
+intersect the set of senders and receivers who are active at certain
 times and learn who is sending and receiving which messages
 % Really?  I thought that an intersection attack told you who was
 % talking with whom, not which messages were sent to whom.  I.e., Eve
 % can learn that Alice is sending messages to Bob and Carol, but
 % can't be certain which messages were meant for whom. -Nick
+% But if we further intersect to learn that the messages on Tuesday
+% are for Bob and those on Wednesday are for Carol, ... -RRD
 \cite{langos02}. Good dummy traffic designs may eventually address the
 intersection attack, but for now it remains an open problem.
 
@@ -398,15 +400,15 @@ exit policies for advertising what delivery options a node will provide.
 \subsection{Indistinguishable replies}
 \label{subsec:header-swap}
 
-By making forwards and replies indistinguishable, we prevent an
-adversary from dividing the message anonymity sets into two
-classes. In particular, if replies are relatively infrequent, an
-adversary who controlls some of the MIXes can more
-easily trace the path of each reply:  even though the batches may be
-large, the number of replies in each batch will be quite small.
+By making forwards and replies indistinguishable, we prevent an adversary
+from dividing the message anonymity sets into two classes. In particular,
+if replies are infrequent relative to forwards, an adversary who controls
+some of the MIXes can more easily trace the path of each reply:  even
+though the batches may be large, the number of replies in each batch
+will be quite small.
 
 Having indistinguishable replies, however, creates new attacks.  In
-Mixmaster, senders achieve message integrity by including a hash of
+Mixmaster, senders ensure message integrity by including a hash of
 the entire message in each hop of the header.  Each MIX in the path
 checks the integrity of the header and payload, and drops the message
 immediately if it has been altered.  But in Mixminion, since the
@@ -442,11 +444,10 @@ We divide a message's path into two \emph{legs}, and split the header
 into two equal-size subheaders, each corresponding to a single leg.
 Each hop contains a hash of the subheader it's a part of, so we can do
 integrity-checking of the path (but not the payload) within each leg.
-Each hop also contains a symmetric key to
-decrypt the rest of the message. The MIX uses the same key to place
-% NOT the same key! Each hop contains a master secret, which is used
-% to derive the encryption key and the padding seed.  Using the same
-% key for both confuses security properties. -Nick
+Each hop also contains a symmetric key, which is used to derive a
+decryption key for decrypting the rest of the message. The MIX also
+derives a padding seed from this master key. It uses this padding seed
+to place
 predictable padding at the end of the subheader, so the hash will
 match even though each hop must regrow the subheader to maintain
 constant length.
@@ -533,7 +534,7 @@ and generates her own path for the first leg.
 %   attack.  
 
 Without the crossover point, an adversary could mount a \emph{tagging
-attack} by modifying (``tagging'' the payload of a forward message as
+attack} by modifying (``tagging'') the payload of a forward message as
 it leaves Alice, and recognizing it later when it reaches Bob.
 Specifically, if our encryption mechanism were an ordinary
 counter-mode cipher, he might alter a specific byte in the payload of
@@ -613,14 +614,10 @@ than the exit node), or the total length of the route.
 The above design is still vulnerable to a subtle and dangerous
 attack. If Alice sends a group of messages along the same path, the
 adversary can tag some of those message as they leave Alice, recognize
-<<<<<<< minion-design.tex
-the pattern (number and timing of tagged and untagged messages) at the 
-crossover point, and observe where the untagged ones go.
-=======
-the pattern (number of tagged and untagged messages) at the crossover
-point, and observe where the untagged ones go (if he built the second
-leg himself, as in an anonymized reply, he can recognize it immediately).
->>>>>>> 1.30
+the pattern (number and timing of tagged and untagged messages) at the
+crossover point, and observe where the untagged ones go (if he built
+the second leg himself, as in an anonymized reply, he can recognize
+it immediately).
 
 With some assumptions about our adversary, we can reduce
 this attack to a traffic confirmation attack we're already willing to
@@ -658,9 +655,7 @@ the message to the second leg. Therefore, if the adversary doesn't own
 most of the crossover points that Alice chooses, a successful
 multiple-message tagging attack seems infeasible.  We leave a security
 analysis of this multiple-paths approach to future work.
-
-%\subsection{Approach two: the `distinguish replies' method}
-%\label{subsec:distinguish-replies}
+% reference section \ref{sec:choosing-paths} when/if we write it -RRD
 
 \section{Related design decisions}
 
@@ -979,7 +974,9 @@ can be very similar to the current ping servers \cite{levien}, but in the
 future we can investigate integrating more complex and attack-resistant
 reputation metrics.   Even this reputation information introduces
 vulnerabilities: for example, an adversary 
-%trying to do traffic analysis
+trying to do traffic analysis
+% want to leave the above line in. Otherwise the reader will say
+% "so? what does this get him?" -RRD
 can get more traffic by gaining a high reputation \cite{mix-acc}. We can
 defend against these attacks by building paths from a suitably large pool
 of nodes \cite{casc-rep} to bound the probability that an adversary will
@@ -1013,7 +1010,7 @@ messages with repeated headers --- so its reply blocks are necessarily
 single-use. There are a number of approaches for building nymservers
 from single-use reply blocks.
 
-In the simplest approach, nymservers keep a stock or reply blocks for
+In the simplest approach, nymservers keep a stock of reply blocks for
 each mailbox, and use a reply block for each incoming message. As long
 as the owner of the pseudonym keeps the nymserver well-stocked, no
 messages will be lost.  But it is hard for the user to know how many
@@ -1026,6 +1023,11 @@ messages arrive and queue at the nymserver, and the user periodically
 checks the status of his mail and sends a sufficient batch of reply
 blocks so the nymserver can deliver that mail. 
 % Actually, isn't this more similar to POP? -Nick
+% Yes, it is. We want to make sure the messages don't get deleted
+% until we confirm we've gotten them. (is this even true? or do we
+% just accept that some will get lost in the network.) But other
+% than a difference in a the transport layer, you're right, it sounds
+% like pop. -RRD
 In this case, the nymserver doesn't need to store any reply blocks.
 The above flooding attack still works, but now it is exactly
 like flooding a normal IMAP mailbox, and the usual techniques (such as
@@ -1037,12 +1039,8 @@ some messages, to indicate that they can now be deleted.
 Of course, there are different legal and security implications for the two
 designs. In the first design, no mail is stored on the server, but it must
 keep valid reply blocks on hand. The second case is in some sense more
-secure 
-% In =what= sense more secure?  Because of the DoS issue?  Because
-% it doesn't keep a pile of reply blocks around?  We should be
-% specific.  -Nick
-but also creates more liability --- the server need not store any reply
-blocks, but it has to keep mail for each recipient
+secure because the server need not store any reply blocks, but it also
+creates more liability because the server keeps mail for each recipient
 until it is retrieved. The owner of the pseudonym could provide a public
 key that the nymserver uses to immediately encrypt all incoming messages,
 to limit the amount of time the nymserver keeps plaintext messages.
