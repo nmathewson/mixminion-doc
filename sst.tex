@@ -1,0 +1,112 @@
+SST - Simple Secure Transport
+
+G. Danezis
+
+Goals:
+
+* Protocol that can be used to protect data travelling on a
+bidirectional communication link. 
+* Confidentiality of the data must be protected, and restricted to the
+communicating parties.
+* The integrity of the data must be preserved.
+* No party in the communication should be able to prove to any third
+party that any information has been transmitted (plausible deniability).
+* Keys seized must not reveal any past communications. (Forward Secrecy)
+* Continious surveillance of the channel should be in place for an
+attacker that has seized the keys to continue being able to evesdrop on
+the communication. (Self Healing property)
+* Limited primitives necessary to implement the protocol (AES, SHA1, DH,
+RSA-PKCS#1).
+* Conservative design that can be analyzed heuristically and formally.
+* The ability to keep state in order to avoid expensive public key
+operations (DH, DSS), and the ability to resume previous sessions.
+* A short easy to implement protocol.
+* NO protection against traffic analysis (no padding, mixing etc).
+
+Primitives:
+
+M,N (Len(M)+Len(N) bytes) - The concatenation of M and N binary strings.
+H(M) (20 bytes) - The SHA-1 hash of M (* bytes).
+{M}K (16 + Len(M) bytes) - The AES in counter mode encryption with IV.
+      (IV, E_k(IV XOR 1) XOR P1, E_k(IV XOR 2) XOR P2, ...
+SIGN_SKx[M] (128 bytes) - The signature of M using signing key x.
+
+
+Protocol:
+
+V = "SST1.0"
+VKx is the verification key of X (128 * 2 bytes)
+
+Key Exchange: Input IDb
+
+(A initiates the key exchange.)
+A: fresh a (16 bytes).
+   DHa = (g^a (p), g , p). (3*128 bytes).
+   IDa = H(VKa)
+A->B: V, "S", "**", VKa, IDb, DHa, SIGN_SKa[V, "S**", VKa, IDb, DHa]
+
+B: IDa = H(VKa), check that IDb = H(VKb), check signature.
+   fresh b
+   DHb = (g^b (p), g, p)
+B->A: V, "S", "OK", IDa, VKb, DHb, SIGN_SKb[V, "SOK", IDa, VKb, DHa,
+      DHb]
+
+If any problem occurs (Singnature not checking, or hashes not matching)
+
+B->A: V, "S", "NO".
+
+A,B: Kab = H("PRIMARY_KEY",IDa, IDb, g^(ab) (p))
+     IDab = H("ID", IDa, IDb, Kab)
+     Kba = H("PRIMARY_KEY",IDb, IDa, g^(ab) (p))
+     IDba = H("ID", IDb, IDa, Kba)
+     Delete DHa, DHb, a, b
+     Store (IDab,IDa, IDb, Kab), (IDba, IDb, IDa, Kba)
+
+
+
+Data Exchange + Key refresh: Input TAG (1 byte), DATA, IDxy (IDx, IDy,
+Kxy)
+
+(The principals have been renamed since any of the above A, B can take
+the role of the initiator of a Data Exhange protocol. The appropriate
+key record (IDx, IDy, Kxy) should be used.)
+
+
+X: fresh Nx (16 bytes)
+   L = Len(DATA) (2 bytes)
+   X->Y: V, TAG, "**", IDxy, L, {Nx, DATA, H(V, TAG, "**", IDxy, L, Nx,
+         DATA, Kxy)}Kxy .
+
+Y: check signatures, hashes, and existance of IDxy
+   fresh Ny (16 bytes)
+   Y->X: V, TAG, "OK", IDxy, {Ny, H(V, TAG, "OK", IDxy, L, Na, Ny, DATA,
+         Kxy)}Kxy
+
+X,Y: Kxy = H("UPDATE", TAG, Nx, Ny, Kxy)
+     IDxy = H("ID", IDx, IDy, Kxy)
+     delete old Kxy, Nx, Ny.
+
+If anything above goes wrong:
+Y->X: V, TAG, "NO"
+
+Definition of different tags:
+"D" - data transfer, means that X wants to transfer some data to Y.
+"R" - resume, can be the first message of a conversation and means that
+      X wants to resume a session with IDxy. DATA must be "" (L=0).
+"C" - close, means that X wants to close the session, but keep the
+      secrets in the IDxy records, in order to resume it later. DATA
+      must be "" (L=0).
+
+Notes:
+
+* The key setup defines two unidirectional channels from A->B and from
+B->A. After the keys are defined they have to be used, managed and
+closed individually as specified above.
+* A key update operation MUST happen after each data transfer + key
+refresh message sent. If the recipient does not reply it should be
+considered as an error. A particular key should not be used for more
+than one message exchange. (although the IV in AEC counter mode is still
+necessary, since the same key is used in two messages)
+* More than one message exchange should never be taking place in
+parallel using the same key record IDxy since it would introduce race
+conditions.
