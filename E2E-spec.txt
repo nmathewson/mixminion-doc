@@ -141,15 +141,22 @@ Junk: a packet whose payload is garbled between the crossover point
     and the recipient.
 
 **Kinds of SURBs**
-[XXXX No longer supported.
-  Stateful SURB: A mode of SURB generation in which the SURB generator
-    remembers an independent set of decryption keys for each generated
-    SURB.  
-  -NM]
 
 Stateless SURB: A mode of SURB generation in which the SURB generator
     only needs to remember a single medium-to-long-term secret to
-    decrypt packets sent to any number of SURBs.
+    decrypt packets sent to any number of SURBs.   
+
+    Note that a client must use a different secret for each
+    pseudonymous identity it maintains; otherwise, it could not
+    distinguish among messages sent to its different pseudonymous
+    identities.  (An attacker could then confirm that "Alice" and
+    "Bob" are the same person's pseudonym by sending the "Bob"
+    pseudonym a message addressed to Alice.)
+
+    Note also that long-term secrets must be very hard to guess;
+    otherwise, exit nodes can mount an offline secret-guessing attack
+    to trivially break a client's SURBs.  Passwords are too easy to
+    guess; 20-byte random keys are more suitable.
 
 === The Design ===
 
@@ -419,54 +426,41 @@ D) The exit node behaves as follows:
 
 E) SURB generators behave as follows:
 
-       If generating a stateful SURB: 
-            [XXXX No longer supported -NM]
-            Generate encryption keys at random.
-            Choose a random 159 bit tag.
-            Store the keys, indexed by the tag.
+       Let SEC be our long-term secret.
+       Do
+            Generate a random 159 bit seed S.
+       Until H(S|SEC|"Validate") ends with a 0 byte.
+       // (We check for the 0 byte so we can recognize stateless
+       //  SURBs without doing many costly LIONESS operations.)
 
-       Else
-            Let SEC be our long-term secret.
-            Do
-                Generate a random 159 bit seed S.
-            Until H(S|SEC|"Validate") ends with a 0 byte.
-            // (We check for the 0 byte so we can recognize stateless
-            //  SURBs without doing many costly LIONESS operations.)
-
-            Generate the encryption keys from the seed H(S|SEC|"Generate").
-            Let Tag=S.
-       Endif
+       Generate the encryption keys from the seed H(S|SEC|"Generate").
+       Let Tag=S.
 
        Generate a SURB using the encryption keys; use Tag as the
            tag field in the final subheader.
 
 F) The recipient behaves as follows for non-plaintext messages.
 
-   [XXXX No longer supported
-       If we ever use stateful SURBs, and Tag is the index of a stored key-set:
-            Decrypt the payload with the stored key-set.
-            If the decrypted payload is of the form 0size, H(X), X:
-                The message contents are X[0:size].  Return.
-            Else if decrypted payload is of the form 1idx, H(X), X:
-                Begin K-of-N message reconstruction. Return.
-            Else:
-                The payload is junk.  Return.
-            Endif.
-       Endif
-     -NM]
+       If we ever use stateless SURBs:
+          For every pseudonymous identity ID we maintain:
+            Let SEC = this identity's SURB secret.
+            If H(Tag|SEC|"Validate") ends with 0:
+                Reconstruct decryption keys from PRNG(Tag|SEC|"Generate").
+                Use the key set to decrypt the payload.
 
-       If we ever use stateless SURBs, and H(Tag|SEC|"Validate") ends with 0:
-            Reconstruct decryption keys from PRNG(Tag|SEC|"Generate").
-            Use the key set to decrypt the payload.
-
-            If the decrypted payload is of the form 0size, H(X), X:
-                The message contents are X[0:size].  Return.
-            Else if decrypted payload is of the form 1idx, H(X), X:
-                Begin K-of-N message reconstruction. Return.
+                If the decrypted payload is of the form 0size, H(X), X:
+                    This packet is addressed to this identity.
+                    The message contents are X[0:size].  Return.
+                Else if decrypted payload is of the form 1idx, H(X), X:
+                    This packet is addressed to this identity.
+                    Begin K-of-N message reconstruction. Return.
+                Endif
+                // If the hash is incorrect, we may have incorrectly guessed
+                // the message to be a stateless SURB.  Continue.  
+		// (Implementations must inform users which identity
+		// has been used, in order to prevent a SURB-swapping attack)
             Endif
-
-            // If the hash is incorrect, we may have incorrectly guessed
-            // the message to be a stateless SURB.  Continue.
+         Endloop
        Endif.
 
        If we have an end-to-end public key of size KS,
