@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.27 2004/08/12 16:55:13 nickm Exp $
+$Id: dir-spec.txt,v 1.28 2004/08/13 17:06:01 nickm Exp $
 
                                 MIX3:3
            Type III (Mixminion) Mix Directory Specification
@@ -743,10 +743,9 @@ Table of Contents
 7.1. Research and configuration
 
    On an ongoing basis, directory servers gather information about server
-   descriptors on the network, and try to learn about their reliability by
-   pinging them or referring to other trusted pingers.  Directory servers
-   SHOULD retain, for each mix, all published descriptors it knows that are
-   not expired or superseded.
+   descriptors on the network, and try to learn about their reliability.
+   Directory servers SHOULD retain, for each mix, all published descriptors
+   it knows that are not expired or superseded.
 
    Additionally, directory server administrators SHOULD decide whether given
    mixes are "trustworthy".  Software SHOULD treat all mixes as untrustworthy
@@ -778,7 +777,9 @@ Table of Contents
    and YYYY-MM-DD is the day for which the voted-upon directory _will_ apply
    (i.e., the day after the vote takes place).
 
-   The "vote" directory must be available _before_ 23:00 GMT.
+   The "vote" directory SHOULD be available _before_ 23:00 GMT.  If a "vote"
+   directory is late, some or all directory servers may not be able to
+   incorporate its result into their computed consensus directories.
 
 7.3. Tabulation
 
@@ -834,7 +835,9 @@ Table of Contents
 
      3. Generate and sign the directory, and publish it at "B/YYYY-MM-DD.gz".
 
-   The signed directory MUST be available by 23:30 GMT.
+   The signed directory SHOULD be available by 23:30 GMT; if a signed
+   directory is late, other directory servers may not be able to collect its
+   signature in time for publication.
 
 7.4. Signature collection
 
