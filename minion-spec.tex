@@ -15,7 +15,7 @@ or travels through the network, so we shall proceed with explaining
 how the full message is structured but starting with the smallest
 building block. 
 
-Definitions
+Definitions & cryptographic primitives
 
 - if B is a byte array, B[i:j] (j bytes) is sub array starting at 
   byte i with length j.
@@ -39,6 +39,10 @@ Definitions
 - PRNG(K, n) (n bytes) Produces n bytes of pseudo-random numbers.
   PRNG(K, n) = Encrypt(K, Z(n))
 
+RSA encryption and decryption is used with OAEP padding, using the 
+mask function MGF1 and SHA1 as the hash function. The security
+parameter P is set to be the hash ... .
+
 The sub-header structure and address extensions.
 
 The sub header contains all the information that a node needs to know
@@ -53,7 +57,7 @@ Shared Secret: 16 bytes
 Digest:        16 bytes
 Flags:         1 byte
 Address Size:  2 bytes
-Address Type:  2 bytes
+Address Type:  2 bytes - total 39 bytes
 Address:       [Address Size] bytes
 
 * The Version is present to manage concurrent versions of the
@@ -86,9 +90,11 @@ advertise what address types they support.
 The sub header fields are encrypted using RSA after having been padded
 using OAEP (or should it be OAEP+ or Anonymous OAEP?), using a 1024
 bit key which results in a size of 128 bytes. The OAEP padding allows
-86 bytes to be used. In case an additional block is added to fit the
-address it should be a multiple of 128 bytes and should have the
-following structure:
+86 bytes to be used. If the address is longer than 86-39 bytes then
+additional blocks have to be added.
+
+In case an additional block is added to fit the address it should be a
+multiple of 128 bytes and should have the following structure:
  
 Address Extension:
 
@@ -121,6 +127,15 @@ There are three predefined types of addresses:
 0x0001 TCP/IP4 (IP: 4 bytes, PORT: 2 bytes, KEYID: 16 bytes): 22 bytes
 0x0002 SMTP   (EMAIL ADDRESS: Variable): Variable bytes
 0x0003 RTRN   (NUM: 2 bytes, MASTER SECRET: 16 bytes): 18 bytes
+
+A TCP/IP4 address type indicates that the messge has to be transmitted
+using the custom Type III remailer transport protocol. The IP field of
+represents the IP v4 address in network order. The KEYID field
+represents the hash of the public verifucation key with which the
+ephemeral D.H. key has to be signed.
+
+The EMAIL field in the SMTP type of address should be a valid email
+address [RFC2821].
 
 The address type RTRN should be used in conjunction with stateless
 reply blocks, to remind the recipient the master secret used to
@@ -249,6 +264,8 @@ message M = (H1, H2, P) performs the following operations:
 Process M:
 	SHS(V, SK, D, F, A) = RSA_OAEP_Decrypt(PK,H1[0:128]);
 	If there is any problem with the OAEP padding discard the message.
+	If the address spans accross many blocks extract them and
+		decrypt it.
 	Check that D = H(H1[128:15*128]);
 	H1 = H1[128:15*128] | PRNG(HASH(SK, ``RANDOM
 						JUNK'')[0:16])[0:128];
