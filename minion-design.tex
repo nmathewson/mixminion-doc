@@ -170,14 +170,12 @@ in the cypherpunk remailers. Note that Mixmaster does not include reply
 functionality, so deployed remailer systems still use the less secure
 long-term cypherpunk reply blocks. At about the same time, Gulcu and
 Tsudik introduced the Babel system \cite{babel}, which also created a
-practical remailer design (although one that never saw widespread use).
+practical remailer design (although one that never saw widespread
+use).  
 
-% Shouldn't ``Cypherpunks Remailer''  be capitalized? A quick search
-% turns up all of /[Cc]ypherpunks? (\(Type[- ]I?\))? [Rr]emailer/
-% The most common spelling seems to be plural, capitalized.  But Roger
-% may know something I don't.  -Nick
+% Mention that Babel has distinguishable replies?  (_Possibly_
+% replayable and taggable ones too.)  -Nick
 
-% Mention what Babel provided, and how MMinion compares? -Nick
 
 %\subsection{Robustness}
 %
@@ -205,15 +203,16 @@ practical remailer design (although one that never saw widespread use).
 Levien's \emph{statistics pages} \cite{levien} track both remailer
 capabilities (such as what kinds of encryption the remailer supports)
 and remailer up-times (obtained by pinging the machines in question
-and by sending test messages through each machine or group of machines).
-Such \emph{reputation systems} improve the reliability of MIX-nets by
-allowing users to avoid choosing unreliable MIXes. The Jack B Nymble 2
-remailer client \cite{potato} allows users to import statistics files
-and can then pick remailers according to that data. Users can specify
-minimum reliability scores, decide that a remailer should always or never
-be used, and specify maximum latency. Ongoing research on more powerful
-reputation systems includes a reputation system for free-route networks
-\cite{mix-acc} and another for MIX cascades \cite{casc-rep}.
+and by sending test messages through each machine or group of
+machines).  Such \emph{reputation systems} improve the reliability of
+MIX-nets by allowing users to avoid choosing unreliable MIXes. The
+Jack B Nymble 2 remailer client \cite{potato} and the Mixminion 2.9
+remailer allow users to import statistics files and can then pick
+remailers according to that data. Users can specify minimum
+reliability scores, decide that a remailer should always or never be
+used, and specify maximum latency. Ongoing research on more powerful
+reputation systems includes a reputation system for free-route
+networks \cite{mix-acc} and another for MIX cascades \cite{casc-rep}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -236,14 +235,15 @@ Mixminion uses the same general MIX-net paradigm as previous work
 path through the network. She repeatedly ``onion'' encrypts her message,
 starting with the last
 MIX in her path, and sends the onion to the first MIX in her path. Each
-MIX unwraps a single layer of the onion, and passes the result to the
+MIX unwraps a single layer of the onion, pads the message to a fixed
+length (32KB in our current design), and passes the result to the
 next MIX. We describe the behavior of the last MIX in
 Section \ref{subsec:delivery-modules}.
 
 % A bit more detail about waht is contained in the header: -George
 
 Headers addressed to each intermediate mix are encrypted using RSA-OAEP
- \cite{PKCS1} and are of 128kb each. They contain a secret addressed
+ \cite{PKCS1} and are of 128 bytes each. They contain a secret addressed
 to the node that can be used to generate padding and decrypt the rest
 of the message. They also contain the address of the next node to 
 which to message should be forwarded along with its expected signature 
@@ -272,10 +272,10 @@ times and learn who is sending and receiving which messages
 \cite{langos02}. Good dummy traffic designs may eventually address the
 intersection attack, but for now it remains an open problem.
 
-We choose to drop backward-compatibility with Mixmaster and the cypherpunk
-remailer systems, in order to provide a simple extensible design. At
-the same time, we provide a new feature: a reply block mechanism that
-is as secure as forward messages.
+We choose to drop packet-level compatibility with Mixmaster and the
+cypherpunk remailer systems, in order to provide a simple extensible
+design. At the same time, we provide a new feature: a reply block
+mechanism that is as secure as forward messages.
 
 Reusable reply blocks, such as those in the cypherpunk remailer, are a
 security risk --- by their very nature they let people send multiple
@@ -385,14 +385,14 @@ analysed security properties than less constrained approaches.
 \label{subsec:replies}
 
 The rest of this section describes the mechanism for secure replies,
-including some new attacks and how we defeat them. The model that 
-Mixminion follows in order to implement replies is inspired by 
-BABEL \cite{babel}, as it requires the receiver of a reply block to
-keep no other state than it private keys, in order to read the reply.
-All the secrets that are required in order to strip the layers of
-encryption are derived from a master secret contained in the last
-header of the single use reply block that the creator of the block
-addresses to themselves and encrypt under their own public key.
+including some new attacks and how we defeat them. Mixminion's reply
+model is in part inspired by BABEL \cite{babel}, as it requires the
+receiver of a reply block to keep no other state than its secret keys,
+in order to read the reply.  All the secrets that are required in
+order to strip the layers of encryption are derived from a master
+secret contained in the last header of the single use reply block that
+the creator of the block addresses to themselves and encrypt under
+their own public key.
 
 \subsection{Indistinguishable replies}
 \label{subsec:header-swap}
@@ -452,6 +452,12 @@ predictable padding at the end of the subheader, so the hash will
 match even though each hop must regrow the subheader to maintain
 constant length.
 
+For forward messages, Alice provides both legs; for anonymous replies, Alice
+uses Bob's reply block as the second leg, and generates her own path
+for the first leg.  (To send a direct reply, Alice can use an empty
+first leg, or send the reply block and message to a MIX that can wrap
+them for her.)
+
 When Alice creates her message, she encrypts the second subheader
 with a hash of her payload (she also does the usual layered onion
 encryptions). Alice's message then traverses the MIX-net as normal (every
@@ -483,9 +489,6 @@ how this all-or-nothing encryption approach helps protect against tagging.
 \end{center}
 \end{figure}
 
-Because the path is split into two legs, we can cleanly support anonymized
-reply messages. Alice simply uses Bob's reply block as the second leg,
-and generates her own path for the first leg.
 
 \subsection{Defenses against tagging attacks}
 \label{subsec:tagging}
@@ -630,7 +633,7 @@ exit policies for advertising what delivery options a node will provide.
 Unlike remailer Types I and II that used SMTP \cite{SMTP} (i.e. ordinary
 Internet e-mail) as their underlying transport mechanism, Mixminion
 clients and nodes communicate using a forward secure encrypted channel
-based on TLS \cite{TLS}.
+based on TLS \cite{TLS}.  
 TLS allows the establishment of an encrypted tunnel using ephemeral
 Diffie-Hellman keys. In order to guarantee that the receiving end is
 the one intended by the creator of the anonymous message, the
@@ -667,15 +670,16 @@ asymmetric encryption techniques, so they are relatively fast.
 % I'm not sure, though, whether we want one of the cert-based ones (A)
 % or one of the the anon-server ones. (B) -Nick
 
-The above scheme offers forward secrecy: after the keys
+The purpose of link-layer encryption is to provide forward secrecy: 
+after the keys
 have been deleted, not even the
 nodes that exchange messages can decrypt or recognize messages
 that might have been intercepted on the links. This makes it
 impossible to comply with decryption notices that might be served in
 some jurisdictions.  
 It also forces adversaries to 
-corrupt and control nodes in order to learn enough to trace
-back a forward anonymous communication by requesting nodes to decrypt
+corrupt and control nodes in order trace
+a forward anonymous communication by requesting nodes to decrypt
 it. 
 % In advance, or later?  I'm not clear what the above sentence is
 % saying. -Nick
@@ -689,6 +693,11 @@ analysis. Encrypted links between honest nodes prevent an adversary
 from recognizing even his own messages; but without link padding, he
 can still measure how much traffic is being transmitted.
 
+As a fringe benefit, using a separate link-level protocol makes it
+easier to deploy relay-only MIXes --- such nodes simply omit SMTP
+support.  (See Section \ref{subsec:delivery-modules} below.)
+% Credit for the above point goes to Len.
+
 \subsection{Message types and delivery modules}
 \label{subsec:delivery-modules}
 
@@ -696,12 +705,13 @@ Once a Mixminion packet reaches the final MIX in its path, it must
 either be delivered to its intended recipient, or dropped if it's an
 intra-network dummy message. In order to support different kinds of
 delivery, the header includes a type code for the action to be taken
-to deliver the message.  A few types --- such as `dummy', `SMTP', and `local
-delivery' --- are specified as a part of the Mixminion standard.  Others
-may be added by future extensions, in order to implement
-abuse-resistant exit policies (see Section \ref{subsec:exitpolicies}),
-to administer nymservers (see Section \ref{sec:nymservers}), to publish
-anonymously to Usenet, or to support other protocols.
+to deliver the message.  A few types --- such as `dummy', `SMTP', and
+`local delivery' --- are specified as a part of the Mixminion
+standard.  Others may be added by future extensions, in order to
+implement abuse-resistant exit policies (see Section
+\ref{subsec:exitpolicies}), to administer nymservers (see Section
+\ref{sec:nymservers}), to publish anonymously to Usenet, to relay
+messages to older remailers, or to support other protocols.
 
 Nearly all delivery methods require additional information beyond the
 message type and its payload.  The SMTP module, for example, requires
