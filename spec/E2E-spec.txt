@@ -1,25 +1,124 @@
-END TO END MIXMINION
-   
-   This document attempts to motivate a set of requirements for
-   end-to-end message transport on Type III (Mixminion) remailers, and
-   to provide a design meeting those requirements.  The first design[1]
-   was sent to mixminion-dev on on September 20; the second design[2] on
-   October 11 2002.
-   
-   This is a minor revision of the second design.  It should be folded
-   into the main spec.
-   [XXXX Or, we should aggressively compartmentalize the main spec. This
-     part is only needed if you're writing a client or an exit module for
-     a server.  Relay-only servers don't need this. -NM]
-   
-   [1] http://archives.seul.org/mixminion/dev/msg000013.html
-   [2] http://archives.seul.org/mixminion/dev/Oct-2002/msg00000.html
-   
-=== Introduction ===
-   
-   STATUS:  All of this specification, except for K-of-N fragmentation, is
-   implemented in the codebase today.  (I have a prototype of the K-of-N
-   backend.
+$Id: E2E-spec.txt,v 1.2 2003/06/20 07:11:23 nickm Exp $
+
+                                MIX3:2
+         Type-III Remailers: End-to-end Encoding and Delivery
+
+                            George Danezis
+                           Roger Dingledine
+                            Nick Mathewson
+                             (who else?)
+
+Status of this Document
+
+   This draft document ("E2E-spec.txt") describes a proposed
+   specification for Type III remailers.  It is not a final version.
+   It has not yet been submitted to any standards body.
+
+   TODO: See open issues section.
+
+Abstract
+
+   This document describes a formats and algorithms used by client
+   software for Type III mixes; and by Type III mixes that support
+   delivery.  It does not contain information for the formats and
+   algorithms that these applications share with relay-only remailers
+   -- for these, see "minion-spec.txt".
+
+   Although this document discusses security issues in implementing
+   Type III mix software, it is not comprehensive, nor does it discuss
+   all implementation issues.
+
+Table of Contents
+
+            Status of this Document                                    X
+            Abstract
+            Table of Contents
+   1.       Introduction
+   1.1.     Terminology
+
+   2.       End-to-end message encoding
+   2.1.     Preliminaries
+   2.1.1.   Preliminaries: Types of messages
+   2.1.1.   Preliminaries: Compression
+   2.1.2.   Preliminaries: K-of-N fragmentation
+   2.2.     Generating messages
+   2.2.1.   Generating plaintext forward messages
+   2.2.2.   Generating encrypted forward messages
+   2.2.3.   Generating reply messages
+   2.2.4.   Generating stateless SURBs
+   2.3.     Decoding messages
+   2.3.1.   Decoding algorithm
+
+   3.       Delivery types
+   3.1.     MBOX
+   3.1.1.   Formatting: Header data
+   3.1.2.   Formatting: Message body
+   3.1.3.   Server descriptor section
+   3.2.     SMTP
+   3.2.1.   Formatting: Header data
+   3.2.2.   Formatting: Message body
+   3.2.3.   Server descriptor section
+
+   A.1.     Appendix: Versioning and alphas
+
+   X.       Open questions
+
+1. Introduction
+
+   This document is an adjunct to the main Type III (Mixminion) Mix
+   protocol specification in "minion-spec.txt".  Whereas the main
+   specification describes formats and algorithms which all compliant
+   Type III mixes and clients users must generate and process, this
+   document describes formats and algorithms for use at the edges of
+   the system: by user software that generates anonymous messages; by
+   user software that generates reply blocks; by exit nodes that
+   deliver Type III messages; and by user software that decrypts
+   encrypted Type III messages.
+
+   Although it is possible for Type III mixes to support other
+   delivery methods, and possible for clients to encode end-to-end
+   messages in different ways, we _strongly_ encourage new
+   implementations to remain compatible with these methods.  Since
+   users receive anonymity from the cover traffic provided by other
+   users, additional methods and options for delivery and encoding
+   come at the expense of decreasing the anonymity provided by the
+   system.
+
+1.1. Terminology
+
+      * "Packet" - A Type III mix packet.  Fixed in size to 32 KB.
+      
+      * "Message" - A variable size end-to-end message, transmitted
+        from one location from another.  May be larger or smaller
+        than a single packet.
+
+      * "Forward message" - A message sent anonymously to a known
+        recipient.
+        
+      * "Direct reply message" - A message sent to an known recipient,
+        with no attempt to maintain sender anonymity.
+
+      * "Anonymous reply message" - A message sent anonymously to an
+        unknown recipient".
+
+      * "Forward plaintext message" - A forward message sent in the
+        clear.
+
+      * "Forward encrypted message" - A forward message encrypted to
+        the public key of its recipient.
+
+2. End-to-end message encoding
+
+   This section 
+
+
+
+
+
+
+
+
+
    
    OVERVIEW
    The current specification describes only how to send single Mixminion
@@ -401,7 +500,7 @@ END TO END MIXMINION
                 Let Tag = M'[0:20].
                 Let Payload = M'[20:KS] | SPRP_ENC(Ksession,
                                                    "END-TO-END ENCRYPT",
-    	                                         M[KS-38 : SZ+16])
+                                                 M[KS-38 : SZ+16])
                Endif
    
            If Message type is 'reply':
@@ -457,8 +556,8 @@ END TO END MIXMINION
                    Endif
                    // If the hash is incorrect, we may have incorrectly guessed
                    // the message to be a stateless SURB.  Continue.  
-   		// (Implementations must inform users which identity
-   		// has been used, in order to prevent a SURB-swapping attack)
+                // (Implementations must inform users which identity
+                // has been used, in order to prevent a SURB-swapping attack)
                Endif
             Endloop
           Endif.
@@ -561,55 +660,55 @@ END TO END MIXMINION
    should perform the following operations to decode it:
    
    [XXXX A note about the philosophical significance of the ``KEY'':
-   	Here (and in the E2E document) the KEY that is used to test 
-   	whether a message can be decoded is really attached to a 
-   	particular pseudonym of the recipient. This, I think, must 
-   	be made more explicit than it is otherwise people implementing 
-   	protocols on top of MixMinion will get things wrong.
+        Here (and in the E2E document) the KEY that is used to test 
+        whether a message can be decoded is really attached to a 
+        particular pseudonym of the recipient. This, I think, must 
+        be made more explicit than it is otherwise people implementing 
+        protocols on top of MixMinion will get things wrong.
    
-   	Maybe it would even be a good strategy if we use something like
-   	NYMLOGINNAME|KEY(or PASSWORD) just to stress that after this step 
-   	any operation on the data is linkable to this pseudonym, 
-   	and no operation should be performed that link two different 
-   	pseudonyms together. 
-   	
-   	In fact a test as described below allows a particular pseudonym 
-   	to check if a message if for it. It is WRONG to give it a sequence 
-   	of KEYs and just get back a set of messages that is not annotated 
-   	with the identity of the decoder. -GD]
+        Maybe it would even be a good strategy if we use something like
+        NYMLOGINNAME|KEY(or PASSWORD) just to stress that after this step 
+        any operation on the data is linkable to this pseudonym, 
+        and no operation should be performed that link two different 
+        pseudonyms together. 
+        
+        In fact a test as described below allows a particular pseudonym 
+        to check if a message if for it. It is WRONG to give it a sequence 
+        of KEYs and just get back a set of messages that is not annotated 
+        with the identity of the decoder. -GD]
    
    
    PROCEDURE: Decode a message.
    
    Input:  KEY is the long term key of one of the identities of the receipient.
-   	TAG field of sub-header or header where 
+        TAG field of sub-header or header where 
            TAG = ( Encrypt(KEY, nHops | seed) | padding up to 44b).
            M the body of the message.
    Output: P, the plaintext of the message.
    
-   	If the message was sent using the forward-path then 
-   		P = M; exit;
-   	Otherwise, we regenerate all keys used to encrypt the payload:
-   		(seed, nHops) = Decrypt(KEY,TAG)[0:17]
-   		SK_1..SK_16 = PRNG(seed, nHops*16)[0:16*nhops]
-   		For i = nHops to 0
-   			M = SPRP_DEC(SK_i, ``PAYLOAD ENCRYPT'',M);
-   		end
+        If the message was sent using the forward-path then 
+                P = M; exit;
+        Otherwise, we regenerate all keys used to encrypt the payload:
+                (seed, nHops) = Decrypt(KEY,TAG)[0:17]
+                SK_1..SK_16 = PRNG(seed, nHops*16)[0:16*nhops]
+                For i = nHops to 0
+                        M = SPRP_DEC(SK_i, ``PAYLOAD ENCRYPT'',M);
+                end
    
-   		// We need here a convention for creating the
-   		//   Encryption key in the SURB.
-   		M = SPRP_DEC(seed, "PRIVATE SURB KEY",M);
-   		
-   		P = M; exit;
+                // We need here a convention for creating the
+                //   Encryption key in the SURB.
+                M = SPRP_DEC(seed, "PRIVATE SURB KEY",M);
+                
+                P = M; exit;
    
    [XXXX We do not actually specify how the TAG field and the BODY are
    found, prior to be given to this function. So the above works for
    delivery via SMTP but not if the final hop is reached via FWD/IP4. The
    options are the following: 
-   	- We require the final recipient to have a public/private key
-   	  and decode the header to extract the TAG/BODY messages.
-   	- We use symmetric encryption for the final header and extract
-   	  the TAG field using a secret key.
+        - We require the final recipient to have a public/private key
+          and decode the header to extract the TAG/BODY messages.
+        - We use symmetric encryption for the final header and extract
+          the TAG field using a secret key.
    Any of the two can be used, and it does not have to be standardized
    since this operation only affects the final client, but we can give
    some advice. -GD]
@@ -633,10 +732,10 @@ END TO END MIXMINION
        crypto. The original point I had in mind had to do with
        observability. If the key is symetric then crooked nodes can do
        the following:
-   	- observe all users noting which SURB's they are receiving.
-   	  They can then note down the keys used.
-   	- When a message is seen at a cross over point, all keys are
-       	  tried on it, making the forward path useless, since it can
+        - observe all users noting which SURB's they are receiving.
+          They can then note down the keys used.
+        - When a message is seen at a cross over point, all keys are
+          tried on it, making the forward path useless, since it can
              be linked to a SURB received by someone specific.
    
        My original idea was to use a key-private cryptosystem, to hide
@@ -649,9 +748,9 @@ END TO END MIXMINION
        scenario. But this is a point we need to emphasise, that is
        obvious when mentioned:
    
-   	``Do not use SURB's that have been delivered non anonymously
-   	for establishing sender-anonymous communications with others.''
-   								-GD]
+        ``Do not use SURB's that have been delivered non anonymously
+        for establishing sender-anonymous communications with others.''
+                                                                -GD]
    
    %%%%%%%%%%
    \subsection{'Stateless' reply blocks}
@@ -686,10 +785,10 @@ END TO END MIXMINION
    [ XXXX we now use a hash and therefore this is not relevent any more -GD]
    
    [ XXXX It seems that the TAG generated takes up all the space that the TAG 
-   	is allowed to use. Would it be a good idea if we allow the constructor
-   	of the SURB to embed more (even propriatery) information in the TAG?
-   	That would require us to use ENCRYPTION instead of H(.) as in the new
-   	E2E document. -GD]
+        is allowed to use. Would it be a good idea if we allow the constructor
+        of the SURB to embed more (even propriatery) information in the TAG?
+        That would require us to use ENCRYPTION instead of H(.) as in the new
+        E2E document. -GD]
    
    
    ======================
