@@ -71,6 +71,34 @@ have more stuff done.)
  application for this.  Clients can't use it without leaking which
  servers they're interested in, and giving servers the opportunity to
  lie to clients.  What's the upside?) -NM]
+[I believe that this will make it more easy to construct Directory servers. 
+ For some reason I have the feeling that it will scale better if directory 
+ servers know about mixes (and can query them automatically) rather than the 
+ other way around (mixes knowing about directory servers). This way one can 
+ run independently a directory server, without any collaboration from the mix
+ network (other than the ability to request info). 
+
+ Let's not forget that the
+ mixes *sign* their information with a long term key, therefore after you 
+ establish that you trust a signing key to belong to an honest server, the 
+ operation of querying a directory server for updates is simply a question 
+ of transport and not of trust. Of course you still trust them to give you a 
+ information on a complete set of servers, but this can also be checked. 
+ It is also true that the a client requesting only the information on the 
+ servers it is about the use will ruin its anonymity. On the other hand if key
+ updates are not frequent, then the client can slowly update its database in 
+ the background.
+
+ Even more possibilities open up if each mix server give on request not only 
+ their information but also what they think the state of other servers, they 
+ have contacted in the past, is. This way each server you might contact will 
+ give you a set of other servers, that can be used by clients to construct a 
+ complete picture. Which ones are to be trusted is of course an orthogonal 
+ issue, but once it is decided the updated information could flow very 
+ quickly. (this is in fact a gossip protocol)
+
+ These are the reasons why I think it might be a good idea to have automatic 
+ on request information from servers. -GD]
 
 \section{Message Format}
 
