@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.18 2003/12/17 00:44:07 nickm Exp $
+$Id: E2E-spec.txt,v 1.19 2004/08/06 19:35:07 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -215,8 +215,7 @@ Table of Contents
        ARGUMENTS
            M: the message to send
            PS: payload sized (fixed)
-           EXF: expansion factor (fixed: everyone must use the same EXF,
-                                 see below.)
+           EXF: expansion factor 
 
        Let M_SIZE = CEIL(LEN(M) / PS)
 
@@ -241,6 +240,8 @@ Table of Contents
 
   [If we find an unpatented O(N) algorithm, we use it instead of this
    junk. -NM]
+
+  Everyone must use the same EXF. The value of EXF is 4/3. 
 
 2.1.3. Building blocks: whitening
 
@@ -383,7 +384,7 @@ Table of Contents
 2.2.2. Generating plaintext forward messages
 
    To send a plaintext forward message M, we first let PAYLOADS =
-   PACKETIZE(M, 28KB).  For every PAYLOAD_i, we set TAG_i = to a
+   PACKETIZE_MESSAGE(M, 0).  For every PAYLOAD_i, we set TAG_i = to a
    randomly chosen 159-bit integer.
 
    We then transmit each payload with its corresponding tag.
@@ -415,7 +416,7 @@ Table of Contents
 
    We specify a solution to 2 here.  When generating plaintext forward
    fragmented messages, the message generator uses a routing type of
-   "FRAGMENT" (0x0103), an empty routing into, and prepends the
+   "FRAGMENT" (0x0103), an empty routing info, and prepends the
    following fields to the message body before compressing and
    fragmenting it:
 
@@ -433,7 +434,7 @@ Table of Contents
 
    To send an encrypted forward message M to a user with an RSA public
    key PK with length PKLEN (in octets), we set PAYLOADS =
-   PACKETIZE(M, 28KB-PK_OVERHEAD_LEN+TAG_LEN-SPRP_KEY_LEN).  (We lose 42
+   PACKETIZE_MESSAGE(M, PK_OVERHEAD_LEN-TAG_LEN+SPRP_KEY_LEN).  (We lose 42
    octets to OAEP padding and 20 to encode the session key, but gain
    20 by spilling the encrypted data into the decoding tag.)
 
@@ -454,7 +455,7 @@ Table of Contents
 2.2.4.   Generating reply messages
 
    To send a reply message M to an anonymous recipient, we set
-   PAYLOADS = PACKETIZE(M, 28KB).   We send each PAYLOAD_i with a
+   PAYLOADS = PACKETIZE(M, 0).   We send each PAYLOAD_i with a
    separate SURB_i -- we must have enough to use a different SURB for
    each message.  We do not need to include TAG (decoding handle)
    fields: they are a part of the SURB.
