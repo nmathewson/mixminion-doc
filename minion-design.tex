@@ -1028,7 +1028,9 @@ of redundant extensions, and against the use of rare extensions.
 \label{subsec:exitpolicies}
 
 One important entry in a node's capability block is its \emph{exit
-policy}. Exit abuse is a serious barrier to wide-scale remailer deployment
+policy}, that describes to which address and by which method a mix node is
+prepared to deliver messages. Exit abuse is a serious barrier to
+wide-scale remailer deployment 
 --- rare indeed is the network administrator tolerant of machines that
 potentially deliver hate mail. % to the U.S. President.
 
@@ -1056,7 +1058,9 @@ plausible deniability. %\footnote{
 Similarly, if receiving mail is opt-out, an abuser can deny service
 by forging an opt-out request from a legitimate user. We use a compromise,
 where all users are assumed to want to receive mail, but each Mixminion
-message arrives with instructions on how to opt out. Specifically, the
+message arrives with instructions on how to opt out. 
+% XXX Is this true? (in spec or actual implemetation): 
+Specifically, the
 message includes a secret that must be used to authorize the opt-out. Thus
 adversaries who cannot read the victim's mail cannot forge an opt-out
 request.  (We believe that restricting ourselves to such adversaries is
@@ -1273,7 +1277,7 @@ single-use. Nonetheless, there are still a number of approaches for building
 nymservers from single-use reply blocks.
 
 In the first approach, nymservers keep a stock of reply blocks for
-each mailbox, and use a new reply block for each incoming message. 
+each mailbox, and use a new reply block $\alpha_i$ for each incoming message. 
 Suppose Alice wants to register a pseudonym $\alpha$ with signature and
 verification keys $(S_\alpha,V_\alpha)$ with the Nym server in order
 to receive messages from Bob.  In this case, the parties communicate as
@@ -1281,10 +1285,10 @@ follows:
 
 \begin{equation}
 \begin{aligned}
-(A)^\alpha \rightarrow \mathrm{Nym}&: \{\mathrm{Register} , \alpha, V_{\alpha}, (A)^\alpha_1 \dots
-(A)^\alpha_n\}_{S_\alpha} \\ 
+\alpha \rightarrow \mathrm{Nym}&: \{\mathrm{Register} , \alpha, V_{\alpha}, \alpha_1 \dots
+\alpha_n\}_{S_\alpha} \\ 
 B \rightarrow \mathrm{Nym}&: \alpha, M \\ 
-\mathrm{Nym} \rightarrow (A)^\alpha_i&: M \\
+\mathrm{Nym} \rightarrow \alpha_i&: M \\
 \end{aligned}
 \end{equation}
 
@@ -1304,11 +1308,11 @@ communicate as follows:
 
 \begin{equation}
 \begin{aligned}
-(A)^\alpha \rightarrow \mathrm{Nym}&: \{\mathrm{Register} , \alpha, V_{\alpha}\}_{S_{\alpha}}\\
+\alpha \rightarrow \mathrm{Nym}&: \{\mathrm{Register} , \alpha, V_{\alpha}\}_{S_{\alpha}}\\
 B \rightarrow \mathrm{Nym}&: \alpha, M \\
-(A)^\alpha \rightarrow \mathrm{Nym}&: \{\mathrm{Query} ,\alpha, (A)^\alpha_1 \dots
-(A)^\alpha_n\}_{S_{\alpha}} \\
-\mathrm{Nym} \rightarrow (A)^\alpha_i&: M
+\alpha \rightarrow \mathrm{Nym}&: \{\mathrm{Query} ,\alpha, \alpha_1 \dots
+\alpha_n\}_{S_{\alpha}} \\
+\mathrm{Nym} \rightarrow \alpha_i&: M
 \end{aligned}
 \end{equation}
 
@@ -1376,7 +1380,9 @@ leave the pool remains constant. Thus it is impossible to arrange to
 completely flush the mix with high probability in one flush. An adversary
 is forced to spend multiple intervals (and thus delay other messages
 for considerable time) first to flush the original honest messages from
-the mix, and again to flush the target message from the mix. This delay
+the mix, and again to flush the target message from the mix. 
+% XXXX Is this true? Do we implement or even specify a heartbeat? -GD
+This delay
 can be noticed by the other mixes, because they communicate over TLS
 with a heartbeat to detect delays.
 % XXXX Huh? Heartbeat? -NM
@@ -1438,7 +1444,8 @@ created by the adversary.
 When Alice (the owner of a pseudonym) downloads her mail from a
 nymserver, she will likely receive many separate messages. Similarly, if
 Alice uses Mixminion as a transport layer for higher-level applications,
-sending a large file means sending many Mixminion messages.
+sending a large file means sending many Mixminion messages, because of
+their fixed size.
 Conventional wisdom suggests that she should pick a different
 % can I get a \cite here? -RRD
 path for every message, but an adversary that owns all the nodes in
@@ -1493,10 +1500,11 @@ them.
 \begin{itemize}
 \item \emph{Compromise a mix.} Messages traverse multiple mixes, so
 compromising a single mix, even a crossover point, does not gain much.
-\item \emph{Compromise a mix's private key.} Again, owning a single mix
+\item \emph{Compromise a mix's private key.} Again, `owning' a single mix
 is of limited use. Further, periodic mix key rotation limits the window
 of time in which to attack the next mix in the target message's path.
-\item \emph{Replaying messages.}  Mixes remember header checksums of
+\item \emph{Replaying messages.}  Mixes remember header cryptographic 
+checksums of
 previously seen messages; after key rotation these old headers can no
 longer be decrypted.
 \item \emph{Delaying messages.} The adversary can delay messages and
@@ -1505,12 +1513,12 @@ different. The efficacy of this attack is poorly understood, but it may
 well be quite damaging \cite{trickle02}. Imposing a deadline on
 transmission at each hop may help \cite{mix-acc}.
 \item \emph{Dropping messages.} The adversary can drop messages with the
-hope that users will notice and resend. If the user must resend, he
-should use the same path, to prevent the adversary from forcing him onto
+hope that users will notice and resend. If the user must resend, she
+should use the same path, to prevent the adversary from forcing her onto
 an adversary-controlled path (see Section \ref{subsec:many-messages}).
 \item \emph{Tagging messages.} Mixes detect modified headers immediately
 using checksums. The payload can still be tagged, but the ``swap'' step
-along with LIONESS encryption from Section \ref{subsec:header-swap}
+along with SPRP encryption from Section \ref{subsec:header-swap}
 provide protection.
 \item \emph{N$-1$ attack (trickle, flooding)} The ``timed dynamic-pool''
 batching strategy from Section \ref{subsec:batching}, along with our dummy
@@ -1528,7 +1536,8 @@ thus increasing the cost of an intersection attack. However, a complete
 solution remains an open problem \cite{langos02}.
 \item \emph{Textual analysis.} Mixminion provides location anonymity,
 not data anonymity. Users are responsible for making sure their messages
-do not reveal identifying information.
+do not reveal identifying information. Such attacks are practical, and
+therefore a real threat, as documented in \cite{rao-pseudonymity}.
 \end{itemize}
 
 \item \textbf{Exit attacks}
@@ -1601,7 +1610,7 @@ correction codes to recover if some messages are lost.
 \item Can we keep the indistinguishability of forward messages and
 replies using a simpler design? We need to prove that our design provides
 unlinkability between the input bit-patterns of messages and the messages
-coming out of the network.
+coming out of the network (\emph{bit-wise unlinkability}).
 \item Currently, reply messages can be distinguished from plaintext forward
 messages at the exit nodes: the former exit as encrypted data, and the
 latter do not.  We prevent further partitioning by arranging 
