@@ -206,10 +206,38 @@ of attacks known as \emph{tagging attacks}.
 
 \subsection{Link-level encryption and what it gets us}
 
-Diffie-Hellman with ephemeral keys. OpenSSL. Some discussion of how
-this makes purely passive adversaries worse off, but really not that
-much worse off because they can still watch the number of characters
-going by on the channel.
+Unlike remailer types I and II that used SMTP as their underlining 
+transport mechanism, Mixminion clients and nodes will communicate between 
+them using a forward secure encrypted channel based on TLS \cite{TLS}.
+TLS allows the establishment of an encrypted tunnel using ephemeral 
+Diffie-Hellman keys. In order to make sure that the receiving end is the 
+one intended by the creator of the anonymous message, the ephemeral key could be 
+signed by the receiving node. As soon as a session key has been established 
+the Diffie-Hellman keys are destroyed and messages start being sent through the
+tunnel. After each message a standard key update operation is performed to generate 
+a new key and the old key material is deleted. The update mechanism does not require 
+any asymmetric encryption techniques, which makes the process fast.
+
+The above scheme offers forward secrecy in the sense that even the nodes 
+that exchange messages are not in a position to decrypt or even recognize 
+messages that might have been intercepted on the links. This makes it impossible 
+to comply with decryption notices that might be served in some jurisdiction.
+It also makes it necessary for an adversary to corrupt and control nodes in order
+to have enough information to trace back a forward anonymous communication by 
+requesting nodes to decrypt it. Reply blocks can still be used for this purpose.
+Even if an attacker manages to get hold of the session key at a particular point
+they would have to observe all subsequent traffic to be able to update their key
+appropriately. 
+
+The forward secure encrypted channel does not offer any protection against 
+traffic analysis. An adversary is still able to measure how much traffic is 
+being transmitted and its recipient.
+
+
+% Diffie-Hellman with ephemeral keys. OpenSSL. Some discussion of how
+% this makes purely passive adversaries worse off, but really not that
+% much worse off because they can still watch the number of characters
+% going by on the channel.
 
 \subsection{Message types and delivery modules}
 
