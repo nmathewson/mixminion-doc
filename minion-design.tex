@@ -1028,7 +1028,7 @@ of redundant extensions, and against the use of rare extensions.
 \label{subsec:exitpolicies}
 
 One important entry in a node's capability block is its \emph{exit
-policy}, that describes to which address and by which method a mix node is
+policy}, that describes to which addresses and by which methods a mix node is
 prepared to deliver messages. Exit abuse is a serious barrier to
 wide-scale remailer deployment 
 --- rare indeed is the network administrator tolerant of machines that
@@ -1059,7 +1059,8 @@ Similarly, if receiving mail is opt-out, an abuser can deny service
 by forging an opt-out request from a legitimate user. We use a compromise,
 where all users are assumed to want to receive mail, but each Mixminion
 message arrives with instructions on how to opt out. 
-% XXX Is this true? (in spec or actual implemetation): 
+% XXX Is this true? (in spec or actual implemetation): -GD
+% Not currently, I think. But we need it to be, right?
 Specifically, the
 message includes a secret that must be used to authorize the opt-out. Thus
 adversaries who cannot read the victim's mail cannot forge an opt-out
@@ -1382,6 +1383,8 @@ is forced to spend multiple intervals (and thus delay other messages
 for considerable time) first to flush the original honest messages from
 the mix, and again to flush the target message from the mix. 
 % XXXX Is this true? Do we implement or even specify a heartbeat? -GD
+% Not currently. It seems it might help detect attacks though? But then,
+% how can we tell attacks from network outages? Maybe should take out? -RD
 This delay
 can be noticed by the other mixes, because they communicate over TLS
 with a heartbeat to detect delays.
@@ -1500,7 +1503,7 @@ them.
 \begin{itemize}
 \item \emph{Compromise a mix.} Messages traverse multiple mixes, so
 compromising a single mix, even a crossover point, does not gain much.
-\item \emph{Compromise a mix's private key.} Again, `owning' a single mix
+\item \emph{Compromise a mix's private key.} Again, controlling a single mix
 is of limited use. Further, periodic mix key rotation limits the window
 of time in which to attack the next mix in the target message's path.
 \item \emph{Replaying messages.}  Mixes remember header cryptographic 
