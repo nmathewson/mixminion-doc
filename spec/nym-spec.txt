@@ -1,4 +1,4 @@
-$Id: nym-spec.txt,v 1.1 2003/07/24 08:02:28 nickm Exp $
+$Id: nym-spec.txt,v 1.2 2003/07/28 00:48:08 nickm Exp $
 
                                Mix3:Nym
     Underhill: A Proposed Type 3 Nymserver Protocol Specification
@@ -36,6 +36,9 @@ Acknowledgments
    remailer network have been written by George Danezis and Peter
    McIntyre.  This document incorporates certain elements of their
    designs.
+
+   The following people have contributed suggestions and comments for
+   this documents: Eric Arneson.
 
 Table of Contents
 
@@ -175,6 +178,12 @@ Table of Contents
       - Additionally, users can shut down their accounts without
         special software by sending a shutdown phrase to the
         nymserver via ordinary or anonymous email.
+
+      - Receiving mail from nyms and sending mail to nyms should be
+        completely transparent to a non-anonymous user; mail from a
+        nym to a recipient should appear to originate from a standard
+        mailbox, and mail to a nym should be deliverable with standard
+        MUAs.
 
    Forward security (limited)
 
@@ -343,12 +352,32 @@ Table of Contents
 
       1. The nymserver decides whether to accept the email.  If any
          of the following apply, the nymserver rejects the email:
-         - The email is not addressed to a valid nym.
-         - The email violates the nymserver's abuse or spam policies.
-         - Accepting the email would violate the nym's quota.
-         - The email is rejected by the nym's filtering policies.
+         A. The email is not addressed to a valid nym.
+         B. The email violates the nymserver's abuse or spam policies.
+         C. Accepting the email would violate the nym's quota.
+         D. The email is rejected by the nym's filtering policies.
 
-         [XXXX when do we send a bounce?]
+	 In cases A and C, the nymserver sends a bounce message.
+	 [XXXX Does it send bounces in other cases?  Eric writes:
+
+              Bounces should be sent when incoming mail is being sent
+              to an invalid nym (i.e. "No such user" errors).  Perhaps
+              also when the nym is over quota?  It is common for SMTP
+              servers to reject messages when a quota has been
+              reached, and mail accounts have always required a
+              standard level of maintenance to stay below quota
+              levels.  I know that one of your concerns here is that a
+              quota bounce would allow a DOS attacker to know that his
+              goal has been reached, but if a bounce is sent back to
+              other senders, then at least legitimate senders know
+              that they should try again later.
+
+              Anytime delivery to the nymserver fails, bounces should
+              also be sent back as per the SMTP server's policies.  I
+              think a nymserver will probably be some kind of local
+              delivery agent.  
+
+         XXXX]
 
       2. The nymserver then forms a synopsis of the email; generates a
          random 20-octet message ID for the email; encrypts the email
@@ -451,6 +480,8 @@ Table of Contents
          In-Reply-To
          Message-Id
          References
+	 Return-Path
+	 Sender
          Subject
          To
          X-Anonymous
@@ -539,13 +570,13 @@ Table of Contents
        Header:
             SIG    Signature             (PK_LEN=256 octets)
             NL     Nym Length            (1 octet)
-            NYM    Nym                   (variable length)
+            NYM    Nym                   (variable length; NL octets)
             SEQNO  Sequnce #             (20 octets)
        Body:
           Sequence of:
             CT    Command type      (1 octet)
             CS    Command data size (3 octets)
-            CD    Command data      (variable length)
+            CD    Command data      (variable length; CS octets)
 
    The 'Signature' field is equal to the RSA-OAEP+ signature of a
    SHA-1 hash of the remainder of the message.  The NL field is equal
@@ -576,7 +607,7 @@ Table of Contents
          PW    Proof of work             (??? octets)
        Sequence of:
          NL    Candidate Nym Length      (1 octet)
-         Nym   Candidate Nym             (variable length)
+         Nym   Candidate Nym             (variable length; NL octets)
 
    (To create a new Nym, a nymholder send a new control message
    containing a CREATE command, a NEWPK command, and a SURB command
@@ -610,10 +641,9 @@ Table of Contents
    A NEWPK command sets the nymholder's public keys at the server.
 
    The body of a SURB command has the following structure:
-      Identity key length   (2 octets)
-      Identity key          (variable length)
-      Encryption key length (2 octets)
-      Encryption key        (variable length)
+     ID_L Identity key length   (2 octets)
+     ID   Identity key          (variable length; ID_L octets)
+     ENC  Encryption key        (variable length; remainder of command)
 
    The key length fields MUST be 128 or 256.  The key fields hold
    ASN.1 encoded RSA public keys.  Their exponents must be 65537.
@@ -632,10 +662,9 @@ Table of Contents
      Destination:
         RS   Routing Size    (2 octets)
         RT   Routing Type    (2 octets)
-        RI   Routing Info    (Variable length; RS=Len(RI))
+        RI   Routing Info    (Variable length; RS octets)
      Message
-        BL   Body length     (4 octets)
-        BODY Email body      (Variable length; BL=Len(BODY))
+        BODY Email body      (Variable length; remainder of command)
 
    The routing fields are as in "minion-spec.txt".  The email body
    is prefixed with headers as in "E2E-spec.txt", but is otherwise
@@ -680,8 +709,8 @@ Table of Contents
    on the nymserver.  The body of a POLICY command has the following
    structure:
        OPTION_LEN  (1 octet)
-       OPTION_NAME (variable length; len(OPTION_NAME) = OPTION_LEN.)
-       VALUE       (variable length)
+       OPTION_NAME (variable length; OPTION_LEN octets)
+       VALUE       (variable length; remainder of command)
 
    Recognized options include:
        "SendMsgAfter" -- max time to hold a sendable email without
@@ -718,7 +747,7 @@ Table of Contents
           Sequence of:
             CT    Command type      (1 octet)
             CS    Command data size (3 octets)
-            CD    Command data      (variable length)
+            CD    Command data      (variable length; CS octets)
 
    The NYM field is equal to the Nym to which these commands apply.
    The NONCE field holds a random value used by the nymserver later to
@@ -784,7 +813,8 @@ Table of Contents
 
    A SUMMARY command has the following body structure:
      VALID_BF Bitfield: which entries in ES have an email?   (2 octets)
-     ES       Encrypted set of synopses.              (variable length)
+     ES       Encrypted set of synopses.              
+                                     (variable length; rest of command)
 
    The LSB in Valid_BF corresponds to the first synopsis in ES, and so
    on.
@@ -793,9 +823,9 @@ Table of Contents
  
    A MSG command relays an email to the client.
 
-   The body of a SUMMARY command has the following structure.
+   The body of MSG commands have the following structure.
      MSGID  Message ID        (20 octets)
-     MSG    Encrypted email  (variable length)
+     MSG    Encrypted email   (variable length; rest of command)
 
    Section 2.3 describes circumstances under which a nymserver
    generates MSG commands.
@@ -815,7 +845,8 @@ Table of Contents
 4.4.6. ERROR [0x05]
 
      NONCE  Nonce from client message; Z(20) if none.  (20 octets)
-     ERROR  English-language error message             (variable width)
+     ERROR  English-language error message             
+                                (variable length; rest of command)
 
 5. Filtering and abuse prevention
 
@@ -829,6 +860,9 @@ Table of Contents
      idea; it's not hard to find pathological input texts that make
      perl-style backtracking regex engines behave very badly.]
 
+   [XXXX Eric suggests "Sieve" (RFC3028) as implemented by
+     Cyrus-IMAP.  Could be keen.  See http://www.cyrusoft.com/sieve/ .]
+
 X. Open issues
 
    - Should there be some versioning here?
@@ -839,4 +873,4 @@ X. Open issues
    - What is in George's and Peter's nymserver specifications that I
      missed?
 
-   - 
+
