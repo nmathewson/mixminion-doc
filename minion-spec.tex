@@ -115,10 +115,7 @@ Version Minor:   1 byte
 Shared Secret:   16 bytes
 Digest:          20 bytes
 Routing Size:    2 bytes
-Routing Type:    2 bytes  [total 43 bytes]
-  [XXXX 43? Is this a fencepost error? I count 42. And it says 42
-        below.
-   -RD]
+Routing Type:    2 bytes  [total 42 bytes]
 Routing info:    [Routing Size] bytes
 
 * The Version is present to manage concurrent versions of the
@@ -138,6 +135,11 @@ of headers when the node receives the message.
 [XXXX Don't we want the digest to cover the current subheader too?
       Otherwise a bad server can modify the directly-next-header
       (he still can't know what he's changing, but hey). -RD]
+
+[XXXX OAEP is supposed to detect modifications to the RSA-encrypted
+      next header, and reject it.  This can't be used to mount a
+      tagging attack; such attacks are useless if you try to make the 
+      immediately next hop drop. -NM]
 
 * The Routing Type of a message defines how the MIX should deliver or
   relay it.  Most routing methods require addition addressing information.
@@ -171,6 +173,10 @@ of headers when the node receives the message.
         size of the plaintext of a subheader), but here we talk about
         128, the size of the crypttext of the subheader. What's up?
    -RD]
+ 
+  [XXXX OAEP padding adds 41 bytes.  Thus, for PK_Encrypt(Foo, K) to
+        fit in 127 bytes (to be input for RSA), you need Len(Foo)<=86.
+   -NM]
 
 The Routing Extension corresponding to a particular subheader is
 encrypted using the Encrypt function with key=Hash(Shared Secret,
