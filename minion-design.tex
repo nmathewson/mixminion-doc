@@ -1,0 +1,170 @@
+
+\documentclass{llncs}
+
+\newcommand{\workingnote}[1]{}        % The version that hides the note.
+%\newcommand{\workingnote}[1]{(**#1)}   % The version that makes the note visible.
+
+%\newif\ifpdf
+%\ifx\pdfoutput\undefined
+%   \pdffalse
+%\else
+%   \pdfoutput=1
+%   \pdftrue
+%\fi
+
+\begin{document}
+%\setstretch{2.0}
+
+%% Use dvipdfm instead. --DH
+%\ifpdf
+%  \pdfcompresslevel=9
+%  \pdfpagewidth=\the\paperwidth
+%  \pdfpageheight=\the\paperheight
+%\fi
+
+\title{The Mixminion Anonymous Remailer}
+\author{George Danezis\inst{1} \and Roger Dingledine\inst{2} \and Nick Mathewson\inst{2}}
+\institute{Cambridge
+\email{(george.danezis@cambridge)}
+\and
+The Free Haven Project
+\email{(arma@mit.edu)}
+% add some more people here
+}
+\maketitle
+\pagestyle{empty} 
+  
+\begin{abstract}
+
+We describe a packet-based anonymous remailer protocol which supports
+single-use reply blocks and includes link-level encryption to provide
+forward anonymity. We include justification for various design decisions
+and a detailed description of attacks and defenses. And some other stuff.
+
+\end{abstract}
+
+Keywords: anonymity, peer-to-peer, remailer, store-and-forward, reply block %, ...
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+\label{sec:intro}
+
+Chaum first introduced anonymous remailer designs over 20 years ago
+\cite{chaum-mix}. The research community has since introduced many
+new designs and proofs, and discovered a variety of new attacks, but
+the state of deployed remailers has changed remarkably little since
+Cottrell published his Mixmaster software \cite{mixmaster-attacks} eight years
+ago. Part of that is due to the liability involved in running a remailer
+node on the Internet, and part is due to the complexity of the current
+infrastructure --- it is very hard to add new experimental features
+to the current software.
+
+The Mixminion project aims to deploy a cleaner updated remailer design
+in the same spirit as Mixmaster, with the goals of expanding deployment
+and providing a research base for experimental features. Specifically, we:
+
+\begin{itemize}
+\item Introduce a new primitive called a \emph{single-use reply block}
+(SURB), and describe how to build higher-level systems such as nymservers
+using these SURBs. Mixmaster provides no support for replies, instead
+relying on the older and less secure cypherpunk remailer design
+\cite{cypherpunk-remailer}.  By integrating reply capabilities into
+Mixminion, we can finally retire the cypherpunk type 1 remailer network.
+\item Introduce link-level encryption with ephemeral keys to ensure
+forward anonymity for each message.
+\item Provide flexible delivery schemes --- rather than just allowing
+delivery to mail or usenet, we allow designers to add arbitrary modules to
+handle incoming messages. By separating the core mixing architecture from
+these higher-level modules, we can limit their influence on the anonymity
+properties of the system.
+\item Describe a \emph{reputation server} design to give users more
+information about the current state and reliability of Mixminion servers.
+% \item probably some more
+\end{itemize}
+
+Many of our design decisions impacted anonymity in surprising ways. Herein
+we document and analyze some of these influences to provide more intuition
+to developers and users.
+
+% ...
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Goals and Assumptions}
+
+% and non-goals
+% threat models, etc
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Related Work}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Design Overview}
+
+\subsection{Packet structure, how packets travel}
+
+\subsection{Why forward and reply messages are secure}
+
+\subsection{Link-level encryption and what it gets us}
+
+\subsection{Message types and delivery modules}
+
+delivery information in header or in payload?
+
+\subsection{Exit policies and abuse}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Nym management and single-use reply blocks}
+
+\subsection{Nymservers}
+
+\subsection{Long-term nyms: how to choose paths for reply blocks}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Reputation Servers}
+
+initially the reputation servers are just to track participating
+mixes
+and then hand out keys for them
+and replace the pinging servers
+and then do pinging themselves
+
+reliability for paths, nodes, reply blocks
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Maintaining anonymity sets}
+
+\subsection{Transmitting large files with Mixminion}
+
+\subsection{key rotation and anonymity}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Implementation choices}
+
+some details about how to build it. logging and statistics? etc.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Attacks and Defenses}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Future Directions}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section*{Acknowledgements}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\bibliographystyle{plain} \bibliography{minion-design}
+
+\end{document}
+
