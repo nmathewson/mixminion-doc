@@ -931,8 +931,8 @@ he would have to observe all subsequent traffic to be able to update
 his key appropriately.
 
 Additionally link encryption makes active and passive attacks on the
-network links more difficult. Since a message tell each mix about
-the identity of its successor, it is difficult for an attacker to
+network links more difficult. Since a message tells each mix the identity
+of its successor in the path, it is difficult for an attacker to
 mount a man-in-the-middle attack to modify messages, inject messages
 to a node as if they were part of the normal communications, or delete
 messages.  An additional \emph{heartbeat} signal in the SSL tunnel
@@ -1081,7 +1081,7 @@ adversaries who cannot read the victim's mail cannot forge an opt-out
 request.  (We believe that restricting ourselves to such adversaries is
 reasonable.  After all, adversaries strong enough to read the victim's mail
 can probably deny service to him in some other way.  Users may also avoid
-this attack by running their own 'delivery-only' nodes, which would amount to
+this attack by running their own `delivery-only' nodes, which would amount to
 an implicit opt-in.)
 
 %We might instead
@@ -1152,7 +1152,8 @@ statistical attacks.
 We use a compromise solution that still provides forward anonymity.  Messages
 don't contain any timestamp or expiration information. As in Mixmaster, each
 mix keeps hashes of the headers of all messages it has processed; but unlike
-Mixmaster, a mix only discards these hashes it rotates its public key.  Mixes
+Mixmaster, a mix only discards these hashes when it rotates its public
+key. Mixes
 should choose key rotation frequency based on their security goals and on the
 number of hashes they are willing to store, and advertise their key rotation
 schedules along with their public key information.  (See Section
@@ -1195,7 +1196,7 @@ In Mixminion, a group of redundant directory servers provide clients
 information about nodes' current keys, capabilities, and state.
 These directory servers must be synchronized and redundant: we lose security if
 clients have different information about network topology and node
-reliability. An adversary who controled a directory server could track
+reliability. An adversary who controls a directory server could track
 certain clients by providing different information --- perhaps by listing
 only mixes under its control, or by informing only certain clients about a
 given mix.
