@@ -104,9 +104,12 @@ All RSA encryption uses the public exponent 65535.
 
 \subsection{The subheader structure and address extensions}
 
-A subheader contains all the information that a MIX needs to know
-in order to check the integrity of a message and route it through the
-Internet. The subheader contains the following fields: 
+A subheader contains all the information that a MIX needs to check the
+integrity of a message and route it through the Internet. The subheader
+is encrypted using RSA after having been padded using OAEP, using a 1024
+bit key. This results in an encrypted block of 128 bytes.
+
+A subheader contains the following fields:
 
 Subheader fields:
 
@@ -122,33 +125,28 @@ Routing info:    [Routing Size] bytes
 protocol. If a packet is received with a version that is not supported
 it should be discarded. Nodes must advertise what versions of the
 protocol they support in their status blocks; see below.
-(Because having multiple versions makes messages more linkable, it is
-important to keep too many from existing at a time.)
+(Because users using different versions can be more easily tracked,
+we would like to minimize the number of different version numbers in
+use at a time.)
+[XXXX we should probably remove the parenthetical. it doesn't add
+      much? -RD]
 * The Shared Secret is the base secret that is used to generate all
 other keys for the operations of the node on the packet. It must be
 kept secret and discarded as soon as the packet has been processed. 
 * The Digest contains an integrity check of the remainder of the current
 header (128*15 bytes in total). The digest does not cover the current
-subheader: modifications to it are detected because each subheader is
-encrypted using OAEP padding.
+subheader: modifications to it are detected because of the OAEP padding.
 
 * The Routing Type defines how the MIX should deliver or relay the
-  message.  Most routing methods require addition addressing information.
-  The Routing Size field indicates the total size of the routing
-  information.   If the information is too long to fit in a single
-  subheader, it may spill into subsequent subheaders.
+  message. If a MIX receives a routing type it does not recognize,
+  it must discard the message.
 
-  If a MIX receives a routing type it does not recognize, it must
-  discard the message. 
-
-  The subheader is encrypted using RSA after having been padded
-  using OAEP, using a 1024 bit key.  This results in an encrypted block
-  of 128 bytes.  If the routing info is longer than 86-42=44 bytes, then
-  one or more additional subheaders have to be added.
-
-  When an additional block is added to fit the routing info, it must be
-  a multiple of 86 bytes (ie 128 when encrypted) and should have the
-  following structure:
+  Most routing methods require additional addressing information.
+  The Routing Size field indicates the total size of the Routing
+  Information. If the information is too long to fit in a single
+  subheader (more than 86-42=44 bytes), then one or more additional
+  Routing Extension blocks have to be added. These additional blocks
+  must be 128 bytes each and should have the following structure:
  
   Routing Extension:
 
@@ -158,11 +156,11 @@ encrypted using OAEP padding.
 * The address data length is specified by the ``Routing Size'' field
   contained in the subheader.
 * Padding of zeroes is used to make the size of the Routing Extension a
-  multiple of 86 bytes.  
+  multiple of 128 bytes.
 
 The Routing Extension corresponding to a particular subheader is
 encrypted using the Encrypt function with key=Hash(Shared Secret,
-``ROUTING EXTENSION SECRET KEY'') and appended to the RSA encrypted
+``ROUTING EXTENSION SECRET KEY'') and appended to the RSA-encrypted
 subheader.
 
 We will formally refer to the subheader structure as:
@@ -205,7 +203,7 @@ A DROP routing type indicates a dummy message, to be discarded.
 A FWD/IP4 routing type indicates that the message has to be
 retransmitted using the TLS/Mixmaster transport protocol. The IP field
 represents the IPv4 address.  The KEYID field represents the hash of
-the next node's tranport public key.
+the next node's transport public key.
 
 [XXXX Are the TLS keys different from the keys used to encrypt the
       headers?  I claim they should be. -NM]
