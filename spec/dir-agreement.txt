@@ -324,11 +324,12 @@ Status
    needs to be deterministic, so that every cooperating directory
    server in a quorum arrives at the same quorum.
 
-   [Remember: the end goal is for there to be a single most
+   [[[Remember: the end goal is for there to be a single most
    trustworthy quorum that all clients use.  This quorum-building
    algorithm is only designed to minimize the number of competing
    quorums when we can't come up with a single most trustworthy one;
-   and to discourage directory severs from fragmenting the quorum.]
+   and to discourage directory severs from fragmenting the quorum.
+   ]]]
 
    To choose a quorum, directory servers iteratively calculate the
    "best" quorum of directory servers, and see if they belong to it.
@@ -349,13 +350,15 @@ Status
           proceed to step 2.
 
        2. Let N be the size of the tied sets under consideration.  If
-          N>=5, and any two of the tied sets have at least N/2 common
-          elements, we compute the 'friendlier' set as follows: Set A
-          is friendlier than set B if the number of <A_i,B_j> pairs
+          N>=5, we compute a 'friendliness' relation as follows: Set A
+          is "friendly" to set B if A and B share at least N/2
+          elements in common, and the number of <A_i,B_j> pairs
           such that A_i trust B_j is greater than the number of
           <B_i,A_j> pairs such B_i trusts A_j.
 
-          (Note that 'friendliness' can be cyclical.)
+          (Note that 'friendliness' can be cyclical, but cannot be
+	  symmetric.  That is, we can have A-friendly-to-B-friendly-
+	  to-C, but we cannot have A-friendly-to-B-friendly-to-A.)
 
           We then compute the 'index' of each set by taking the SHA1
           hash of the sorted public keys of all the directory servers
@@ -363,10 +366,11 @@ Status
 
           We compute a 'transitive friendliness' relationship as
           follows: First, we break cycles in the friendliness graph,
-          from largest cycle to smallest, by removing the
-          'is-friendlier-than' relation from the smallest-indexed set
-          in the friendliness graph.  Secondly, we take the transitive
-          closure of the resulting graph.
+          from largest cycle to smallest (breaking cycle size ties by
+          highest element index), by removing the 'is-friendlier-than'
+          relation from the smallest-indexed set in the friendliness
+          graph.  Secondly, we take the transitive closure of the
+          resulting graph.
 
           Finally, compute the best set as follows: start with "S_0",
           the set with the highest index.  If there are one or more
