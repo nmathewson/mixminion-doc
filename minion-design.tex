@@ -407,9 +407,11 @@ them and look for the pattern later. He can also drop some of them and
 look for resulting patterns.
 
 The attack is possible only if the adversary happens to own the crossover
-point --- and Alice chooses the crossover point. If Alice were sending
-only one message, then this multiple-message tagging attack also would
-not be possible. Thus Alice picks $k$ paths for sending her $n$
+point that Alice chooses.
+% If Alice were sending
+%only one message, then this multiple-message tagging attack also would
+%not be possible.
+Thus Alice picks $k$ paths for sending her $n$
 messages;\footnote{
   We can prevent the adversary from using divide-and-conquer on Alice's
   batches if Alice uses a hybrid path starting with a short cascade ---
@@ -424,8 +426,9 @@ The key here is that when the adversary doesn't own a given crossover
 point, the tagging attack is equivalent to the dropping attack. The
 crossover point in question simply doesn't deliver the message to the
 second leg. Therefore, if the adversary doesn't own most of the crossover
-points that Alice's chooses, a successful multiple-message tagging attack
-is infeasible.
+points that Alice chooses, a successful multiple-message tagging attack is
+infeasible. We leave a security analysis of this multiple-paths approach
+to future work; but see Section \ref{subsec:choosing-paths}.
 
 \section{Related design decisions}
 
@@ -760,6 +763,7 @@ them most comfortable.
 \section{Maintaining anonymity sets}
 
 \subsection{Long-term nyms: how to choose paths for reply blocks}
+\label{subsec:choosing-paths}
 
 This question is hard. We're going to have to argue about it for a
 while more, I think.
@@ -852,6 +856,17 @@ Attack: use caps to partition anon set.
 
 \section{Future Directions}
 \label{sec:conclusion}
+
+This design document represents the first step in peer review of the
+Type III remailer protocol. Many of the ideas, ranging from the core
+design to peripheral design choices, need more attention:
+
+\begin{itemize}
+\item We need to analyze the proposed defense against the multiple-message
+tagging attack.
+\end{itemize}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
