@@ -828,34 +828,32 @@ PROCEDURE: Choose sets of messages to transmit ("Cottrell-style batching")
 Inputs: Q (a queue of messages)
         N (the number of messages in the queue).
 	MIX_INTERVAL (algorithm parameter; time to wait between
-                      batches of messages.  Should be around XXXXX.)
+                      batches of messages.  Should be around
+                      XXXXX. Must be >= 0.)
         POOL_SIZE (algorithm parameter; minimum size of pool.  Should
-                   be at least XXXXXXXX)
+                   be at least XXXXXXXX.  Must be >= 0.)
         MAX_REPLACEMENT_RATE (algorithm parameter; largest allowable
                    rate for messages to be removed from the
-                   pool. Should be between XXXX and XXXX.)
+                   pool. Should be between XXXX and XXXX.  Must have
+                   0.0 < MAX_REPLACEMENT_RATE <= 1.0)
 
 Outputs: (A set of messages sent to the network).
 
 1. Wait for MIX_INTERVAL seconds.
 
-[XXXX Not quite
-  2. If N > POOL_SIZE, then choose Min(N-POOL_SIZE, N*MAX_REPLACEMENT_RATE)
-     messages from Q.  Transmit the selected messages.
-
-   [Examination of the mixmaster source confirms the following rule.] -NM]
-
-2. If N > POOL_SIZE, then choose Min(N-POOL_SIZE, 
-                                     Max(1, FLOOR(N*MAX_REPLACEMENT_RATE)))
+2. If N > POOL_SIZE, then let 'max_send' = FLOOR(N*MAX_REPLACEMENT_RATE).
+   [If 'max_send' < 0, let max_send = 1.]  Choose Min(N-POOL_SIZE, max_send)
    messages from Q.  Transmit the selected messages.
+
+[XXXX Email from Peter Palfrader confirms the bracketed step above,
+ which can only occur when MAX_REPLACEMENT_RATE < 0.  I'm going to
+ suggest that we simply forbid MAX_REPLACEMENT_RATE < 0, and go back
+ to the simplified version:
+     Min(N-POOL_SIZE, FLOOR(N*MAX_REPLACEMENT_RATE)) -NM]
 
 3. Repeat indefinitely.
 
-[XXXX Erg.  I'm changing this back again.  If I understand correctly,
-   there's a paper that describes another batching algorithm and calls
-   it "mixmaster".  Andrei, Paul, and Roger copied this description, and
-   I copied them. 
-
+[XXXX 
    Paul and/or Andrei describe a variant that checks N>=POOL_SIZE+THRESHOLD, 
    with THRESHOLD>= 1.  Roger claims (verbally) that he isn't sure whether
    this would buy us anything, since (he says) adding 1 to POOL_SIZE would
