@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.11 2003/09/02 22:04:07 arma Exp $
+$Id: dir-spec.txt,v 1.12 2003/09/03 14:34:03 nickm Exp $
 
 				Mix3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -221,7 +221,7 @@ Table of Contents
         EOL is converted to a single NL character.
 
       - Second, the message is converted to a "stub" format: the values
-        of any unsigned entries in the message are replaced with the
+        of any _unsigned_ entries in the message are replaced with the
         empty string.  (Their entry lines now contain an identifier, a
         colon, a single ' ' character, and a single NL character.)
 
@@ -254,12 +254,12 @@ Table of Contents
             least 2048 bits long and no more than 4096 bits long.  The
             exponent of this key must be 65537.
 
-        'Digest': The digest of this descriptor.  When generating the
-            digest, the Digest entry is excluded as unsigned.
+        'Digest': The digest of this descriptor.  The value of this
+            entry is unsigned.  (See section 2.4)
 
         'Signature': The signed digest of this block, signed by the
-            Identity key.  When generating the digest, the Signature
-            entry is excluded as unsigned.
+            Identity key.  The value of this entry is unsigned.  (See
+            section 2.4)
 
         'Published': The time when this block was generated.
 
@@ -440,11 +440,11 @@ Table of Contents
        between 2048 and 4096 bits long, and the exponent must be 65537.
 
      - 'DirectoryDigest' : The digest of the entire directory.  The
-       value of this entry is unsigned.
+       value of this entry is unsigned. (See section 2.4)
 
      - 'DirectorySignature' : The signature of the directory digest
        with the directory server's identity key.  The value of this
-       entry is unsigned.
+       entry is unsigned. (See section 2.4)
 
    The 'Recommended-Software' section MUST contain the following
    entries:
