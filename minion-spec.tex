@@ -4,27 +4,26 @@
 
 [All of these are mentioned in more detail below.]
 
-1. Statistics Information Exchange format
-
-   [Not for first cut]
- 
-2. Mail gateways. We should specify these.
-
+1. Mail gateways. We should specify these.
    [Should go into appendix]
      
-3. When do dummy messages get generated?
-4. When does link padding get generated?
-
-   [Both active research areas; not for first cut]
-
-5. Need to write: algorithm for processing a reply.
+2. Need to write: algorithm for processing a reply.
 
    XXXX The thing is done, Nick please check it for bugs, and to find
    out if it is realistic. I still find it difficult to define the
    difference between forward path and SURBed messages since we do not
    have any special markers in the payload. -GD
 
-6. We should write the nymserver spec too. We can keep it pretty much
+   XXXX It looks okay; I'll triple-check it when I get there in the
+   implementation (should be within the next week).  I think that I
+   may be coming around to your pt of view about encoding size and
+   whatnot; maybe we should mark reply deliver too?  (We need to
+   figure out whether reply/junk indistinguishability really buys
+   us anything.  If not, we can put more stuff in reply tags.  We
+   probably need to anyway.)  If we do this, we'll want to look at all
+   uses of the 'TAG' field and maybe break it up a bit finder.  -NM
+
+3. We should write the nymserver spec too. We can keep it pretty much
     separate from this Mixminion spec.
 
     I will start working on this as soon as I am back from Belgium (5
@@ -34,17 +33,32 @@
     instead of the general mixminion spec document. -GD
     Cool. -NM    
 
-7. We'll also want somebody from the Mixmaster crowd to go through and
-    write a "backward compatibility with Mixmaster" addendum, to specify
-    what dual Mixmaster/Mixminion servers should do when they receive a
-    given packet. (Len?)
+4. Description of mixing algorithm should go in descriptor blocks. -NM
 
-    If we could have a hack so that both services can run as different
-    binaries, it will be easier to phase out the mixmaster stuff. -GD
+5. We must change the crossover and message-generation algorithms to address
+   George's attack of 15 August 2002.
 
-    Fear not.  Modularity is what I live for. ;) -NM
+   I've taken a rough cut at this, but I want George to check it out. -NM
 
-8. Description of mixing algorithm should go in descriptor blocks. -NM
+6. We should specify: are 'DROP'-type messages dropped before they go
+    into the mix pool, or after they're pulled from the pool?
+
+7. We should specify: what happens when a message is undeliverable?
+
+8. Specification for incoming SMTP interface.
+
+
+\section{FUTURE ISSUES}
+(These are unresolved issues that we don't want to think about till we
+have more stuff done.)
+
+1. Statistics Information Exchange format
+   [Not for first cut]
+2. Specify: verification for directories.
+	[not for first cut]
+3. When do dummy messages get generated?
+4. When does link padding get generated?
+   [Both active research areas; not for first cut]
 
 \section{Message Format}
 
@@ -315,6 +329,10 @@ Process:
         else
 	// Phase 2
 	H2 = SPRP_ENC(SHA1(P), ``HIDE HEADER'', H2)
+[XXXX We should add this to address George's attack of 15Aug.  George,
+      is this correct?  Does it go here?
+        P = SPRP_ENC(SHA1(H2), "HIDE PAYLOAD", P)
+                                                       - NM]
 
 	for i = N .. 1
 		H2 = SPRP_ENC(SK1_i, "HEADER ENCRYPT",H2)
@@ -345,6 +363,10 @@ PROCEDURE: Process a message M
 	if routing type is DROP:
                 End.
 	if routing type is SWAP-FWD:
+[XXXX We should add this to address George's attack of 15Aug.  George,
+      is this correct?  Does it go here?
+                P = SPRP_DEC(SHA1(H2), "HIDE PAYLOAD", P)
+                                                             -NM]
 		H2 = SPRP_DEC(SHA1(P), ``HIDE HEADER'', H2)
 		Swap H1 and H2;
         if routing type is SWAP-FWD or FWD:
@@ -473,7 +495,6 @@ The version number should be in decimal ASCII and is the same as the
 binary version.
 
 \subsection{'Stateless' reply blocks}
-
 
 4. Stateless replies and SMTP (depends on 2 and 3, if I understand correctly)
 
@@ -682,8 +703,7 @@ the entries:
          key must be 65537.
 
 	 Clients should at least give a warning if the identity key of
-         any server should ever change. [XXXX Write more in section
-         about directory servers. -NM] 
+         any server should ever change.
      'Digest': The digest of this block. See below.
      'Signature': The signed digest of this block.  See below.
      'Published': A date/time, in the form 'DD/MM/YYYY HH:MM:SS',
@@ -795,23 +815,6 @@ Directory servers change their directories only at midnight GMT.  Any
 client which has not downloaded a directory since before midnight GMT,
 must download a fresh directory before generating any packets.
 
-[There is going to be an orgy of traffic analysis exploits there. I
-think we should be less strict about having to download the directory
-before sending. And maybe allow anonymous access to direcoty
-servers. (Hey the first application!) -GD]
-
-[I think there are worse exploits by _not_ requiring that users
-download the latest version of the application.  If they don't
-download before sending, a passive adversary knows that all messages
-through removed nodes are from users who haven't downloaded, and all
-messages through new nodes are from users who have.  
-
-On the other hand, all we learn by seeing a user get the directory is
-that she plans to send ... which we would have learned when she sent
-her first packet.
-
-Are there other exploits I'm not seeing? -NM]
-
 A directory includes all the servers that were uploaded to the
 directory before some cutoff time the previous day, and which proved
 upon some random number of tests and probings to have a real Mixminion
@@ -837,7 +840,7 @@ Implementors are strongly encouraged to use this algorithm, or another
 equally robust against active and passive attacks.  (Be sure to read
 \cite{batching-taxonomy}.)
 
-PROCEDURE: Choose sets of messages to transmit
+PROCEDURE: Choose sets of messages to transmit ("Cotterll-style batching")
 
 Inputs: Q (a queue of messages)
         N (the number of messages in the queue).
@@ -921,22 +924,29 @@ fact in their server descriptor by including a section of the form:
  
          [Incoming/Mix2]
          Address: (type-II remailer's email address)
-         KeyID: (type-II key id)
+         Key: (type-II key)
+	 KeyID: (type-II keyid)
          Signature: (signature of identity key with type-II key)
 	 (Optionally, KeyID and Signature repeated any number of
                       times.)
 
 This section advertises that the mix can handle type-II messages
-intended for a given type-II identity (email address) and set of keys
-(keyids).
+intended for a given type-II identity (email address) and set of keys.
 
-The value of 'Signature' must be the base-64 representation of the
-RSA-OAEP/PKCS1 signature (using the type-II remailer key) of the SHA-1
-hash of the ASN.1 representation of this node's identity key.  
+The value of 'key' is the base-64 representation of the ASN.1 encoding
+of the Mix node's type-II key. The value of 'Signature' must be the
+base-64 representation of the RSA-OAEP/PKCS1 signature (using the
+type-II remailer key) of the SHA-1 hash of the ASN.1 representation of
+this node's identity key.
 
-Upon receiving a type-II message, if a bridging node notices that the
-destination node is also a type-III node, the bridging node unbase64's
-the type-II message's contents, and uses them (plus random
-padding) as the payload of a type-III message for that node.  The
-routing type must be 'MIX2' (0x0102); the routing info must be equal
-to the destination mix's type-II address.
+Directory servers and bridging nodes _must_ verify that keyid and
+signature are correctly computed.
+
+Upon receiving a type-II message via SMTP, a bridging node checks
+whether the destination node is also a type-III node, by looking for a
+type-III node whose KeyID matches the KeyID for the packet (the first
+16 bytes).  If it finds one, the bridging node unbase64's the type-II
+message's contents, and uses them (plus random padding) as the payload
+of a type-III message for that node.  The routing type must be 'MIX2'
+(0x0102); the routing info must be equal to the destination mix's
+type-II address.
