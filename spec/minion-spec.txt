@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.20 2003/10/07 20:14:09 weasel Exp $
+$Id: minion-spec.txt,v 1.21 2003/10/09 04:05:47 nickm Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -686,7 +686,7 @@ Table of Contents
         //             -256
         //           = 2048-256 - SUM(SIZE_1 ... SIZE_(i-1))
         //           = 2048 - 256 - len(J_{i-1})
-        OFFSET = PADDING_LEN  + Len(J_i) - 256
+        OFFSET = HEADER_LEN - PK_ENC_LEN - Len(J_(i-1))
         J_i = J_i ^ Stream_i[OFFSET:Len(J_i)]
      end
 
@@ -707,7 +707,7 @@ Table of Contents
         REST = H0[PK_MAX_DATA_LEN : Len(H0) - PK_MAX_DATA_LEN]
 
         EREST = Encrypt(K_i, REST)
-        DIGEST = HASH(EREST | J_i)
+        DIGEST = HASH(EREST | J_(i-1))
 
         SH = SHS(V, SK_i, DIGEST, len(RI), RT, RI)
         UNDERFLOW = Min(PK_MAX_DATA_LEN - SH_LEN, 0)
