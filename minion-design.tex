@@ -209,13 +209,13 @@ Mixminion uses the same general MIX-net paradigm as previous work
 a path through the network.
 % consisting of $k$ MIXes, $N_1 \dots N_k$.
 She repeatedly ``onion'' encrypts her message, starting with the last
-MIX in her path, and sends the onion to the first MIX in her path. That
+MIX in her path, and sends the onion to the first MIX in her path. Each
 MIX processes the onion and passes the unwrapped-by-one-layer onion to
-the next MIX, and so on. We describe the behavior of the last MIX in
+the next MIX. We describe the behavior of the last MIX in
 Section \ref{subsec:delivery-modules}.
 
 While Mixminion protects against known \emph{traffic analysis} attacks
-(where an adversary attempts to link a given message to its sender or
+(where an adversary given a message attempts to learn its sender or
 receiver \cite{jfraymond, simon}), we do not fully address \emph{traffic
 confirmation} attacks. In a traffic confirmation attack, the adversary
 treats the MIX network as a black box and observes the behavior of
@@ -234,8 +234,10 @@ Reusable reply blocks are security risks --- by their very nature they
 let people send multiple messages to them. These multiple messages can be
 used to very quickly trace the recipient's path: if two incoming batches
 both include a message to the same reply block, then the next hop must
-be in the intersection of both outgoing batches.
-Thus Mixminion uses single-use reply blocks to provide secure replies.
+be in the intersection of both outgoing batches. Mixminion thus uses
+single-use reply blocks to prevent these replays. Further, the Mixminion
+protocol makes reply messages indistinguishable from forward messages,
+allowing all messages to share the same anonymity set.
 
 %%i will put this stuff later.
 %Parties that benefit from anonymity properties must run dedicated software
@@ -248,7 +250,7 @@ Thus Mixminion uses single-use reply blocks to provide secure replies.
 %and in the case of the ``swap headers'' method, described below, the
 %the node that performs the crossover.
 
-The rest of this section describes the motivation for secure replies,
+The rest of this section describes the mechanism for secure replies,
 including some new attacks and how we defeat them. We also discuss using
 link-level encryption with ephemeral keys to provide forward anonymity,
 message types and modules for handling different types of messages, and
