@@ -581,7 +581,7 @@ the hash of the current payload, and then swaps the two headers. The
 swap operation is detailed in Figure 2 --- specifically, the normal
 operations done at every hop are those above the dotted line, and the
 operations performed only by the crossover point are those below
-the dotted line. The encryption primitive, labelled ``LBC'', that is
+the dotted line. The encryption primitive, labeled ``LBC'', that is
 used to blind the second header and the payload needs to have certain
 properties:
 
@@ -684,7 +684,7 @@ cannot be used.
 Mixminion uses a hybrid strategy to protect against
 such attacks: we use cryptographic checksums to protect the headers,
 and we make sure that the addressing information contained in the
-headers is destroyed if the payload is modified by an adversay.
+headers is destroyed if the payload is modified by an adversary.
 
 If the Mixminion design did not require
 the crossover point, an adversary could mount a tagging
@@ -763,7 +763,7 @@ We use a path length of 4 hops per leg, but with only 2 hops in the
 second leg of a forward message.
 
 It is worth noting that while semantically secure encryption cannot be
-used directly to solve the probem of tagging attacks in Mixminion, the
+used directly to solve the problem of tagging attacks in Mixminion, the
 structure of the operations performed on the message as it travels
 through the network is very similar to the Luby-Rackoff \cite{sprp}
 structure. In particular the fact that the header depends on the body
@@ -1548,7 +1548,7 @@ yet seen a thorough enough analysis to be convinced. For this reason
 while Mixminion is flexible enough to support them it does not use
 them until their effects on anonymity are better understood. As the
 engineering effort to implement the specification into a robust system
-proceeds, undoutedly the researchers associated or inspired by this
+proceeds, undoubtedly the researchers associated or inspired by this
 project will try to shine some light on the open questions above.
 
 We invite interested developers to join the {\tt mixminion-dev}
