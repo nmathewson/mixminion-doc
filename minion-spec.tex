@@ -56,11 +56,9 @@ with the smallest building block.
             L := L xor H(K4 | R | K4) 
             return L | R
 
-  For convenience, we write SPRP_ENC(MS,P,M) to denote:
-    [XXXX not clear what MS is. Master secret I presume? Can we pick a
-       better variable? -RD]
+  For convenience, we write SPRP_ENC(SK,P,M) to denote:
        LIONESS_ENCRYPT(K1,K2,K3,K4,M)
-       where K=HASH(MS | P)
+       where K=HASH(SK | P)
              K1 = K
              K2 = K xor 0x00...01
              K3 = K xor 0x00...02
@@ -197,20 +195,6 @@ free-form.
 reminding recipients of the master secrets they used to generate the
 reply block.)
 
-[XXXX Where has the RTRN type gone? I guess you can do the same job
-with the LOCAL field but I would prefer to have it specified as a
-separate type in the standard. 
-
-0x0101 RTRN  (HOPS: 1 byte , KEY: 20 bytes) : 21 bytes -GD]
-
-[XXXX Hm.  I'd rather not have 2 types that do exactly the same thing.
-      Perhaps RTRN should behave differently, or LOCAL should have a
-      type field of its own.
-
-      As things stand above, you can do stateless return delivery with
-      either of SMTP or LOCAL; neither is more "returny" than the other.
-
-      Would it solve your concerns to add a type field to LOCAL? -NM]
 [XXXX Ok, here is my real concern: I do not want every different client
       to implement their own version of the stateless reply block, in
 such a way that they cannot interoperate. So I would rather have some 
@@ -319,7 +303,7 @@ encrypted using the stream cipher.
 [XXXX not a stream cipher. Encrypt()? -RD]
 [XXXX Encrypt _is_ a stream cipher, but we should be specific. -NM]
 
-(In practice, depends pwe must construct the subheaders serially, from last to
+(In practice, we must construct the subheaders serially, from last to
 first, so that each can contain a digest of the subsequent subheaders
 and padding data.) 
 
@@ -833,6 +817,7 @@ services, keys, and exit policies over a set period of time.
          this Descriptor block.
      'Identity': The modulus of this Mix node's long-term signing key,
          represented in ASN.1, and encoded in BASE64.  Whitespace in
+[is ASN.1 better than PEM? -RD]
          this field is ignored, to allow the key to span multiple
          lines.  The modulus of this key should be at least 2048 bits
          long.  The exponent of this key must be 65535.
@@ -856,13 +841,13 @@ services, keys, and exit policies over a set period of time.
      'Packet-Key': A BASE64-encoded modulus used to encode subheaders
          intended for this server.
 
-The digest of a descriptor block is computed by replacing all digest
-and signature fields with the empty string, and computing the SHA-1
-digest of the result.  The signed digest is the OAEP/PCKS1 signature
-of the digest with the server's identity key.  Both of these values
-are represented in BASE64, with whitespace allowed.
+The digest of a descriptor block is computed by zeroing out the digest
+and signature fields, and computing the SHA-1 digest of the result.
+The signed digest is the OAEP/PCKS1 signature of the digest with the
+server's identity key.  Both of these values are represented in BASE64,
+with whitespace allowed.
 
-If this sever accepts incoming MMTP connections, it must have an
+If this server accepts incoming MMTP connections, it must have an
 'Incoming/MMTP' section, with the following entries:
 
      'MMTP-Descriptor-Version': The string '1.0'
@@ -881,14 +866,16 @@ and any number of entries of the form:
       'Allow': Address
       'Deny': Address
 
-The patterns are of the form:
+The Address tokens are of the form:
 
-   IP/Port = IP ('/' Mask)? (Port ('-' MaxPort)?)?
+   Address = IP ('/' Mask)? (Port ('-' MaxPort)?)?
 
 An omitted mask defaults to 255.255.255.255.  An omitted portrange
 defaults to 48099 on ALLOW and 0-65535 on DENY.
 
 The entries are order-significant; the first one to match wins.
+[This is different from the earlier post, where you process each
+ one. Was that accident or intent? -RD]
 
 The default policy is 'Deny: 0.0.0.0/0.0.0.0'
 
@@ -926,7 +913,7 @@ Day Day ...  Day  ...
 1   2        x
 
 
-Assuming that mixes talk to each ther every day and some know, and
+Assuming that mixes talk to each other every day and some know, and
 trust, each others verification keys we create a ``headless''
 certification infrastructure. Since not all the mixes are going to
 revoke their verification keys in the same day it is possible to 
