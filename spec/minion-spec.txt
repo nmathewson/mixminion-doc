@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.16 2003/10/06 18:52:08 nickm Exp $
+$Id: minion-spec.txt,v 1.17 2003/10/06 19:01:01 arma Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -373,7 +373,7 @@ Table of Contents
      M with our stream cipher, using key K.  (Encrypt(Encrypt(M)) = M.)
 
    - SubKey(K,S) - Derivation of a named sub key, using a master key K
-     (Len(K) = 16) and an aribrary length ASCII String.
+     (Len(K) = 16) and an arbitrary length ASCII String.
      (Len(SubKey(K,S)) = 16)
      SubKey(K,S) = Hash(K | S)[0:16]
 
