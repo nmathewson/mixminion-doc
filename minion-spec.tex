@@ -41,14 +41,7 @@
 
     Fear not.  Modularity is what I live for. ;) -NM
 
-8. We never actually specify a batching algorithm.  
-
-   [XXXX Andrei has suggested that we don't require a mixing
-   algorithm, in order to allow improvements.  I think this is
-   reasonable, but we should probably specify that (1) whatever we do
-   should be at least as good as Cottrell (2) MIXes should include
-   their mixing algorithm in their descriptor blocks. -NM]
-
+8. Description of mixing algorithm should go in descriptor blocks. -NM
 
 \section{Message Format}
 
@@ -764,7 +757,36 @@ an active research project, we leave them for a later draft.
 [XXXX Issues include:  How do directory servers synchronize?
    What happens when they disagree?  How many servers must a client
    contact before he/she has enough information?  How do we catch
-   dishonest directory servers? -NM]
+   dishonest directory servers? -NM
+
+\section{Appendix: Pooling rule}
+
+In order to allow room for future experimentation, we do not require a
+single batching rule.  Nonetheless, we describe a recommended rule (as
+used in Mixmaster) which is somewhat resistant to flooding attacks.
+Implementors are strongly encouraged to use this algorithm, or another
+equally robust against active and passive attacks.  (Be sure to read
+\cite{batching-taxonomy}.)
+
+PROCEDURE: Choose sets of messages to transmit
+
+Inputs: Q (a queue of messages)
+        N (the number of messages in the queue).
+	MIX_INTERVAL (algorithm parameter; time to wait between
+                      batches of messages.  Should be around XXXXX.)
+        POOL_SIZE (algorithm parameter; minimum size of pool.  Should
+                   be at least XXXXXXXX)
+        MAX_REPLACEMENT_RATE (algorithm parameter; largest allowable
+                   rate for messages to be removed from the
+                   pool. Should be between XXXX and XXXX.)
+Outputs: (A set of messages sent to the network).
+
+1. Wait for MIX_INTERVAL seconds.
+
+2. If N > POOL_SIZE, then choose Min(N-POOL_SIZE, N*MAX_REPLACEMENT_RATE)
+    messages from Q.  Transmit the selected messages.
+
+3. Repeat indefinitely.
 
 \section{Appendix: MBOX delivery}
 
