@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.22 2003/10/09 05:14:03 weasel Exp $
+$Id: minion-spec.txt,v 1.23 2003/10/15 17:14:02 weasel Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -1155,6 +1155,6 @@ A.2. Appendix: Backward compatibility with Type II remailers
 A.3. Appendix: Versioning and alphas
 
    Today's alpha code does not publish its version as '1.0'; it uses
-   '0.x' instead (currently '0.3' for packets, '0.2' for MMTP, and
+   '0.x' instead (currently '0.3' for packets, '0.3' for MMTP, and
    '0.1' for everything else).  Production versions MUST NOT retain
    backward compatibility with pre-production releases.
