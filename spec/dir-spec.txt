@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.25 2004/08/12 07:44:07 nickm Exp $
+$Id: dir-spec.txt,v 1.26 2004/08/12 16:24:57 nickm Exp $
 
                                 MIX3:3
            Type III (Mixminion) Mix Directory Specification
@@ -357,7 +357,7 @@ Table of Contents
             list these modes.  Added in Mixminion 0.0.4]
 
         'Why-Insecure': A human-readable string.  This string SHOULD
-            be present if and only Secure-Configuration is 'no'.  If
+            be present if and only if Secure-Configuration is 'no'.  If
             present, it SHOULD contain an explanation of why the
             operating mode is insecure. [Added in Mixminion 0.0.5]
 
@@ -511,7 +511,7 @@ Table of Contents
        nicknames.  Clients SHOULD NOT depend on servers whose nicknames are
        not on this list to be reliable or trustworthy.
 
-     - 'Voting-Servers' : A comma-separated list of information for the of
+     - 'Voting-Servers' : A comma-separated list of items for the
        the directory servers who voted on this directory.  Each item contains
        a fingerprint, a single space, and a URL base.  Each fingerprint is a
        base-64 encoded SHA1 hash of the ASN.1 encoding of the directory
@@ -630,7 +630,7 @@ Table of Contents
 
        B/
 
-          SHOULD contain a human-readble HTML document describing the
+          SHOULD contain a human-readable HTML document describing the
           directory server and its policies.
 
        B/current.gz
@@ -802,11 +802,14 @@ Table of Contents
    against every mix and against every recommended software version.]
 
       1. Validate each "vote" directory.  Verify that all formats are
-         correct, and all signatures are valid.  Check that the Valid-After
-         and Valid-Until times correspond to the following day; that the
-         Voting-Servers list is identical to our own; that the Status is
-         "vote"; and that the Version number matches ours.  If any of these
-         checks fail, do not consider the "vote" directory in step 2.
+         correct, and all signatures are valid.  Check:
+            - that the Valid-After and Valid-Until times correspond to the
+              following day,
+            - that the Voting-Servers list is identical to our own,
+            - that the Status is "vote",
+            - and that the Version number matches ours.
+         If any of these checks fail, do not consider the "vote" directory in
+         step 2.
 
       2. Determine the contents of the consensus directory:
           - For each distinct mix identity in any vote directory:
@@ -847,9 +850,9 @@ Table of Contents
    Directory-Signature sections from that signed directory to its own signed
    directory, and publishes the result at "B/YYYY-MM-DD.gz"
 
-   If it discovers that another directory server in its voting group has
-   signed a different directory, a directory server SHOULD warn its
-   administrator that fragmentation has occurred.
+   If the directory server discovers that another directory server in its
+   voting group has signed a different directory, a directory server SHOULD
+   warn its administrator that fragmentation has occurred.
 
 7.5. Publication
 
@@ -877,7 +880,7 @@ Table of Contents
    administrators' responsibility.
 
    If clients find a consensus directory signed by insufficient trusted
-   directory servers, it SHOULD worn the user, and respond appropriately (see
+   directory servers, it SHOULD warn the user, and respond appropriately (see
    8 below).
 
 8. Downloading directories
