@@ -81,8 +81,9 @@ protects against almost all known attacks.
 
 Chaum first introduced anonymous remailers over 20 years ago
 \cite{chaum-mix}. The research community has since introduced many new
-designs and proofs \cite{abe}\cite{babel}\cite{flash-mix}\cite{kesdogan}\cite{shuffle}\cite{hybrid-mix},
-and discovered a variety of new attacks
+designs and proofs
+\cite{abe}\cite{babel}\cite{flash-mix}\cite{kesdogan}\cite{shuffle}\cite{hybrid-mix}, 
+and discovered a variety of new attacks 
 \cite{back-traffic-analysis}\cite{langos02}\cite{disad-free-routes}\cite{desmedt}\cite{mitkuro}\cite{raymond00}.
 But because many of the newer designs require considerable coordination or
 synchronization, deployed remailers still use Cottrell's Mixmaster
@@ -190,12 +191,15 @@ Chaum introduced the concept of using relay servers, or \emph{mixes},
 for anonymous communications \cite{chaum-mix}. Each mix has a public key
 which senders use to encrypt messages to it. The mix receives a batch
 of these encrypted messages, decrypts them, and delivers them. Because
-a decrypted message looks nothing like the original encrypted message,
+a decrypted message output looks nothing like the original encrypted
+input message,
 and because the mix collects a batch of messages and then sends out the
 decrypted messages in a new order, an observer cannot learn which incoming
 message corresponds to which outgoing message. Chaum showed the
 security of a mix against a \emph{passive adversary} who can eavesdrop on
 all communications but is unable to observe the reordering inside the mix.
+Pfitzmann found a weakness in Chaum's original scheme, based on the
+properties of raw RSA encryption and fixes it in \cite{pfitzmann90how}.
 
 However, trusting a single mix is dangerous: the mix itself could be
 controlled by the adversary. Therefore users send their messages through
@@ -209,7 +213,8 @@ the mixes in reverse order. She includes routing information at each hop,
 so that each mix $M_i$ receives the address of $M_{i+1}$ along with the
 message intended for $M_{i+1}$ (all encrypted with $M_i$'s public key).
 Recent research on mix networks (mix-nets) includes stop-and-go mix-nets
-\cite{kesdogan}, ...and others XXX.
+\cite{kesdogan}, and schemes based on more sophisticated cryptographic
+constructs that aim at providing robustness.
 %distributed flash mixes \cite{flash-mix} and their weaknesses
 %\cite{desmedt}\cite{mitkuro}, and hybrid mixes \cite{hybrid-mix}.
 
@@ -227,18 +232,26 @@ can create a very high anonymity set because all the traffic does not
 need to go through each mix. Mix cascade research includes real-time
 mixes \cite{realtime-mix} and web mixes \cite{web-mix}.
 
-there are also more complex designs like flash mixes and provable shuffles
-(cite flash, ron and markus's recent paper, abe's and neff's provable
-shuffle stuff). but it's harder to use this stuff because it makes lots
-of assumptions about mix coordination and who the participants are.
+There are also more complex designs, that use cryprographic operations
+and zero knowledge proofs, in order to provide proofs of the correct
+functionig of the mix network and to detect and exclude misbehaving
+participants. 
+These include flash mixes \cite{flash-mix} and attacks against them
+\cite{mitomo00attack}, hybrid mixes
+\cite{hybrid-mix}\cite{jakobsson-optimally} and provable shuffles
+\cite{PShuffle}\cite{502000}. Altought the properties of these designs
+are appealing they are often not practical since they assume a lot of
+coordination and synchronization between the mixes, and they impose a
+heavy computational and communication overhead.
 
 % What's a reply block?
 When recipients want to achieve anonymity, some mix-net designs allow
 them to construct \emph{reply blocks} that allow others to send
-messages to them without knowing their identities.  A reply block
-contains only the routing portion of a message; the actual contents
-are provided by the user that eventually sends a message to the
-recipient.
+messages to them without knowing their identities. Such a design was
+first introduced by Chaum \cite{chaum-mix} and later extended in \cite{babel}. 
+A reply block contains only the routing portion of a message; the
+actual contents are appended to by the user that eventually sends a
+message to the recipient.
 
 \subsection{Known attacks against mix-nets}
 
@@ -453,7 +466,7 @@ times and learn who is sending and receiving which messages
 % can't be certain which messages were meant for whom. -Nick
 % But if we further intersect to learn that the messages on Tuesday
 % are for Bob and those on Wednesday are for Carol, ... -RRD
-\cite{langos02}. Good dummy traffic designs may eventually address the
+\cite{langos02}. Good dummy traffic designs may eventually address such
 intersection attack, but for now it remains an open problem.
 
 We choose to drop packet-level compatibility with Mixmaster and the
@@ -467,9 +480,9 @@ Type III key. The message is sent as a Type III encrypted message, but
 it decrypts to reveal the Type II message.
 
 We also provide a new feature: a reply block mechanism that is as secure
-as forward messages.
-Reusable reply blocks, such as those in the Cypherpunk remailer, are a
-security risk --- by their very nature they let people send multiple
+as forward messages. Reusable reply blocks, such as those in the
+Cypherpunk remailer, are a security risk --- by their very nature they
+let people send multiple 
 messages through them.  These multiple messages can easily be used to
 trace the recipient's path: if two incoming batches both include a
 message to the same reply block, then the next hop must be in the
@@ -484,48 +497,14 @@ forward secure communications due to the fact that the adversaries have
 in their possession a string that they can force intermediate mixes to
 decrypt until the originator is reached.
 
-\subsection{Tagging attacks}
-\label{subsec:tagging-attacks}
-
-To motivate some aspects of the Mixminion design, we describe an attack
-that works against many mix-net protocols, including Mixmaster and Babel.
-
-A {\em tagging attack} is an active attack in which a message is
-modified by altering part of it (for example by flipping bits), so
-that it can be recognized later in the path.  A later mix controlled by
-the attacker can recognize tagged messages because the header does
-not conform to the expected format when decrypted.  Also, the final
-recipient can recognize a tagged message for which the payload has
-been altered.
-
-Checking the integrity of hop headers individually is not
-sufficient to prevent tagging attacks.  For example, in Mixmaster
-each hop header contains a hash of the other fields in that header
-\cite{mixmaster-spec}.
-Each mix in the path checks the integrity of the header, and drops
-the message immediately if it has been altered.  However, 
-an attacking mix can still alter a header that will be decrypted
-only after several more hops, and so tagging attacks are still possible.
-
-The most straightforward way to prevent tagging attacks is to
-verify the integrity of the whole message at every hop.  For forward messages,
-then, the padding added to a message must be derived deterministically,
-so that it is possible to calculate
-authentication tags for the whole message at each hop.  But
-the situation becomes more complicated when reply messages are
-introduced --- the message and the reply block are
-created by different users. It is therefore impossible for the creator
-of the SURB to include in the header a checksum of a message he
-does not yet know. Mixminion uses a hybrid strategy to protect against
-such attacks: we use cryptographic checksums to protect the headers,
-and we make sure that the addressing information contained in the
-message is destroyed if the payload is modified by an adversay.
-
-\subsection{Replies}
+\subsection{Recipient anonymity and indistinguishable replies}
 \label{subsec:replies}
+\label{subsec:header-swap}
 
 The rest of this section describes the mechanism for secure replies,
-including how we defeat tagging-related attacks. 
+its integration with the normal sender anonymous message delivery and
+how we defeat tagging-related attacks.  
+
 Mixminion allows Alice to send messages to Bob in one of three ways:
 
 \begin{enumerate}
@@ -552,8 +531,8 @@ secret contained in the last header of the single-use reply block, which
 the creator of the block addresses to itself and encrypts under its
 own public key.
 
-\subsection{Indistinguishable replies}
-\label{subsec:header-swap}
+% \subsection{Indistinguishable replies}
+% \label{subsec:header-swap}
 
 By making forward messages and replies indistinguishable even to mixes,
 we prevent an
@@ -679,11 +658,55 @@ discussion of how this approach helps protect against tagging.
 \end{center}
 \end{figure}
 
-
 \subsection{Defenses against tagging attacks}
+\label{subsec:tagging-attacks}
 \label{subsec:tagging-defenses}
 
-Without the crossover point, an adversary could mount a tagging
+To motivate some aspects of the Mixminion design, we describe an attack
+that works against many mix-net protocols, including Mixmaster and Babel.
+
+A {\em tagging attack} is an active attack in which a message is
+modified by altering part of it (for example by flipping bits), so
+that it can be recognized later in the path.  A later mix controlled by
+the attacker can recognize tagged messages because the header or the
+body does
+not conform to the expected format when decrypted.  Also, the final
+recipient can recognize a tagged message for which the payload has
+been altered.
+
+Checking the integrity of hop headers individually is not
+sufficient to prevent tagging attacks.  For example, in Mixmaster
+each hop header contains a hash of the other fields in that header
+\cite{mixmaster-spec}.
+Each mix in the path checks the integrity of the header, and drops
+the message immediately if it has been altered.  However, 
+an attacking mix can still alter a header that will be decrypted
+only after several more hops, and so tagging attacks are still possible.
+
+The most straightforward way to prevent tagging attacks is to
+verify the integrity of the whole message at every hop.  For forward messages,
+then, the padding added to a message must be derived deterministically,
+so that it is possible to calculate
+authentication tags for the whole message at each hop.  But
+the situation becomes more complicated when reply messages are
+introduced --- the message and the reply block are
+created by different users. It is therefore impossible for the creator
+of the SURB to include in the header a checksum of a message he
+does not yet know. Therefore techniques taken straight out of modern
+cryptology, such as semantically secure or randomized encryption, that
+makes sure that an adversary does not gain any information by sending
+malformed messages to the mix (that acts as a decryption oracle),
+cannot be used.
+
+Mixminion uses a hybrid strategy to protect against
+such attacks: we use cryptographic checksums to protect the headers,
+and we make sure that the addressing information contained in the
+message is destroyed if the payload is modified by an adversay.
+
+% old split here.
+
+If the mixminion design did not require
+ the crossover point, an adversary could mount a tagging
 attack by modifying the payload of a forward message as
 it leaves Alice, and recognizing it later when it reaches Bob.
 Specifically, if our encryption mechanism were an ordinary
@@ -692,7 +715,9 @@ a message entering the mix-net. Since many of the outgoing messages
 will be in part predictable (either entirely plaintext, or with
 predictable PGP header material), the adversary can later observe
 messages exiting the mix-net and look for payloads that have a
-corresponding anomaly at that byte.
+corresponding anomaly at that byte. Other block cipher modes such as
+ Cipher Block Chaining (CBC) present comparable problems, since whole
+ blocks would look like random noise instead of the normal payload.
 
 % I think we shold point out =someplace= why we can't use
 % CBC or anything else that isn't symmetrically good for encryption
@@ -758,6 +783,17 @@ some mixes may only allow outgoing mail to local addresses; if such a
 node gets a crossover message that has been trashed, it might guess
 that the recipient is one of the local addresses.} and so we recommend
 that the second leg be at least a few hops long.
+
+It is worth noting that while semantically secure encryption cannot be
+used directly to solve the probem of tagging attacks in mixminion, the
+structure of the operations performed on the message as it travels
+through the network is very similar to the Luby-Rackoff \cite{sprp}
+structure. In particular the fact that the header depends on the body
+and \emph{vice versa} makes sure that if the message is tagged in
+any way it will become entirely different from what was intended, and
+will provide no information at all to an attacker. It is the
+first time, to our knowledge, that this property is achived by
+distributing the operation of a cipher across many nodes of a mix network.
 
 No mix except the crossover point can distinguish forward messages from
 replies --- even the crossover point cannot be sure whether it is processing
@@ -1218,6 +1254,9 @@ from single-use reply blocks.
 
 In the first approach, nymservers keep a stock of reply blocks for
 each mailbox, and use a reply block for each incoming message. 
+Alice wants to register a pseudonym $\alpha$ with signature and
+verification keys $(S_\alpha,V_\alpha)$ with the Nym server in order
+to receive messages from Bob.
 
 \begin{equation}
 \begin{aligned}
@@ -1465,15 +1504,28 @@ design to peripheral design choices, need more attention:
 \begin{itemize}
 \item We need more research on batching strategies that resist trickle
 and flooding attacks \cite{batching-taxonomy} as well as intersection
-attacks on asynchronous free routes \cite{disad-free-routes}.
+attacks on asynchronous free routes \cite{disad-free-routes}. In
+particular the anonymity they provide during normal operation or under
+attack has to be balanced with other properties such as latency and
+queue sizes on the mix servers.
 \item We need a more thorough investigation of multiple-message tagging
 attacks, and an analysis of how to safely choose paths when
-sending many messages.
+sending many messages. When a message to be sent is larger than the
+mixminion payload size there is a need for a strategy to fragment
+it and reconstruct it at the recipient's end. In case some of the
+messages are lost retransmission strategies or forward error
+correction codes can be used to recover the message. 
 \item We claim that we use conservative techniques, but an all-or-nothing
 variable-length block cipher is pushing it. Can we keep indistinguishable
-forward messages and replies using a simpler design?
+forward messages and replies using a simpler design? It would be
+relieving if the design can be proven to provide unlinkability between
+the input bit-patterns of messages and the messages comming out of the
+network. 
 \item We need stronger intuition about how to use
-dummy messages.
+dummy messages. Such messages can be inserted either at the link layer
+or the actual mixminion layer, and defend against different attacks. A
+more rational approach needs to be developed on who and when to insert
+such dummy messages.
 %\item We intend to draw up a more complete specification, which can lead
 %to implementation and deployment of the Mixminion design.
 % We'll have to get another spec cobbled together before anybody can review
@@ -1481,6 +1533,17 @@ dummy messages.
 % get a more formal spec?  I wouldn't be able to review our system at
 % the level that I'd want to without one.  -Nick 
 \end{itemize}
+
+As detailed in the introduction the principal aim has 
+been to include in mixminion only techniques that are well
+understood. Although some people have speculated about the positive
+effects of the techniques described as open issues above we have not
+yet seen a thorough enough analysis to be convinced. For this reason
+while mixminion is flexible enough to support them it does not use
+them until their effects on anonymity are better understood. As the
+engineering effort to implement the specification into a robust system
+proceeds, undoutedly the researchers associated or inspired by this
+project will try to shine some light on the open questions above.
 
 We invite interested developers to join the {\tt mixminion-dev}
 mailing list \cite{mixminion-dev} and examine the more detailed Mixminion
