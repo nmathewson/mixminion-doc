@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.5 2003/06/26 03:02:34 nickm Exp $
+$Id: dir-spec.txt,v 1.6 2003/06/26 03:20:07 nickm Exp $
 
 				Mix3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -627,7 +627,9 @@ A.2. Generating paths
    Next, the client picks the exit server (if not using a SURB).  If
    the last entry of the second path specifier is ANY, the client
    chooses an element at random from among those 'preferred' server
-   descriptors that support delivery to the exit address.
+   descriptors that support delivery to the exit address, trying to
+   avoid any sequence of two consecutive server descriptors with the
+   same nickname.
 
    Finally, the client picks servers for each of the 'ANY' server
    specifiers.  The client picks 'preferred' server descriptors at
