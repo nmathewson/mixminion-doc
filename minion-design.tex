@@ -21,7 +21,6 @@
 %\fi
 
 \begin{document}
-%\setstretch{2.0}
 
 %% Use dvipdfm instead. --DH
 %\ifpdf
@@ -30,7 +29,7 @@
 %  \pdfpageheight=\the\paperheight
 %\fi
 
-\title{The Mixminion Anonymous Remailer}
+\title{Mixminion: Type III Anonymous Remailer Design}
 \author{George Danezis\inst{1} \and Roger Dingledine\inst{2} \and David Hopwood\inst{3}
         \and Nick Mathewson\inst{2}}
 \institute{Cambridge
@@ -50,9 +49,10 @@ Independent consultant
 We describe a packet-based anonymous remailer protocol that supports
 secure single-use reply blocks and includes link-level encryption to provide
 forward anonymity. We describe designs for directory servers and nymservers,
-and discuss their anonymity implications. We include justification
-for various design decisions and a detailed description of attacks and
-defenses. And some other stuff.
+and discuss their anonymity implications.
+% We include justification
+%for various design decisions and a detailed description of attacks and
+%defenses. And some other stuff.
 
 \end{abstract}
 
@@ -78,29 +78,27 @@ The Mixminion project aims to deploy a cleaner updated remailer design
 in the same spirit as Mixmaster, with the goals of expanding deployment,
 documenting our design decisions and how well they stand up to all known
 attacks, and providing a research base for experimental features. We
-describe our overall design in Section \ref{sec:design}, including two
-designs for a new primitive called a \emph{single-use reply block}
+describe our overall design in Section \ref{sec:design}, including
+a new primitive called a \emph{single-use reply block}
 (SURB).  Mixmaster provides no support for replies, instead relying
 on the older and less secure cypherpunk Type I remailer design
 \cite{remailer-history}. By integrating reply capabilities into
 Mixminion, we can finally retire the Type I remailer network.
 
-We go on in Section \ref{sec:dir-servers} to describe a design for
-Directory Servers to track and distribute remailer availability,
-performance, and key information, and then describe in Section
-\ref{sec:nymservers} how to build higher-level systems such as nymservers
-using SURBs. We introduce link-level encryption with ephemeral keys to
-ensure forward anonymity for each message. We also provide flexible
-delivery schemes --- rather than just allowing delivery to mail or
-Usenet, we allow designers to add arbitrary modules to handle incoming
-and outgoing messages. 
-By separating the core mixing architecture from these
-higher-level modules, we can limit their influence on the anonymity
-properties of the system.
+We introduce link-level encryption with ephemeral keys to ensure forward
+anonymity for each message. We also provide flexible delivery schemes ---
+rather than just allowing delivery to mail or Usenet, we allow designers
+to add arbitrary modules to handle incoming and outgoing messages. By
+separating the core mixing architecture from these higher-level modules,
+we can limit their influence on the anonymity properties of the system. We
+go on in Section \ref{sec:dir-servers} to describe a design for directory
+servers to track and distribute remailer availability, performance,
+and key information, and then describe in Section \ref{sec:nymservers}
+how to securely build higher-level systems such as nymservers using SURBs.
 
 Mixminion aims to be a best-of-breed remailer that uses conservative
 design approaches to provide security against most known attacks.
-Many of our design decisions impacted anonymity in surprising ways. Herein
+Many of our design decisions impact anonymity in surprising ways. Herein
 we document and analyze some of these influences to provide more intuition
 to developers and users.
 
@@ -190,75 +188,84 @@ be used, and specify maximum latency. Ongoing research on more powerful
 reputation systems includes a reputation system for free-route networks
 \cite{mix-acc} and another for MIX cascades \cite{casc-rep}.
 
-% maybe add a subsection on nymservers too?
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%\section{Goals and Assumptions}
-% covered below, at least in part.
-
-% and non-goals
-% threat models, etc
-
-%http://archives.seul.org//mixminion/dev/Mar-2002/msg00004.html
-%http://archives.seul.org//mixminion/dev/Mar-2002/msg00014.html
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Design Overview}
+\section{A MIX-net with Secure Replies}
 \label{sec:design}
 
 Mixminion aims to bring together the current best approaches for providing
 anonymity in a batching message-based MIX environment. We don't aim
 to provide low-latency connection-oriented services like Freedom
-\cite{freedom} or Onion Routing \cite{onion-routing,goldschlag99} --- while those
+\cite{freedom} or Onion Routing \cite{goldschlag99} --- while those
 designs are more effective for common activities like anonymous web
-browsing, it seems they cannot provide the level of strong anonymity of
-slower message-based services [Do we, uh, want to cite that?]. Indeed, we
-further intentionally restrict the set of options for users: we provide
-only one cipher, and we avoid extensions that would help an adversary
-divide the anonymity set.
+browsing, it seems they cannot yet provide the same level of strong
+anonymity as slower message-based services. Indeed, we intentionally
+further restrict the set of options for users: we provide only one
+cipher, and we avoid extensions that would help an adversary divide the
+anonymity set.
 
-We chose to drop backward-compatibility with Mixmaster and the cypherpunk
+Mixminion uses the same general MIX-net paradigm as previous work
+\cite{chaum-mix, mixmaster-attacks, others}. The sender Alice chooses
+a path through the network.
+% consisting of $k$ MIXes, $N_1 \dots N_k$.
+She repeatedly ``onion'' encrypts her message, starting with the last
+MIX in her path, and sends the onion to the first MIX in her path. That
+MIX processes the onion and passes the unwrapped-by-one-layer onion to
+the next MIX, and so on. We describe the behavior of the last MIX in
+Section \ref{subsec:delivery-modules}.
+
+While Mixminion protects against known \emph{traffic analysis} attacks
+(where an adversary attempts to link a given message to its sender or
+receiver \cite{jfraymond, simon}), we do not fully address \emph{traffic
+confirmation} attacks. In a traffic confirmation attack, the adversary
+treats the MIX network as a black box and observes the behavior of
+senders and receivers. Over time, he can intersect the set of senders
+and receivers who are on-line at certain times and learn who is sending
+and receiving which messages \cite{langos02}. Good dummy traffic designs
+may eventually address the intersection attack, but for now it remains
+an open problem.
+
+We choose to drop backward-compatibility with Mixmaster and the cypherpunk
 remailer systems, in order to provide a simple extensible design. At
 the same time, we provide a new feature: a reply block mechanism that
-is as secure as forward messages. Despite that in order to facilitate
-deplayment we only require the parties that benefit from anonymity 
-properties to run dedicated software to be able to communicate with 
-the remailer network. Only senders are therefore required to have special
-clients in case of forward messages, and receivers in the case of SURBs.
+is as secure as forward messages.
 
 Reusable reply blocks are security risks --- by their very nature they
 let people send multiple messages to them. These multiple messages can be
 used to very quickly trace the recipient's path: if two incoming batches
 both include a message to the same reply block, then the next hop must
-be in the intersection of both outgoing batches. For these reasons 
-mixminion only supports single use reply blocks.
+be in the intersection of both outgoing batches.
+Thus Mixminion uses single-use reply blocks to provide secure replies.
 
-One of the objectives of mixminion is to minimize the traffic analysis 
-value any compromised node could extract form passing messages. The 
-message format is such that processing is possible without leaking the
-position of the intermediary node in the chain or the total length
-of the route. Exceptions to this are exit nodes, where a route ends, 
-and in the case of the ``swap headers'' method, described below, the
-the node that performs the crossover.
+%%i will put this stuff later.
+%Parties that benefit from anonymity properties must run dedicated software
+%to be able to communicate with the remailer network; but other parties
+%do not.
+%Mixminion aims to minimize the traffic analysis value any compromised
+%node could extract from passing messages. The protocol doesn't leak
+%the position of the intermediary node in the chain or the total length
+%of the route. Exceptions to this are exit nodes, where a route ends,
+%and in the case of the ``swap headers'' method, described below, the
+%the node that performs the crossover.
 
-%Mixmaster solves the problem by not providing reply functionality,
-%and instead falling back on the less secure multiple-use reply blocks
-%provided by the type I remailer network.
+The rest of this section describes the motivation for secure replies,
+including some new attacks and how we defeat them. We also discuss using
+link-level encryption with ephemeral keys to provide forward anonymity,
+message types and modules for handling different types of messages, and
+exit policies for advertising what delivery options a node will provide.
 
-The rest of this section describes the header structure and the
-protocol for building and processing messages. In particular, we
-focus on two competing ways of providing secure reply functionality,
-and the tradeoffs and design decisions surrounding each approach. In
-the first approach, we provide a mechanism for implementing replies so
-that a reply message is indistinguishable from a forward message. Because this
-approach introduces some attacks that we cannot adequately address, we
-then propose a second approach that allows forward and reply messages
-to be distinguished but provides better overall security.
+%The rest of this section describes the header structure and the
+%protocol for building and processing messages. In particular, we
+%focus on two competing ways of providing secure reply functionality,
+%and the tradeoffs and design decisions surrounding each approach. In
+%the first approach, we provide a mechanism for implementing replies so
+%that a reply message is indistinguishable from a forward message. Because this
+%approach introduces some attacks that we cannot adequately address, we
+%then propose a second approach that allows forward and reply messages
+%to be distinguished but provides better overall security.
 
 
-\subsection{Approach one: the `header swap' method}
+\subsection{Indistinguishable replies}
 \label{subsec:header-swap}
 
 Making forwards and replies indistinguishable prevents an adversary from
@@ -362,6 +369,7 @@ link padding, he is still able to measure how much traffic is being
 transmitted.
 
 \subsection{Message types and delivery modules}
+\label{subsec:delivery-modules}
 
 Once a Mixminion packet reaches the final MIX in its path, it must be
 dropped (if it is a dummy message), or delivered to its intended
@@ -370,8 +378,8 @@ delivery, each header contains a type code for the action to be taken
 to deliver the message.  A few types--such as DUMMY, SMTP, and LOCAL
 DELIVERY--are specified as a part of the Mixminion standard.  Others
 may be added by future extensions, in order to implement
-abuse-resistant exit policies (see \ref{subsec:exitpolicies}), to
-administer nymservers (see \ref{sec:nymservers}), to publish
+abuse-resistant exit policies (see Section \ref{subsec:exitpolicies}),
+to administer nymservers (see Section \ref{sec:nymservers}), to publish
 anonymously to Usenet, or to support other protocols.
 
 % We never reached a consensus (afaik) on whether 'FORWARD' and 'DROP'
