@@ -11,9 +11,32 @@
 
 2. Email encryption: what do we do?
 
+   Proposal: SURBs include an encryption key; anonymous SURB-using
+   senders LIONESS_ENCRYPT the payload with this key before all other
+   processing.  This way, nobody but the recipient will see the
+   plaintext of the message. [For stateless SURBs, the encryption key
+   is derived from the seed like the rest of the secrets.] -NM
+
 3. Email transport exchange format.
 
+   Proposal: At the final hop, when the delivery mechanism is SMTP, we
+   proceed as follows.  If the message is a series of printable
+   characters followed by some number of NULs, assume we're
+   delivering in ASCII or ISO-foo or whatever, and send the text
+   portion of the message as an email.   (Where printable==
+   {all characters but hexadecimal 00-06,0E-1F}).  Otherwise,
+   ASCII-armor the message as in 'email transport exchange format'
+   below.
+
+   This way, plaintext forward messages are delivered as plaintext,
+   and tagged messages, reply messages, and non-plaintext messages are
+   all delivered as junk. -NM
+
 4. Stateless replies and SMTP (depends on 2 and 3, if I understand correctly)
+
+   Proposal: stateless replies put E_recipient_key(nHops | seed) as
+   the value of the LOCAL or SMTP Tag field, as suggested in my
+   comments below.  (See comments for why.) -NM
 
 5. Do we support other SSL modes for MMTP?
 
@@ -27,13 +50,23 @@
 
 7. Local delivery
 
+   XXXX
+
 8. Server descriptor rules for Local/SMTP modes.
+
+   XXXX
 
 9. When do dummy messages get generated?
 
+   XXXX
+
 10. When does link padding get generated?
 
+   XXXX
+
 11. Need to write: algorithm for processing a reply.
+
+   XXXX
 
 12. Support Diffs for directories?
 
