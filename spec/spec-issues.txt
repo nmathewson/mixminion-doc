@@ -1,4 +1,4 @@
-$Id: spec-issues.txt,v 1.1 2003/07/14 22:15:59 nickm Exp $
+$Id: spec-issues.txt,v 1.2 2003/07/24 03:33:21 nickm Exp $
 
 				MIX3:X
     Open Issues in Type III (Mixminion) Mix Protocol Specifications
@@ -22,6 +22,7 @@ Status of this Document
 Table of Contents
 
             Status of this Document                                    X
+   0.       Meta-issues
    1.       Issues in MIX3:1: 'minion-spec.txt'
    1.1.     Disposition of 'DROP' messages
    1.2.     Generation of dummy messages and link padding
@@ -50,6 +51,13 @@ Table of Contents
    4.       Unspecified components
    4.1.     Nymserver
    4.2.     Standard API
+
+0. Meta-issues
+
+   The authors lists may be incomplete.
+
+   We should add an ACKS section where we put all the people that have
+   contributed to the project.
 
 1. Issues in Mix3:1: 'minion-spec.txt'
 

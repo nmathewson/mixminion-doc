@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.8 2003/07/14 22:15:59 nickm Exp $
+$Id: minion-spec.txt,v 1.9 2003/07/24 03:33:21 nickm Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -14,21 +14,12 @@ Status of this Document
    specification for Type III remailers.  It is not a final version.
    It has not yet been submitted to any standards body.
 
-   It supersedes the old "minion-spec.tex", which was never really a
-   TeX file in the first place.  When you edit it, try to keep it
-   looking like an RFC.
+   (This draft supersedes the old "minion-spec.tex", which was never
+   really a TeX file in the first place.  When you edit it, try to
+   keep it looking like an RFC.)
 
    The organization of this document loosely follows the structure
    of RFC2440.
-
-   TODO:
-      - Resolve XXXXs, esp: 3.2.3 - 4.
-      - Describe crossover and server operations
-      - Who else to add to authors?
-      - We should add an ACKS section where we put all the people that
-         have contributed to the project.
-      - Process E2E-spec
-        - Incorporate Text-spec
 
 Abstract
 
@@ -156,7 +147,7 @@ Table of Contents
 
       4. The sender chooses a list of the mixes from step 3 to
          constitute a path through the mix-net. [Described in
-         "path-spec.txt".]
+         "E2E-spec.txt".]
 
       5. The sender successively wraps the chunk in a layer of
          encryption for each node in the chosen path, from last to
@@ -483,9 +474,10 @@ Table of Contents
 
    0x0100-0x0FFF: PREDEFINED DELIVERY TYPES.
 
-   0x0100 SMTP   [See "E2E-spec.txt"]
-   0x0101 MBOX   [See "E2E-spec.txt"]
-   0x0102 MIX2   (EMAIL ADDRESS: variable).  Type II remailer support.
+   0x0100 SMTP      [See "E2E-spec.txt"]
+   0x0101 MBOX      [See "E2E-spec.txt"]
+   0x0102 MIX2      (EMAIL ADDRESS: variable).  Type II remailer support.
+   0x0103 FRAGMENT  (Fragment to be reassembled by exit node; see E2E-spec)
 
    0x1000-0xEFFF: UNALLOCATED
 

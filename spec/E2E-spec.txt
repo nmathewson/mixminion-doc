@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.5 2003/07/14 22:15:59 nickm Exp $
+$Id: E2E-spec.txt,v 1.6 2003/07/24 03:33:21 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -13,8 +13,6 @@ Status of this Document
    This draft document ("E2E-spec.txt") describes a proposed
    specification for Type III remailers.  It is not a final version.
    It has not yet been submitted to any standards body.
-
-   TODO: See open issues section.
 
 Abstract
 
@@ -65,6 +63,8 @@ Table of Contents
    3.3.2.   Formatting: Message body
    3.3.3.   Delivery
    3.3.4.   Server descriptor section
+   3.4.     Fragments
+   3.4.1.   Server descriptor section
 
    A.1.     Appendix: Versioning and alphas
 
@@ -385,6 +385,46 @@ Table of Contents
 
    We then transmit each payload with its corresponding tag.
 
+2.2.2.1. Plaintext forward messages and fragments
+
+   We require some additional complexity to minimize the time in which
+   the destination of a plaintext forward fragmented message is
+   decrypted in remailer's storage.
+
+   Unlike encrypted forward and reply fragmented messages, which are
+   delivered packet-by-packet to their recipients, plaintext forward
+   fragmented messages are reassembled by an exit node before
+   delivery.  (We cannot require that their recipients reassemble
+   them, since we assume that the recipient of a plaintext forward
+   message may not be running any anonymity software.)
+
+   Having exit nodes reassemble fragments introduces two problems:
+
+      1) Because the exit node must hold fragments until they can be
+         reassembled, an attacker can attempt to exhaust the exit
+         node's resources by flooding it with fragments for messages
+         that never arrive.
+
+      2) Because the recipient of a type III packet is encoded in its
+         final subheader, an attacker who compromises a type III
+         remailer can read the identities of all the users who have
+         pending plaintext forward messages.
+
+   We specify a solution to 2 here.  When generating plaintext forward
+   fragmented messages, the message generator uses a routing type of
+   "FRAGMENT" (0x0103), an empty routing into, and prepends the
+   following fields to the message body before fragmenting it:
+
+         RS Routing size    2 octets
+         RT Routing type    2 octets
+         RI Routing info    (variable length; RS=Len(RI))
+    (These fields are as described in minion-spec.txt.)
+
+    Thus, the destination of a message is not retrievable by the exit
+    node until enough fragments have been received to decrypt the
+    message itself.  In this way, we minimize the window in which the
+    identity of a recipient is visible to the exit node.
+
 2.2.3.   Generating encrypted forward messages
 
    To send an encrypted forward message M to a user with an RSA public
@@ -555,6 +595,39 @@ Table of Contents
    alert the user and require explicit confirmation before
    decompressing the message.
 
+2.3.3. Reconstruction issues
+
+   When a server receives a plaintext forward packet containing a
+   fragment of a message, it should behave as follows:
+      
+      - If the server does not support reconstruction, or if the hash
+        of the packet is invalid, it drops the packet.
+
+      - From the declared message size of the message, it calculates
+        the number of packets it expects.  If this number is higher
+        than the maximum number of packets the server is willing to
+        construct, it drops the packet.  
+
+      - If the server has already logged this message ID as finished,
+        it drops the packet.
+
+      - If the server has other packets with this message ID, and
+        those packets have a different message size, it drops all
+        packets with this message ID and logs this message ID as
+        finished.  If the server encounters multiple packets with the
+        same message ID and packet index, it drops all packets with
+        that message ID, and marks the message ID as finished.
+
+      - The server stores this packet pending reconstruction.  If
+        enough packets are held for this message ID to reconstruct
+        the message, the server reconstructs the message (as
+        described below), delivers it, deletes all fragment packets
+        for this message ID, and marks the message ID as finished.
+
+   To prevent denial of service attacks, a server MAY delete old
+   fragments when it is low on disk space.  [XXXX is this the best
+   approach?]
+
 3. Delivery
 
    This section describes the standard message delivery types provided
@@ -581,11 +654,15 @@ Table of Contents
    of "Decoding-handle".  Otherwise, the "Decoding-handle" header
    MUST be omitted.
 
+   [XXXX remove this -- it's no longer accurate.  We require that exit
+   nodes reconstruct fragments now.
+
    When encountering a plaintext fragment, an exit node that does not
    support message reconstruction, or that is not willing to
    reconstruct a message of the given size, SHOULD deliver the
    fragment as-is, with armor described above, and "Message-type" set
    to "fragment".
+   XXXX remove]
 
    When encoding a plaintext Type III message, exit nodes MAY apply
    OpenPGP ASCII armor if the message contains characters other than
@@ -724,11 +801,12 @@ Table of Contents
    Servers that support MBOX delivery MAY include a [Delivery/MBOX]
    section, containing the entry "Version: 1.0".  Other servers
    MUST NOT include a [Delivery/MBOX] section.
-   
+
    If the server supports message reconstruction, the section MAY
    include a "Maximum-size" line, containing the maximum permitted
-   message size in KB (before compression).
-
+   message size in KB (before compression). [XXXX is "before"
+   reasonable?]
+   
 3.3. SMTP
 
    The routing type 0x100 corresponds to SMTP (email) delivery.
@@ -776,11 +854,24 @@ Table of Contents
    Servers that support SMTP delivery MAY include a [Delivery/SMTP]
    section, containing the entry "Version: 1.0".  Other servers
    MUST NOT include a [Delivery/SMTP] section.
-   
+
    If the server supports message reconstruction, the section MAY
    include a "Maximum-size" line, containing the maximum permitted
    message size in KB (before compression). [XXXX is "before"
    reasonable?]
+   
+3.4. Fragments
+
+3.4.1. Server descriptor section
+
+   When a server supports message reconstruction, it MAY include a
+   "[Delivery/Fragmented]" section as described here.  Other servers
+   MUST NOT include a "[Delivery/Fragmented]" section.
+
+   The section, if present, MUST contain a 'Version' entry, with the
+   value "1.0".  It also MUST contain a "Maximum-Fragments" line,
+   containing the maximum size (in fragments) of a message that the
+   server is willing to reconstruct.
 
 A.1. Apendix: versioning and alphas
 

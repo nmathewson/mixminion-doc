@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.8 2003/07/14 22:15:59 nickm Exp $
+$Id: dir-spec.txt,v 1.9 2003/07/24 03:33:21 nickm Exp $
 
 				Mix3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -13,11 +13,6 @@ Status of this Document
    This draft document ("dir-spec.txt") describes a proposed
    specification for Type III Remailers.  It is not a final version.
    It has not yet been submitted to any standards body.
-
-   TODO:
-      - See open issues section
-      - Resolve XXXXs
-      - Final directory operation.
 
 Abstract
 
