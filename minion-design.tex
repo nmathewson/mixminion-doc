@@ -1612,8 +1612,8 @@ We can use retransmission strategies or forward error
 correction codes to recover if some messages are lost.
 \item Can we keep the indistinguishability of forward messages and
 replies using a simpler design? We need to prove that our design provides
-unlinkability between the input bit-patterns of messages and the messages
-coming out of the network (\emph{bit-wise unlinkability}).
+\emph{bit-wise unlinkability} between the input bit-patterns of messages
+and the messages coming out of the network.
 \item Currently, reply messages can be distinguished from plaintext forward
 messages at the exit nodes: the former exit as encrypted data, and the
 latter do not.  We prevent further partitioning by arranging 
@@ -1621,16 +1621,16 @@ encrypted forward messages to blend in with the reply messages, but even this
 degree of distinguishability is unsettling.  Finding further means to
 mitigate this problem would be helpful.
 \item A \emph{synchronous batching} approach, where messages have
-deadlines at each hop, may allow easier anonymity analysis, and may
+deadlines for each hop, may allow easier anonymity analysis, and may
 provide much larger anonymity sets because all messages entering the
 mix-net in a given time interval are mixed together. A cascade is the
 simplest example of this approach, but we should consider mechanisms for
 free-route synchronous mixes. We could greatly improve our protection
 against message delaying attacks and the partitioning attacks discussed
-in Section \ref{subsec:replay}. On the other hand, the cost is greater
+in Section \ref{subsec:replay}. On the other hand, the costs are greater
 network synchronization and overhead, and less mix operator flexibility.
 \item We need stronger intuition about how to use dummy messages. Such
-messages can be inserted either between nodes as link padding, or as
+messages can be inserted between nodes as link padding, or as
 actual multi-hop Mixminion messages. We must develop a more analytically
 justified approach to determine which parties send dummy messages, how many
 they send, and when they send them.
@@ -1639,14 +1639,15 @@ they send, and when they send them.
 \quad While many people have speculated about the benefits of dummy traffic,
 we have not yet seen any convincing analysis. For this reason, while
 Mixminion is flexible enough to support them, we plan to leave dummies
-out of the current design (other than their minimal use in Section
+out of the design (other than their minimal use in Section
 \ref{subsec:batching}) until their effects on anonymity are better
 understood.
 \end{itemize}
 
 We have working code which implements most of the designs described in this
-paper, with acceptable performance (approximately 1.2 MB of messages per
-second on an 800MHz Pentium-III desktop).  We invite interested developers to
+paper, with acceptable performance even using 2048 bit RSA keys
+(800KB of messages per second on a 1GHz Athlon).
+We invite interested developers to
 join the {\tt mixminion-dev} mailing list and examine the more detailed
 Mixminion specification \cite{mixminion-spec}.
 
@@ -1659,7 +1660,7 @@ particularly Len Sassaman, Scott Renfro, Peter Palfrader, Ulf M\"oller,
 Lance Cottrell, and Bram Cohen, to improve the Type II remailer protocol;
 their effort was abandoned in favor of Mixminion.
 
-Susan Born, Lucky Green, David Hopwood, David Mazieres, Peter Palfrader,
+Susan Born, Lucky Green, David Hopwood, David Mazi\`{e}res, Peter Palfrader,
 Len Sassaman, Andrei Serjantov, Robyn Wagner, and Bryce ``Zooko'' Wilcox-O'Hearn
 provided helpful design discussions, editing, and suggestions. We further
 thank all the unnamed cypherpunks out there who have worked on remailer
