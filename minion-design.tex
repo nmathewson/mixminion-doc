@@ -35,20 +35,13 @@
 
 \title{Mixminion: Design of a Type III Anonymous Remailer Protocol}
 
-% Removed for anonymous review
-% 
-%\author{George Danezis\inst{1} \and Roger Dingledine\inst{2} \and David Hopwood\inst{3}
-%        \and Nick Mathewson\inst{2}}
+%\author{George Danezis\inst{1} \and Roger Dingledine\inst{2} \and Nick Mathewson\inst{2}}
+\author{George Danezis \and Roger Dingledine \and Nick Mathewson}
 %\institute{Cambridge University
 %\email{\emailaddr{george.danezis@cl.cam.ac.uk}}
 %\and
 %The Free Haven Project
-%\email{\emailaddr{{arma,nickm}@freehaven.net}}
-%\and
-%Independent consultant
-%\email{\emailaddr{david.hopwood@zetnet.co.uk}}}
-\author{...}
-%\institute{}
+%\email{\emailaddr{{arma,nickm}@freehaven.net}}}
 
 \maketitle
 \pagestyle{plain} 
@@ -100,7 +93,7 @@ vulnerable to replay attacks. We introduce a new primitive called a
 \emph{single-use reply block} (SURB), which makes replies as secure as
 forward messages. Our design goes a step further: in Mixminion the remailers
 themselves cannot distinguish reply messages from forward messages. We also
-describe how use these SURBs to securely build higher-level systems such as
+describe how to use these SURBs to securely build higher-level systems such as
 nymservers. By integrating reply capabilities into Mixminion, we can finally
 retire the Type I remailer network.
 
@@ -169,7 +162,10 @@ improve anonymity.
 We review mixes and mix-nets in Section \ref{sec:background},
 describe our goals and assumptions in Section \ref{sec:assumptions},
 and then address the above list of improvements in Sections
-\ref{sec:design}-\ref{sec:nymservers}. We conclude with a summary of
+\ref{sec:design}-\ref{sec:nymservers}. We then summarize how our design
+stands up to known attacks, and conclude with a list of open problems.
+
+ We conclude with a summary of
 how our design stands up to known attacks, and a list of future work.
 
 %The Mixminion Project aims to deploy a cleaner remailer design
@@ -440,7 +436,7 @@ We choose to \emph{drop packet-level compatibility with Mixmaster} and the
 Cypherpunk remailer systems in order to provide a simple extensible
 design. We can retain minimal backwards compatibility by ``remixing'' Type II
 (Mixmaster) messages inside Type III (Mixminion) messages, thus increasing
-anonymity sets in the Type III network. (A Type II messages traveling between
+anonymity sets in the Type III network. (A Type II message traveling between
 backward-compatible Type III remailers is treated as plaintext, encrypted to
 the next remailer in the chain using its Type III key, and sent as a Type III
 encrypted message.  The recipient decrypts it to reveal the Type II
@@ -835,7 +831,7 @@ messages;\footnote{
   so even if the adversary tags a subset of the messages he doesn't know
   (unless he owns the whole cascade) the groupings of tagged messages.
 }
-to match a tag signature with certainty an adversary would
+to match a tag signature with certainty, an adversary would
 have to own all $k$ crossover points.  (And even then, it seems harder
 as the subsets of her messages would overlap with subsets of
 messages from other senders.)
