@@ -1,6 +1,54 @@
 \title{Type III (Mixminion) MIX Protocol Specifications}
 
+\section{UNRESOLVED ISSUES}
+
+[All of these are mentioned in more detail below.]
+
+1. Is there any reason for the RECEIVED ack in MMTP?
+1.5. Is the 'BAD SHA1' nak in MMTP acceptable?
+
+   Proposal: keep them both. -NM
+
+2. Email encryption: what do we do?
+
+3. Email transport exchange format.
+
+4. Stateless replies and SMTP (depends on 2 and 3, if I understand correctly)
+
+5. Do we support other SSL modes for MMTP?
+
+   Proposal: server-to-server connections must use DHE/RSA/AES128/SHA1, 
+   but we allow clients to connect with RSA/AES128/SHA1 and
+   RSA/3DES/SHA1.  -NM
+   
+6. How often do/must we rehandshake?
+
+   Proposal: see note in text. -NM
+
+7. Local delivery
+
+8. Server descriptor rules for Local/SMTP modes.
+
+9. When do dummy messages get generated?
+
+10. When does link padding get generated?
+
+11. Need to write: algorithm for processing a reply.
+
+12. Support Diffs for directories?
+
+    Proposal: not until later. -NM
+
+13. Do we change directories to XML?  What about descriptor blocks?
+
+    Proposal: Use XML for both. That's what it's there for. -NM
+
+14. Sensible support for multiple directory servers.
+
+    Proposal: save for for later. -NM
+
 \section{Message Format}
+
 
 \subsection{Overview}
 
@@ -23,10 +71,7 @@ with the smallest building block.
 
 - PAD(M,L) (L bytes) pads the message M (Len(M) <= L) to length L
   using zeroes.
-- H(M) (20 bytes) is the SHA-1 hash of M (* bytes).
-[XXXX dangerous -- later you use H as a header. Perhaps use HASH
-  and KHASH? In any case we need to put the keyed-hash-function
-  from Lioness into this primitives section too. -RD]
+- HASH(M) (20 bytes) is the SHA-1 hash of M (* bytes).
 - PK_Encrypt(K,M) (128 bytes) The RSA-encryption of a header M 
   using the public key K.  M is padded using RSA-OAEP, and encoded
   with PKCS1.
@@ -50,14 +95,14 @@ with the smallest building block.
   Thus, SPRP_ENCRYPT(K1,K2,K3,K4,M) is computed as follows:
             L := M[0:20]
             R := M[20:len(M)-20]
-            R := ENCRYPT( H(K1 | L | K1)[0:16], R)
-            L := L xor H(K2 | R | K2)
-            R := ENCRYPT( H(K3 | L | K3)[0:16], R)
-            L := L xor H(K4 | R | K4) 
+            R := ENCRYPT( HASH(K1 | L | K1)[0:16], R)
+            L := L xor HASH(K2 | R | K2)
+            R := ENCRYPT( HASH(K3 | L | K3)[0:16], R)
+            L := L xor HASH(K4 | R | K4) 
             return L | R
 
   For convenience, we write SPRP_ENC(SK,P,M) to denote:
-       LIONESS_ENCRYPT(K1,K2,K3,K4,M)
+       SPRP_ENCRYPT(K1,K2,K3,K4,M)
        where K=HASH(SK | P)
              K1 = K
              K2 = K xor 0x00...01
@@ -67,7 +112,7 @@ with the smallest building block.
 - SPRP_DECRYPT(K1,K2,K3,K4,M) (Len(M) bytes) Inverts SPRP_ENCRYPT.
 
   We also define SPRP_DEC(K,P,M) as the inverse of SPRP_ENC.
-    
+
 RSA encryption and decryption is used with OAEP padding, using the
 mask function MGF1 and hash function SHA1.  The security parameter (P
 in the OAEP spec) is set to be the hash of the following 84-character
@@ -299,9 +344,7 @@ random padding to achieve a total size
 of 128*16 bytes. Then, each subheader key is used to create a key
 Hash(SharedSecret, ``HEADER SECRET KEY'') with which the part of the
 header after the subheader (but including its routing extension) is
-encrypted using the stream cipher. 
-[XXXX not a stream cipher. Encrypt()? -RD]
-[XXXX Encrypt _is_ a stream cipher, but we should be specific. -NM]
+encrypted using counter-mode AES.
 
 (In practice, we must construct the subheaders serially, from last to
 first, so that each can contain a digest of the subsequent subheaders
@@ -318,49 +361,28 @@ Output: H (The header)
 Process: 
   // Calculate the sizes of the subheaders
   for i = 1 .. N
-	SIZE_i = Len(ESHS(PK_i, V, SK_i, Z(20), Z(1), 0, 0, RT_i))
-[XXXX                                           Z(2)?    RT_i, 0?
-  I'm not sure how to initialize these. Bigger picture, why not just
-  say 128? -RD]
-                    + Len(EXT(RI_i))
+	SIZE_i = 128 + Len(EXT(RI_i))
 
   // Calculate the Junk that will be appended during processing:
   J_0 = ``'';
   for i = 1 .. N
-	J_i = ( J_(i-1) | PRNG(HASH(SK_i, ``RANDOM JUNK'')[0:16], SIZE_i)
-	J_i = J_i XOR PRNG(HASH(SK_i, ``HEADER SECRET KEY''),
-  		128*16)[128*15 -Len(J_i) + SIZE_i:Len(J_i)];
-[XXXX                       16? -RD]
-[XXXX  From the source:
+	J_i = J_(i-1) | PRNG(HASH(SK_i, ``RANDOM JUNK'')[0:16], SIZE_i)
 
-        # Node i encrypts starting with its first extended subheader.  By
-        #   the time it reaches the junk, it's traversed:
-        #          All of its extended subheaders    [(size-1)*128]
-        #          Non-junk parts of the header      [HEADER_LEN-len(nextJunk)]
-        #
-        # Simplifying, we find that the PRNG index for the junk is
-        #    HEADER_LEN-len(lastJunk)-128.
+        Stream_i = PRNG(HASH(SK_i, ``HEADER SECRET KEY''), 128*16);
 
-      So we have 128*16 - len(J_(i-1)) - 128 =
-                = 128*15 - len(J(i) | PRNG(..., SIZE_i)
-                = 128*15 - len(J_i) - SIZE_i.
-
-      Hm.  There seems to be a sign difference here.
-                                                     -NM ]
-
-
+	J_i = J_i XOR Stream_i[128*15 -Len(J_i) + SIZE_i:Len(J_i)];
   end
 
   // Create the Header
   H_(N+1) = Rand(128*16 - sum(SIZE_1 .. SIZE_N));
 
   for i = N .. 1
-	K = HASH(SK_i, ``HEADER SECRET KEY'')[0:16];
+	K = HASH(SK_i | ``HEADER SECRET KEY'')[0:16];
 	IF i = N (set appropriate routing type and A_i)
 	EH = EXT( RI_i )
-        REST = Encrypt(K, (EH || H_(i+1)))
-  	DIGEST = HASH( REST | J_i )
-	H_i = ESHS(PK_i, V, SK_i, DIGEST, F, len(RI_i), RT_i, RI_i) || REST
+        REST = Encrypt(K, (EH | H_(i+1)))
+  	DIGEST = HASH(REST | J_i)
+	H_i = ESHS(PK_i, V, SK_i, DIGEST, F, len(RI_i), RT_i, RI_i) | REST
   end
 
 return H_1;
@@ -437,15 +459,6 @@ Process:
 	            P = SPRP_ENC(SK2_i, "PAYLOAD ENCRYPT", P)
 		end
         else
-           [ XXXX what do we use for H2 if we're not using a reply
-	           block? -NM ]
-	   [ XXXX The above processing is only happening if it is NOT
-	a reply block. Otherwise it is impossible to know the keys
-	SK2_i. For a reply block there is no other processing]
-           [ XXXX Ah!  Perhaps, then, there should be a third
-	          procedure that breaks down the relationship between
-                  ``Construct a message'' here and ``create a single header''
-                  above. -NM]
 	// Phase 2
 	H2 = SPRP_ENC(SHA1(P), ``HIDE HEADER'', H2)
 
@@ -463,10 +476,10 @@ PK receiving message M = (H1, H2, P) performs the following operations:
 PROCEDURE: Process a message M
 	SHS(V, SK, D, RS, RT, RI) = PK_Decrypt(PK,H1[0:128]);
         If there is any problem with the OAEP padding discard the message.
-        Check that D = H(H1[128:15*128]), and discard if not.
+        Check that D = HASH(H1[128:15*128]), and discard if not.
         Let n_extra = number of extended headers = Ceil( (RS-44) / 128 )
                   
-        H1 = H1[128:15*128] | PRNG(HASH(SK, "RANDOM 
+        H1 = H1[128:15*128] | PRNG(HASH(SK | "RANDOM 
                                                JUNK")[0:16],128+128*n_extra)
 	H1 = H1 XOR PRNG(HASH(SK, "HEADER SECRET KEY")[0:16], Len(H1))
         RI = RI | H[0:128*n_extra]
@@ -483,20 +496,6 @@ PROCEDURE: Process a message M
 	   	Put (H1, H2, P) in queue to be sent to the address in RI.
         Otherwise:
 		Give (RT, RI, HASH(SK,``APPLICATION KEY''), P) to
-[XXXX what use could hashing it first be? too dangerous to give SK
-  directly? -RD]
-[XXXX I feel that the application ca if it is dumb screw the
-                anonymity, but is we do not give it the ``raw''
-                secrets, then we could avoid the most obvious
-                abuses. Therefore we provide HASH(SK,``APPLICATION
-                KEY'') as a shared key, which is not used anywhere
-                else, and that cannot derive any other keys used in
-                the anonymization layer. -GD] 
-[XXXX I agree with George.  If the application were braindamaged and
-      leaked some of SK, the current node would not provide
-      anonymity.  But if the application only leaked HASH(SK,
-      'APPLICATION KEY'), the Mixminion layer would have already
-      anonymized the packet up to the application layer. -NM]
 		
 Module manager. 
 
@@ -533,16 +532,14 @@ Binary Format:
   use as an exit point.
 * Use-by-Date: indicated the expiry date the SURB should be used by. Can
   be calculated using the key rotation frequencies of the intermediate
-  nodes.
-   [ XXXX Units? If we're too fine-grained, people may use this to
-     leak info.  If we're too course-grained, we can't move to a
-     tighter schedule later on.  -NM]
-   [ XXXX Should we have it in days since a magic date? -GD]
-   [ XXXX We haven't yet settled on a standard granularity.  A
-      synchronous scheme practically needs finer grains.  I suggest
-      that we go for seconds, but require that seconds be aligned to
-      the first second of a day. -NM]
-  
+  nodes.  This field must be given as a number of seconds since
+  midnight GMT on Jan 1, 1970--but must be aligned to the start of a
+  day (in other words, it must be divisible by 60*60*24).
+  (Misaligned dates must be rejected as invalid.)
+
+  (Rationale: a seconds-level granularity allows us to move to a
+  tighter schedule later on in order to support a synchronous mixnet.)
+
 * SURB data: Containst the SURB that is created as described
   above. 
 
@@ -599,7 +596,7 @@ be replayed. To do this a hash of the secret contained in the
 subheader is kept for as long as the public key under which it was
 encrypted is in use. The Hash should be computed in the following way:
 
-X = H(SharedSecret, ``REPLAY PREVENTION'')
+X = HASH(SharedSecret | ``REPLAY PREVENTION'')
 
 The value X is not secret, and its secrecy should not be relied upon.
 The integrity of the list should be secured and the X values lists may
@@ -661,6 +658,14 @@ before we suspend a session. -NM]
 connection is dropped. Notice that re-keying does not involve any
 Public key operations. Doing it every 5 minutes is good enough, or
 even doing it when there is not much other traffic. -GD]
+[XXXX
+ Proposal: When A is done sending a batch of messages, _A_ initiates a
+   re-keying operation and then suspends the session.  B allows
+   session resumption later on only if 1) less than 120 seconds have
+   passed, or 2) A re-keyed immediately before suspending.
+
+   This way, no key that has been used to send messages can be used
+   after 120 seconds to send messages again. -NM]
 
 Protocol outline: (Portions marked with '*' are normative; other
 portions are non-normative descriptions of TLS.)
@@ -678,29 +683,21 @@ portions are non-normative descriptions of TLS.)
   key has been established. All communications are then encrypted
   using this session key.
 
-* A sends "PROTOCOL 1.0", NL.  This indicates the highest protocol
+* A sends "PROTOCOL 1.0", CRLF.  This indicates the highest protocol
   version A supports.
-[XXXX This seems to imply that MMTP implementations must stay
-  backward compatible forever, or at least implement a contiguous set 
-  of versions.  Is this really so? -NM]
-[XXXX On further thought, this situation is unacceptable.  I think that 
-  A must send a comma-sepaarated list of protocol versions.  Here's
-  why:
-        Suppose that we've published protocols 1.0, 1.1, and 1.2.  Suppose
-  that 1.2 is better than 1.0, and 1.1 has turned out to be horribly 
-  insecure.  A client should be able to say ``PROTOCOL 1.0,1.2'' so
-  that it can cleanly refuse to support 1.1. -NM] 
-[XXXX BTW, is NL 'LF' or is it 'CRLF'? -NM]
+
+  (Future clients that support more protocols should transmit
+   "PROTOCOL", a list of comma-separated protocol versions, and a CRLF.)
 
 * If B is not willing to use any protocol A supports, B closes the 
   connection.
 
-  B sends "PROTOCOL 1.0", NL.  This indicates B's choice of protocol.
+  B sends "PROTOCOL 1.0", CRLF.  This indicates B's choice of protocol.
 
   If A is not willing to support B's choice, A closes the connection.
 
-* A sends "SEND", NL, M, H(M,"SEND") (5 + 32k + 20 bytes)
-* B sends "RECEIVED", NL, H(M,"RECEIVED") (9 + 20 bytes)
+* A sends "SEND", CRLF, M, HASH(M|"SEND") (6 + 32k + 20 bytes)
+* B sends "RECEIVED", CRLF, HASH(M|"RECEIVED") (10 + 20 bytes)
 
 [XXXX Roger was wondering: what is the purpose of the RECEIVED ack? If
    the server goes away without warning, SSL will tell us. -NM]
@@ -708,7 +705,7 @@ portions are non-normative descriptions of TLS.)
 [XXXX proposal to allow link-level padding:
 
   If the hash sent from A to B is incorrect, B instead sends
-          "BAD SHA1", NL, H(M,"BAD SHA1"), (9+20 bytes).
+          "BAD SHA1", CRLF, HASH(M|"BAD SHA1"), (9+20 bytes).
 
   (We provide this option in order to support link-level padding.  If
   B did not send a hash of the incorrect message, a passive adversary
@@ -755,8 +752,6 @@ Key: Value
 
 Key: Value
 Key: Value
- That
- Spans a few lines.
 
 [Section2]
 Key: Value
@@ -764,7 +759,7 @@ Key: Value
 
 [XXXX For configuration files, we should allow a broader format.  It
   should allow '=' and ' ' as synonyms for ':'.  It should also allow
-  comments preceded with '#'. -NM]
+  comments preceded with '#', and line continuations as in RFC 822. -NM]
 
 \subsection{Syntax}
 
@@ -776,27 +771,25 @@ Key: Value
                   of Y.
             X|Y: Either an occurrence of X, or an occurence of Y.)
 
-Descriptor = NL* Beginline Section* Endline NL*
+Descriptor = CRLF* Beginline Section* Endline CRLF*
 
-Beginline = '-----BEGIN ' Doctype '------' NL+
+Beginline = '-----BEGIN ' Doctype '------' CRLF+
 
-Endline = '-----END ' Doctype '------' NL+
+Endline = '-----END ' Doctype '------' CRLF+
 
 Doctype = (<any printable character but '-'>)+
 
 Section = SectionLine EntryLine*
 
-SectionLine = '[' Word ']' NL+
+SectionLine = '[' Word ']' CRLF+
 
-EntryLine = Word ':' (' ' | '\t')+ Data ContinuationLine* NL+
+.EntryLine = Word ':' ' ' Data CRLF+
 
 Word = (<Any printable, non-space character but ':'>)+
 
-Data = (<any character but NL>)*
+Data = (<any character but CR or LF>)*
 
-ContinuationLine = (' ' | '\t')+ Data NL
-
-[XXXX Again, NL = '\n', or NL = '\r\n'?? -NM]
+CRLF = CR LF
 
 \section{Mixminion descriptor blocks}
 
@@ -804,7 +797,6 @@ This section describes the format of server descriptors, as uploaded
 to and downloaded from directory servers.  A server descriptor is a
 promise, by a MIX's administrators, to provide a given set of
 services, keys, and exit policies over a set period of time.
-
 
 'Doctype' above must be 'Mixminion Server'.  It must begin with a
 'Server' section.  This section includes the entries:
@@ -817,7 +809,6 @@ services, keys, and exit policies over a set period of time.
          this Descriptor block.
      'Identity': The modulus of this Mix node's long-term signing key,
          represented in ASN.1, and encoded in BASE64.  Whitespace in
-[is ASN.1 better than PEM? -RD]
          this field is ignored, to allow the key to span multiple
          lines.  The modulus of this key should be at least 2048 bits
          long.  The exponent of this key must be 65535.
@@ -825,7 +816,6 @@ services, keys, and exit policies over a set period of time.
 	 Clients should at least give a warning if the identity key of
          any server should ever change. [XXXX Write more in section
          about directory servers. -NM]
-     'Digest': The digest of this server block.  See below.
      'Signature': The signed digest of this block.  See below.
      'Valid-After': A date, in the form 'DD/MM/YYYY'.  After midnight GMT
          on this date, this server must support the operations listed
@@ -838,14 +828,14 @@ services, keys, and exit policies over a set period of time.
      'Comments': Human-readable information about this server.  Must
          be <1024 bytes long.  It *must not* be necessary to read this
          information to use the server properly.
-     'Packet-Key': A BASE64-encoded modulus used to encode subheaders
-         intended for this server.
+     'Packet-Key': The public key used to encode encode subheaders for
+         this server, encoded in ASN.1, represented in BASE64. 
 
-The digest of a descriptor block is computed by zeroing out the digest
-and signature fields, and computing the SHA-1 digest of the result.
-The signed digest is the OAEP/PCKS1 signature of the digest with the
-server's identity key.  Both of these values are represented in BASE64,
-with whitespace allowed.
+The digest of a descriptor block is computed by removing the contents
+of the signature field, and computing the SHA-1 digest of
+the result.  The signed digest is the OAEP/PCKS1 signature of the
+digest with the server's identity key.  This values is
+represented in BASE64.
 
 If this server accepts incoming MMTP connections, it must have an
 'Incoming/MMTP' section, with the following entries:
@@ -853,13 +843,15 @@ If this server accepts incoming MMTP connections, it must have an
      'MMTP-Descriptor-Version': The string '1.0'
      'Port': A port at which IP accepts incoming MMTP connections.
      'Key-Digest': The KEYID of this server, encoded in BASE64.
-
-[XXXX Should we include MMTP versions here? -NM]
+     'Protocols': A comma-separated list of the protocols this
+           server accepts.
 
 If this server supports outgoing MMTP connections, it must have a
-'Modules/MMTP' section, with one entry of the form:
+'Modules/MMTP' section, with one entry each of the form:
 
       'MMTP-Descriptor-Version': The string '1.0'
+      'Protocols': A comma-separated list of the protocols this server
+           supports for outgoing connections.
 
 and any number of entries of the form:
 
@@ -874,8 +866,6 @@ An omitted mask defaults to 255.255.255.255.  An omitted portrange
 defaults to 48099 on ALLOW and 0-65535 on DENY.
 
 The entries are order-significant; the first one to match wins.
-[This is different from the earlier post, where you process each
- one. Was that accident or intent? -RD]
 
 The default policy is 'Deny: 0.0.0.0/0.0.0.0'
 
@@ -893,55 +883,63 @@ A client should ignore any sections it does not recognize, but should
 not use any service whose sections have an unrecognized descriptor
 version.
 
-[XXXX I suggest that the following section on Trust management be
-  omitted, until we figure out what we really want in the way of
-  directory service. -NM]
+\subsection{Directories and Directory servers}
 
-[XXXX
+A directory is a list of Mixminion servers which are believed to
+be operational at a given time.
 
-Trust Management: Hash of the State of the world as the mix knows it at
-        that point. This can be the hash of a whole tree:
+A directory server provides an HTTP URL for uploading server
+descriptors, an HTTP URL for downloading a directory, and a long-term
+public key (2048 bits).
 
-		           H
-             / =           |                   = \
-	Internal                               External
- /=                  =\                     /=        =\
-Logs of           Previous keys          Other Mix    ...
-Seen messages     and config +stats       Per Day
-|   |    |   |    |   |   |  ...          |   |   |
-Day Day ...  Day  ...
-1   2        x
+To upload a descriptor block, a client performs an HTTP POST request
+to the upload URL, with the server block as enclosed entity.
 
+To retrieve the directory, a client performs an HTTP GET request on
+the directory URL.
 
-Assuming that mixes talk to each other every day and some know, and
-trust, each others verification keys we create a ``headless''
-certification infrastructure. Since not all the mixes are going to
-revoke their verification keys in the same day it is possible to 
-check that the historic information (and stats) across the network has
-not been modified. (there is only the need to reveal the hashes from a
-node to the head of the tree to check the validity of the information).
+[XXXX There should be a way to request a diff of entries since a given
+time, rather than the entire directory. -NM]
 
-XXXX You are right, lets ignore it at the moment since the extensible 
-nature of the above format allows us to include it later. -GD]
+A directory takes the following form:
 
-\subsection{Directories}
+-----BEGIN Mixminion Directory-----
+Version: 1.0
+Identity: <Base64-encoded public key, in ASN.1>
+Signature: <Base64-encoded OAEP/PCKS1 signature of this document, with
+     the contents of this field removed.>
+-----BEGIN Mixminion Server-----
+ ....
+-----END Mixminion Server-----
+-----BEGIN Mixminion Server-----
+ ....
+-----END Mixminion Server-----
+-----END Mixminion Directory-----
 
-A 'directory' is a signed list of MIX nodes.  It is transmitted as a
-'Mixminion Directory' block and a list of 'Mixminion Server' blocks.
-By convention, the server blocks are sorted in ascending order by
-their Identity Moduli.
+[XXXX The nesting is getting a little nasty here.  This may be our
+   last chance to use XML.  I'm leaning this way now, but I'd
+   really like any ideas pro or con. -NM]
 
-[XXXX What's in a directory? -NM]
+Directory servers change their directories only at midnight GMT.  Any
+client which has not downloaded a directory since before midnight GMT,
+must download a fresh directory before generating any packets.
+
+A directory includes all the servers that were uploaded to the
+directory before some cutoff time the previous day, and which proved
+upon some random number of tests and probings to have a real Mixminion
+server running on them.  A directory server periodically re-tests
+the servers in its directory to make sure they have not gone down.
+
+Because of possible attacks related to accidentally or maliciously
+unsynchronized servers, we leave the presence of multiple directory
+servers for a later draft.
+
+[XXXX We need to support multiple directory servers. I propose we
+   leave this for later. -NM]
 
 \section{Statistics Information Exchange formats}
 
 [Stats, reputation, ... Roger?]
-
-Accessing directory server?
-
-Uploading blocks
-
-Signing blocks ????
 
 Receiving a reply?
 
