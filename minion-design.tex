@@ -474,7 +474,7 @@ discussion of how this approach helps protect against tagging.
 
 \begin{figure}
 \begin{center}
-\resizebox{10cm}{!}{\includegraphics{SWAP.eps}}
+\resizebox{10cm}{!}{\includegraphics{SWAP}}
 \caption{The operations required by the ``swap'' method} 
 \end{center}
 \end{figure}
@@ -876,8 +876,8 @@ messages previously sent between them. Key rotation limits the window
 of opportunity for this attack.
 
 A more complete solution to partitioning attacks may be possible by
-using the ``batch synchronous'' approach described in
-Section \ref{subsec:batching}; this will be a subject of our research.
+using the ``synchronous batch'' approach described in
+Section \ref{subsec:batching}; this is a subject for future research.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1096,8 +1096,8 @@ the attacks described in Section 4 of \cite{disad-free-routes}.
 % Should really summarise them, but I don't have time :-(
 We would like to explore a
 %One possible approach that we want to explore using Mixminion is a
-strategy called {\em synchronous batching}. This approach prevents these
-attacks even when free routes are used, and improves the
+strategy called {\em synchronous batching}. This approach seems to prevent
+these attacks even when free routes are used, and seems to improve the
 trade-off between latency and anonymity.
 
 The network has a fixed {\em batch period}, $t_\mathrm{batch}$, which is closely
@@ -1172,7 +1172,7 @@ anonymity sets of users); bandwidth considerations; reliability;
 enabling users to choose nodes that they trust; and interactions with
 the reputation system.
 
-Further analysis of is needed before we can choose a
+Further analysis is needed before we can choose a
 final network structure. Note that a planned structure, where each
 user's software follows the plan consistently when constructing
 routes, will generally be able to achieve stronger and more easily
