@@ -17,6 +17,12 @@
    plaintext of the message. [For stateless SURBs, the encryption key
    is derived from the seed like the rest of the secrets.] -NM
 
+   And for non-anonymous SURB-using senders, the mail gateway they
+   use does it for them when takes the reply block and attaches their
+   payload. -RD
+
+2b. Mail gateways. We should specify these.
+
 3. Email transport exchange format.
 
    Proposal: At the final hop, when the delivery mechanism is SMTP, we
@@ -79,6 +85,14 @@
 14. Sensible support for multiple directory servers.
 
     Proposal: save for for later. -NM
+
+15. We should write the nymserver spec too. We can keep it pretty much
+    separate from this Mixminion spec.
+
+16. We'll also want somebody from the Mixmaster crowd to go through and
+    write a "backward compatibility with Mixmaster" addendum, to specify
+    what dual Mixmaster/Mixminion servers should do when they receive a
+    given packet. (Len?)
 
 \section{Message Format}
 
@@ -375,7 +389,7 @@ SK0..SKN (and placing routing extension blocks directly after their
 respective subheaders), the header is constructed by appending 
 random padding to achieve a total size
 of 128*16 bytes. Then, each subheader key is used to create a key
-Hash(SharedSecret, ``HEADER SECRET KEY'') with which the part of the
+Hash(SharedSecret | ``HEADER SECRET KEY'') with which the part of the
 header after the subheader (but including its routing extension) is
 encrypted using counter-mode AES.
 
