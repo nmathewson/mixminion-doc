@@ -210,6 +210,13 @@ the next node's transport public key.
 [XXXX And by the way, how exactly do we compute a hash of a public
   key? What encoding do we use?  Do we just use the modulus, or must
   we include 'e' as well? -NM]
+[XXXX We can use the formats in PKCS#1 (ASN.1 format appendix) for
+  RSApublickey. It just appends the binary representations of e and
+  n. We can compute the SHA-1 of this to get a keyID. 
+
+  I think if we argree on all of the above (I do), we can close this
+  thread of comments. Is there any outstanding issue from above? 
+  -GD]
 
 A SWAP routing type tells the node to exchange headers as described below.
 
@@ -317,6 +324,14 @@ ok -GD]
       Am I missing something? -GD]
 [XXXX For SMTP delivery, the tag is included in an 'X-Remailer-Tag'
       header; see above. -NM]
+[XXXX As I had it in my mind there would be two subheaders at the end
+         of the message: one with SMTP and one with LOCAL. The SMTP
+         tag would make the last machine (other than recipient's) send
+         the mail, while the LOCAL (encrypted under the final
+         recipient) will still do the decryption and
+         decoding. Therefore the X-Remailer-Tag does not contain any
+         secrets. The packet encoded to be sent by SMTP is still a
+         valid mixminion packet (see email encoding) -GD]
 
 \subsection{The header structure}
 
@@ -652,6 +667,8 @@ MIX-to-MIX communications.
       openssl doesn't support the mentioned ciphersuite.  Nonetheless,
       it seems that NSS and GnuTLS both support it (NSS on the client
       side only), so we needn't worry. -NM]  
+[XXXX I think we should choose a suite that is widely supported and
+      strong at the same time. -GD]
 
 X.509 certificates need not be signed; instead, they must contain
 a key matching that used in the KEYIDportion of the header's routing
