@@ -395,7 +395,8 @@ Messages are composed of a header section and a payload. We divide
 a message's path into two \emph{legs}, and split the header section
 correspondingly into a main header and a secondary header. Each header
 is composed of up to 16 subheaders, one for each hop along the path.
-Each subheader contains a hash of the remainder of its header, so we can do
+Each subheader contains a hash of the remainder of its header as
+seen by the appropriate MIX, so we can do
 integrity-checking of the path (but not the payload) within each leg.
 Each subheader also contains a symmetric key, which is used to derive a
 decryption key for decrypting the rest of the message. The MIX also
@@ -871,7 +872,8 @@ security goals and on how many hashes they want to store.
 Note that this solution does not entirely solve the partitioning problem
 --- near the time of a key rotation, the anonymity set of messages will
 be divided into those senders who knew about the key rotation and used
-the new key, and those who did not.
+the new key, and those who did not.  Moreover, if keys overlap, the above
+delaying attack still works.
 Also note that while key rotation and link encryption (see Section
 \ref{subsec:link-encrypt}) both provide forward security, their protection
 is not redundant. With only link encryption, an adversary running
