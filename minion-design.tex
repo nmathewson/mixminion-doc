@@ -48,7 +48,8 @@
 
 
 \maketitle
-\pagestyle{empty} 
+\pagestyle{plain} 
+% IH2002 wants page numbers
   
 \begin{abstract}
 
@@ -106,7 +107,9 @@ anonymity for each message. We also provide flexible delivery schemes ---
 rather than just allowing delivery to mail or Usenet, we allow designers
 to add arbitrary modules to handle incoming and outgoing messages. By
 separating the core mixing architecture from these higher-level modules,
-we can limit their influence on the anonymity properties of the system. We
+we can both limit their influence on the anonymity properties of the
+system, and also extend the Mixminion network for uses other than
+anonymous email. We
 go on in Section \ref{sec:dir-servers} to describe a design for directory
 servers to track and distribute remailer availability, performance,
 and key information, and then describe in Section \ref{sec:nymservers}
@@ -252,8 +255,9 @@ and are of 128 bytes each. They contain a secret addressed
 to the node that can be used to generate padding and decrypt the rest
 of the message. They also contain the address of the next node to 
 which to message should be forwarded along with its expected signature 
-key fingerprint. In order to frustrate tagging attacks (as described later
-in the paper) the sub-header also contains a hash of the header that
+key fingerprint. In order to frustrate tagging attacks (see
+Section \ref{subsec:tagging}) the sub-header also contains a hash of
+the header that
 should be checked. 
 
 % This last paragraph assumes that the audience already knows the
@@ -288,10 +292,11 @@ messages through them.  These multiple messages can easily be used to
 trace the recipient's path: if two incoming batches both include a
 message to the same reply block, then the next hop must be in the
 intersection of both outgoing batches.  To prevent these replays,
-Mixminion therefore provides only \emph{single-use} reply
-blocks. Further, the Mixminion protocol makes reply messages
-indistinguishable from forward messages, allowing forward and reply
-messages to share the same anonymity set.
+Mixminion therefore provides only \emph{single-use} reply blocks. Since
+replies may be very rare relative to forward messages, and thus
+much easier to trace, the Mixminion protocol makes reply messages
+indistinguishable from forward messages. Thus forward and reply messages
+can share the same anonymity set.
 
 \subsection{Batching Strategy and Network Structure}
 \label{subsec:batching}
@@ -696,7 +701,8 @@ after the keys
 have been deleted, not even the
 nodes that exchange messages can decrypt or recognize messages
 that might have been intercepted on the links. This makes it
-impossible to comply with decryption notices that might be served in
+impossible to comply with decryption notices of past traffic 
+that might be served in
 some jurisdictions.  
 It also forces adversaries to 
 corrupt and control nodes in order trace
