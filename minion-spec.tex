@@ -311,6 +311,8 @@ ok -GD]
       subheader. This subheader is already encrypted under the receipients
       public keys, and therefore we do not need to reencrypt it.
       Am I missing something? -GD]
+[XXXX For SMTP delivery, the tag is included in an 'X-Remailer-Tag'
+      header; see above. -NM]
 
 \subsection{The header structure}
 
@@ -642,6 +644,10 @@ MIX-to-MIX communications.
       implementations? -NM]
 [XXXX Since we define mixminion now I do not think that we will find
       ``older'' clients out there ;) -GD]
+[XXXX OK; my concern was that the most recent released version of
+      openssl doesn't support the mentioned ciphersuite.  Nonetheless,
+      it seems that NSS and GnuTLS both support it (NSS on the client
+      side only), so we needn't worry. -NM]  
 
 X.509 certificates need not be signed; instead, they must contain
 a key matching that used in the KEYID portion of the header's routing
@@ -700,7 +706,7 @@ portions are non-normative descriptions of TLS.)
   B sends "PROTOCOL 1.0", NL.  This indicates B's choice of protocol.
 
   If A is not willing to support B's choice, A closes the connection.
-  
+
 * A sends "SEND", NL, M, H(M,"SEND") (5 + 32k + 20 bytes)
 * B sends "RECEIVED", NL, H(M,"RECEIVED") (9 + 20 bytes)
 
