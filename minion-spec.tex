@@ -723,15 +723,17 @@ the entries:
      'Packet-Key': The public key used to encode encode subheaders for
          this server, encoded in ASN.1, represented in BASE64. 
 
-The digest of a descriptor block is computed by removing the digest
-and signature fields, and computing the SHA-1 digest of the result.
-The signed digest is the OAEP/PCKS1 signature of the digest with the
-server's identity key.  This value is represented in BASE64.
+The digest of a descriptor block is computed by removing the contents
+of the digest and signature fields, and computing the SHA-1 digest of
+the result.  (That is, ``Digest: DATADATADATA...'' is replaced with
+``Digest:''.)  The signed digest is the OAEP/PCKS1 signature of the
+digest with the server's identity key.  This value is represented in
+BASE64.
 
 If this server accepts incoming MMTP connections, it MAY have an
 'Incoming/MMTP' section, with the following entries:
 
-     'MMTP-Descriptor-Version': The string '1.0'
+     'Version': The string '1.0'
      'Port': A port at which IP accepts incoming MMTP connections.
      'Key-Digest': The KEYID of this server, encoded in BASE64.
      'Protocols': A comma-separated list of the protocols this
@@ -744,7 +746,7 @@ and any number of entries of the form:
 If this server supports outgoing MMTP connections, it MAY have a
 'Outgoing/MMTP' section, with one entry each of the form:
 
-      'MMTP-Descriptor-Version': The string '1.0'
+      'Version': The string '1.0'
       'Protocols': A comma-separated list of the protocols this server
            supports for outgoing connections.
 
