@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.3 2003/06/26 03:07:54 nickm Exp $
+$Id: E2E-spec.txt,v 1.4 2003/06/30 17:35:32 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -637,6 +637,13 @@ Table of Contents
    and SHOULD normalize header values by removing leading or trailing
    space.  Unlike RFC[2]822, servers MUST remove unrecognized headers.
 
+   To prevent distinguishability between clients, headers MUST appear
+   in lexical (alphabetical) order.  Servers MUST NOT use out-of-order
+   headers.
+
+   To help implementations comply with RFC2822, each header MUST NOT
+   be longer than 900 characters.
+
 3.2. MBOX
 
    The routing type 0x101 corresponds to MBOX delivery.  Conceptually,
@@ -661,17 +668,17 @@ Table of Contents
   Header encoding is as described in 3.1.2 above.  
 
   The following headers are allowed:
-        "SUBJECT"  (any)
+        "SUBJECT"  (any.  Must be no more than 900 characters long.)
         "FROM"     (any sequence of printing ASCII characters
-                    excluding '"', '[', ']', and ':'.)
+                    excluding '"', '[', ']', and ':'. )
  
         "IN-REPLY-TO" (an RFC2822 msg-id)
         "REFERENCES" (a list of RFC2822 msg-ids)
-        
+
   [XXXX Are msg-ids really what we want? Should we say more?  Should
         we restrict encoding? -NM]
 
-  Unrecognized or malformatted headers MUST be removed.
+  Unrecognized or malformatted headers MUST be removed.  
 
 3.2.3. Delivery
 
