@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.28 2004/07/27 04:47:06 nickm Exp $
+$Id: minion-spec.txt,v 1.29 2004/07/27 07:48:53 arma Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specification
@@ -495,7 +495,7 @@ Table of Contents
    0x0102 MIX2      (EMAIL ADDRESS: variable).  Type II remailer support.
    0x0103 FRAGMENT  (Fragment to be reassembled by exit node; see E2E-spec)
    0x0104 NEWS      [See "E2E-spec.txt"]
-   0x0105 PING      (server-dependant)
+   0x0105 PING      (server-dependent)
 
 
    0x1000-0xEFFF: UNALLOCATED
