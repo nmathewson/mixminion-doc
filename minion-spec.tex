@@ -493,10 +493,10 @@ Binary Format:
 The ASCII Encoding of SURBs.
 
 The  ASCII compatible format of SURBs is:
------BEGIN SURB-----
+======= BEGIN TYPE III REPLY BLOCK ========
 Version: x.x
 Base64 encoded binary SURB 
------END SURB-----
+======== END TYPE III REPLY BLOCK =========
 
 The version number should be in decimal ASCII and is the same as the
 binary version.
@@ -685,12 +685,11 @@ the entries:
          characters.  It may contain only the characters 
          [A-Za-z0-9_.!@#] and '-'.  It should be treated as
          case-insensitive.
+
      'Identity': The modulus of this Mix node's long-term signing key,
-         represented in ASN.1, and encoded in BASE64.  Whitespace in
-         this field is ignored, to allow the key to span multiple
-         lines.  The modulus of this key should be at least 2048 bits
-         long and no more than 4096 bits long.  The exponent of this 
-         key must be 65537.
+         represented in ASN.1, and encoded in BASE64.  The modulus of
+         this key should be at least 2048 bits long and no more than
+         4096 bits long.  The exponent of this key must be 65537.
 
 	 Clients should at least give a warning if the identity key of
          any server should ever change.
@@ -712,7 +711,14 @@ the entries:
          information to use the server properly.
      'Packet-Key': The public key used to encode encode subheaders for
          this server, encoded in ASN.1, represented in BASE64. 
-
+     'Packet-Versions': A comma-separated list of allowable major.minor
+         versions for packets this server will process.  In a
+         production network, only one value should be used for this
+         field. [Added in Mixminion 0.0.3 -NM]
+     'Software': A string description of the software this server is
+         running.  Optional; for debugging purposes only.  Must be
+         less than 256 characters. [Added in Mixminion 0.0.3 -NM]
+ 
 The digest of a descriptor block is computed by removing the contents of the
 digest and signature fields, and computing the SHA-1 digest of the resulting
 ASCII string.  (That is, ``Digest: DATADATADATA...'' is replaced with
@@ -771,9 +777,9 @@ Other services provided by this server should each have their own section.
 permissible (for example) for a server that supports incoming MMTP
 connections to omit the Incoming/MMTP section.)
 
-A client should ignore any sections it does not recognize, but should
-not use any service whose sections have an unrecognized descriptor
-version.
+A client should ignore any keys or sections it does not recognize, but
+should not use any service whose sections have an unrecognized
+descriptor version.
 
 \subsection{Directories and Directory servers}
 
@@ -797,6 +803,7 @@ A directory takes the following form:
  Published: YYYY/MM/DD HH:MM:SS
  Valid-After: YYYY/MM/DD
  Valid-Until: YYYY/MM/DD
+ Recommended-Software: Mixminion 0.0.2,Mixminion 0.0.3
  [Signature]
  DirectoryIdentity: Base64-encoded public key, in ASN.1
  DirectoryDigest: Digest of this document.
