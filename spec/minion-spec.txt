@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.21 2003/10/09 04:05:47 nickm Exp $
+$Id: minion-spec.txt,v 1.22 2003/10/09 05:14:03 weasel Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -710,7 +710,7 @@ Table of Contents
         DIGEST = HASH(EREST | J_(i-1))
 
         SH = SHS(V, SK_i, DIGEST, len(RI), RT, RI)
-        UNDERFLOW = Min(PK_MAX_DATA_LEN - SH_LEN, 0)
+        UNDERFLOW = Max(PK_MAX_DATA_LEN - SH_LEN, 0)
         RSA_PART = SH | H0[PK_MAX_DATA_LEN - UNDERFLOW : UNDERFLOW]
 
         ESH = PK_ENCRYPT(PK_i, RSA_PART)
@@ -820,7 +820,7 @@ Table of Contents
         H1 = H1[PK_ENC_LEN : 2048-PK_ENC_LEN] |
              PRNG(JUNK_KEY, PK_OVERHEAD_LEN + MIN_SH + RS)
         HEADER_KEY = SubKey(SK, "HEADER SECRET KEY")
-        H1 = H1 ^ PRNG(HEADER_KEY, Len(H1))
+        H1 = Encrypt(HEADER_KEY, H1)
 
         FULL_H = PK_PART[MIN_SH:Len(PK_PART)-MIN_SH] | H1
         RI = FULL_H[0:RS]
