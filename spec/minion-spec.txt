@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.12 2003/09/04 16:14:02 nickm Exp $
+$Id: minion-spec.txt,v 1.13 2003/10/01 00:29:57 arma Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -742,9 +742,9 @@ Table of Contents
    so that the recipient only needs to use SPRP_Encrypt steps to
    retrieve the payload.]
 
-   Next, the sender SPRP_Encrypts the payload with a hash of the
-   second header, then SPRP_Encrypts the header with a hash of the
-   second payload.  This step (which the SWAP operation will reverse)
+   Next, the sender SPRP_Encrypts the second header with a hash of the
+   payload, then SPRP_Encrypts the payload with a hash of the encrypted
+   second header.  This step (which the SWAP operation will reverse)
    makes the second header and the payload unreconstructable if
    either is damaged.
 
