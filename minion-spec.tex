@@ -378,11 +378,12 @@ Process:
         Stream_i = PRNG(K_i, 2048 + SIZE_i);
         // Before we encrypt the junk, we encrypt all the data, and all
         // the initial padding, but not the RSA-encrypted part.
-        //    OFFSET = PADDING_LEN + SUM(SIZE_1 ... SIZE_i) - 256
-        //           = 2048-256 + SUM(SIZE_1 ... Size_i)
-        //                      - SUM(SIZE_1 ... Size_N)
-        //           = PADDING_LEN + Len(J_i) - 256
-        OFFSET = PADDING_LEN + Len(J_i) - 256
+        //    OFFSET = PADDING_LEN + SUM(SIZE_i ... SIZE_N) - 256
+        //           = 2048 - SUM(SIZE_1 ... SIZE_N) + SUM(SIZE_i ... SIZE_N)
+        //             -256
+        //           = 2048-256 - SUM(SIZE_1 ... SIZE_(i-1))
+        //           = 2048 - 256 - len(J_{i-1})
+        OFFSET = PADDING_LEN  + Len(J_i) - 256
         J_i = J_i XOR Stream_i[OFFSET:Len(J_i)];
   end
 
@@ -520,6 +521,14 @@ PROCEDURE: Process a message M
         SHS(V, SK, D, RS, RT, ..) = <extract from PK_PART[0:MIN_SH]>
         Check that D = HASH(H1[256:2048-256]), and discard if not.
 
+        [XXXX REPLAY PREVENTION XXXX]
+
+        JUNK_KEY = HASH(SK | "RANDOM JUNK")[0:16]
+        H1 = H1[RSA_LEN : 2048-RSA_LEN] | 
+             PRNG(JUNK_KEY, OAEP_OVERHEAD + MIN_SH + RS)
+        HEADER_KEY = HASH(SK | "HEADER SECRET KEY")[0:16]
+        H1 = H1 XOR PRNG(HEADER_KEY, Len(H1))
+
         If RS > MAX_RSA-MIN_SH then 
             // RI is incomplete.
             RI = PK_PART[MIN_SH:MAX_RSA-MIN_SH]
@@ -531,12 +540,7 @@ PROCEDURE: Process a message M
             EXTRA_H = PK_PART[MIN_SH+RS:Len(PK_PART)-MIN_SH-RS]
         endif
 
-        JUNK_KEY = HASH(SK | "RANDOM JUNK")[0:16]
-        H1 = H1[RSA_LEN : 2048-RSA_LEN] | 
-             PRNG(JUNK_KEY, OAEP_OVERHEAD + MIN_SH +RS)
-        HEADER_KEY = HASH(SK | "HEADER SECRET KEY")[0:16]
-        H1 = H1 XOR PRNG(HEADER_KEY, Len(H1))
-        RI = RI | H[0:MISSING_RI_LEN]
+        RI = RI | H1[0:MISSING_RI_LEN]
         H1 = EXTRA_H | H1[MISSING_RI_LEN:2048-MISSING_RI_LEN]
         H2 = SPRP_DEC(SK, "HEADER ENCRYPT",H2);
         P = SPRP_DEC(SK, "PAYLOAD ENCRYPT",P);
@@ -810,7 +814,6 @@ The first section must be a 'Server' section.  This section includes
 the entries:
 
      'Descriptor-Version':  the string "1.0"
-     'IP': An IPv4 address, in dotted-quad format.
      'Nickname': A human-readable identifier for this server.  If it
          contains any periods, it must be a fully qualified DNS name
          which resolves to the provided IP for the entire lifetime of
@@ -872,6 +875,7 @@ If this server accepts incoming MMTP connections, it MAY have an
 'Incoming/MMTP' section, with the following entries:
 
      'Version': The string '1.0'
+     'IP': An IPv4 address, in dotted-quad format.
      'Port': A port at which IP accepts incoming MMTP connections.
      'Key-Digest': The KEYID of this server, encoded in BASE64.
      'Protocols': A comma-separated list of the protocols this
@@ -1183,15 +1187,6 @@ PAD [28KB-16-2-S bytes] (Random padding)
 \section{Appendix: Versioning and alphas}
 
 Today's alpha code does not publish its version as '1.0'; it uses
-'0.x' instead (currently '0.2' for packets, '0.2' for MMTP, and '0.1'
-for everything else).  Production versions should *not* retain
+'0.x' instead (currently '0.3' for packets, '0.2' for MMTP, and '0.1'
+for everything else).  Production versions MUST NOT retain
 backward compatibility with pre-production releases.
-
-[XXXX Should "should not" become "must not"?  Lucky's reasoning:
-
-       I'd make that a MUST NOT, to minimize the number and duration
-       of (inevitable) arguments in the future about whether a
-       "universal" mixminion client implementing all protocol version
-       can be construed to be as compliant.
-
--NM]
