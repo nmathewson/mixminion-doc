@@ -476,7 +476,15 @@ the hash of the current payload, and then swaps the two subheaders. The
 swap operation is detailed in Figure 1 --- specifically, the normal
 operations done at every hop are those above the dotted line, and the
 special operations performed only by the crossover point are those below
-the dotted line.  We use a variable block size block cipher named BEAR
+the dotted line. The encryption primitive that is used to blind the second 
+header and the payload needs to have certain properties: it should be an 
+All-or-nothing transform on the whole of the message; it should be impossible 
+to predict even a single bit of the decryption of a modified block, without 
+knowledge of the key. Finally we need the encryption and decryption 
+operations to be the same function.
+
+To fulfill the above requirements we use a variable block size 
+block cipher named BEAR
 \cite{BEAR} as our encryption and decryption primitive.  BEAR offers
 the property that if any bit of the encrypted material is changed, the
 decryption will look like random bits. We can use BEAR in a mode where
