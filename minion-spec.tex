@@ -642,13 +642,13 @@ Key: Value
 
 \subsection{Syntax}
 
-(Notation:  X*: 0 or more occurences of X.
-            X+: 1 or more occurences of X.
+(Notation:  X*: 0 or more occurrences of X.
+            X+: 1 or more occurrences of X.
 	    X?: 0 or 1 occurrences of X.
             X Y: An occurrence of X followed by an occurrence of Y.
-	    X*{Y}: 0 or more occurrences of X separated by occurences
+	    X*{Y}: 0 or more occurrences of X separated by occurrences
                   of Y.
-            X|Y: Either an occurrence of X, or an occurence of Y.)
+            X|Y: Either an occurrence of X, or an occurrence of Y.)
 
 Descriptor = NL Section+ 
 
@@ -714,7 +714,7 @@ the entries:
 The digest of a descriptor block is computed by removing the contents of the
 digest and signature fields, and computing the SHA-1 digest of the resulting
 ASCII string.  (That is, ``Digest: DATADATADATA...'' is replaced with
-``Digest:''.)  The signed digest is the OAEP/PCKS1 signature of the digest
+``Digest:''.)  The signed digest is the OAEP/PKCS1 signature of the digest
 with the server's identity key.  This value is represented in BASE64.
 
 [Note: before computing the digest, all implementations must normalize CR and
@@ -797,7 +797,7 @@ A directory takes the following form:
  [Signature]
  Identity: Base64-encoded public key, in ASN.1
  Digest: Digest of this document.
- Signature: Base64-encoded OAEP/PCKS1 signature of this document, with
+ Signature: Base64-encoded OAEP/PKCS1 signature of this document, with
      the contents of this field removed.
  [Server]
      (Server descriptor block)
