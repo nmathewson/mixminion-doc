@@ -17,8 +17,11 @@
    batch of them, so that the nodes can prove they have sent the
    messages. I do not think that anything breaks if we get rid of
    them. -GD]
- 
 
+   Hm.  Well, since I already implemented them, and I do agree with
+   the 'warm feeling' observation, I'll leave them unless anyone
+   objects. -NM
+ 
 2. Email encryption: what do we do?
 
    Proposal: SURBs include an encryption key; anonymous SURB-using
@@ -49,12 +52,34 @@
    ``Payload encryption''
    http://archives.seul.org/mixminion/dev/May-2002/msg00060.html
 
+   The public key idea as specified in your email has its own
+   problems.  If a SURB generator creates a new public key for each
+   message, generating SURBs becomes a far more expensive operation.
+   (Roughly 30-70 times worse.)  Right now, a good processor can
+   generate 170 8-hop SURBs per second.  If you need to generate a
+   1024 RSA key for each SURB, it can only generate 4.5 SURBs per
+   second.  IMO, this is a big loss.
+
+   On the other hand, if you don't generate a new public key for each
+   SURB, your SURBs are now linkable.
+
+   I think that the threat model (an adversary makes you get the 
+   correct SURB but the wrong encryption key) is a bit bogus.  An
+   adversary who can replace the encryption key can replace the entire
+   SURB and achieve similar results. 
+
+   The padding idea is neat, but I think you could use a hash of a
+   symmetric key instead with no ill effects.  -NM
+
 2b. Mail gateways. We should specify these.
 
    XXXX
 
    I feel it should be part of a different standard. Since it is a
    service (like others) that runs on top of Mixminion. -GD
+
+   Agreed, but it should be a standard.  Perhaps a set of addenda is
+   in order. -NM
 
 3. Email transport exchange format.
 
@@ -83,6 +108,13 @@
    that is dealt in a different document along with how to send
    email. -GD
 
+   Hm.  I agree with what you say, but keep in mind that the set of
+   deployed exit applications needs to be pretty uniform in its
+   behavior and support, or else we'll endanger anonymity.  How about
+   we move the above to an additional document, and not implement it
+   until we have all of the spam issues straightened?  -NM
+   
+
 4. Stateless replies and SMTP (depends on 2 and 3, if I understand correctly)
 
    Proposal: stateless replies put E_recipient_key(nHops | seed) as
@@ -92,6 +124,9 @@
    See http://archives.seul.org/mixminion/dev/Jul-2002/msg00003.html
    for more discussion. Should we pick one, or both? -RD
 
+   For now, I'll implement the one where you store E_password(key) on
+   disk. -NM
+  
 5. Do we support other SSL modes for MMTP?
 
    Proposal: server-to-server connections must use DHE/RSA/AES128/SHA1, 
@@ -134,6 +169,11 @@
 		Local/ListServ
 	Acting as different service ports. -GD
 
+   I think we're saying the same thing.  What you mean by
+   'Local/Mailbox', I mean by 'Modules/Local'.  I like your names
+   better, though, and I think we should rename the 'LOCAL' routing
+   type to 'MBOX' below to correspond. -NM
+ 
 8b. Server descriptor rules for SMTP mode.
 
    XXXX
@@ -149,6 +189,8 @@
    Question 9 + 10 are an active research area, and given that we
    provide meachanisms fo doing dummy messages and link padding we
    should not specify anything in the spec. -GD
+
+   This is probably ok _for now_.  I'll add a note. -NM
 
 11. Need to write: algorithm for processing a reply.
 
@@ -184,6 +226,8 @@
 
     I have no experiance with XML so as long as we can sign and trust
     the thing I have no problem with it. -GD
+  
+    Okay; I'll pick one. -NM
 
 14. Sensible support for multiple directory servers.
 
@@ -198,6 +242,7 @@
     napkins and additional issues. May be this is a better place to
     define general SMTP transport (except for last hop of SURB)
     instead of the general mixminion spec document. -GD
+    Cool. -NM    
 
 16. We'll also want somebody from the Mixmaster crowd to go through and
     write a "backward compatibility with Mixmaster" addendum, to specify
@@ -206,6 +251,8 @@
 
     If we could have a hack so that both services can run as different
     binaries, it will be easier to phase out the mixmaster stuff. -GD
+
+    Fear not.  Modularity is what I live for. ;) -NM
 
 \section{Message Format}
 
