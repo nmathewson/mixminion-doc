@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.28 2004/08/13 17:06:01 nickm Exp $
+$Id: dir-spec.txt,v 1.29 2004/08/18 18:51:04 nickm Exp $
 
                                 MIX3:3
            Type III (Mixminion) Mix Directory Specification
@@ -462,13 +462,14 @@ Table of Contents
 
 4. Directory Format
 
-4.1. Muliply-signed format (used in Mixminion 0.0.8)
+4.1. Multiply-signed format (used in Mixminion 0.0.8)
 
    A directory contains a list of Mixminion servers, a statement of which
-   servers are believed to be operational at a given time, and other
-   information about the network.  Each directory is signed by one or more
-   directory servers.  A directory MUST contain all of the following, in
-   order:
+   servers are believed to be "good" (operational, reliable, and trustworthy)
+   at a given time, and other information about the network.  Each directory
+   is signed by one or more directory servers.  A directory MUST contain all
+   of the following, in order:
+
      - Zero or more 'Signed-Directory' sections.
      - A 'Directory-Info' section.
      - A 'Recommended-Software' section.
