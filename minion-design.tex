@@ -142,7 +142,7 @@ against a \emph{passive adversary} who can eavesdrop on all
 communications between MIXes but is unable to observe the reordering
 inside each MIX.
 
-Current research directions on MIX-nets include ``stop-and-go'' MIX-nets
+Recent research on MIX-nets includes ``stop-and-go'' MIX-nets
 \cite{kesdogan}, distributed ``flash MIXes'' \cite{flash-mix} and their
 weaknesses \cite{desmedt,mitkuro}, and hybrid MIXes \cite{hybrid-mix}.
 
@@ -289,8 +289,8 @@ We choose to drop packet-level compatibility with Mixmaster and the
 Cypherpunk remailer systems, in order to provide a simple extensible
 design. We can retain minimal backwards compatibility by ``remixing''
 Type II messages to be Type III messages, thus increasing the anonymity
-set of the Type III network. Type II messages, when travelling between
-remailers capable of understanding both Type II and III, are treated
+set of the Type III network. Type II messages travelling between
+Type III remailers are treated
 as plaintext and encrypted to the next remailer in the chain using its
 Type III key. The message is sent as a Type III encrypted message, but
 it decrypts to reveal the Type II message.
@@ -358,7 +358,8 @@ own public key.
 \subsection{Indistinguishable replies}
 \label{subsec:header-swap}
 
-By making forward messages and replies indistinguishable, we prevent an
+By making forward messages and replies indistinguishable even to MIXes,
+we prevent an
 adversary from dividing the message anonymity sets into two classes. In
 particular, if replies are infrequent relative to forward messages,
 an adversary who controls some of the MIXes can more easily trace the
@@ -440,7 +441,7 @@ properties:
 \end{itemize}
 
 To fulfill the above requirements we use a large-block cipher; that
-is, a cipher that acts as a permution on a block the size of its
+is, a cipher that acts as a permutation on a block the size of its
 input (a subheader or the payload).  Possible candidates
 include LIONESS \cite{BEAR-LIONESS} and SPC \cite{SPC}.
 The cryptographic property required is that of a super-pseudo-random
@@ -449,7 +450,7 @@ The weaker PRP property may be sufficient, given that preventing
 replays limits the number of oracle queries to 1; this will need
 further analysis.  In that case the simpler BEAR construction
 \cite{BEAR-LIONESS} could be used instead of LIONESS.}
-This ensures that if any bit of
+Thus if any bit of
 the encrypted material is changed, the decryption will look like random
 bits.  An SPRP is also equally secure in the encryption and decryption
 directions.  See Section \ref{subsec:tagging} for a
@@ -515,7 +516,7 @@ break anonymity in some cases.
 
 We briefly considered introducing \emph{cover-trash} to frustrate
 these tagging attacks; but that problem is as complex as the dummy
-traffic problem. Instead, we use the decryption-by-hash-of-payload step at the
+traffic problem \cite{langos02}. Instead, we use the decryption-by-hash-of-payload step at the
 crossover point to prevent the attacker from learning information from
 tagging attacks.  Specifically, our solution falls into several cases:
 
@@ -550,11 +551,13 @@ node gets a crossover message that has been trashed, it might guess
 that the recipient is one of the local addresses.} and so we recommend
 that the second leg be at least a few hops long.
 
-Replies are indistinguishable at every hop from forward messages. Even the
-crossover point cannot know whether it is processing a reply or forward message.
-The protocol doesn't allow a MIX to know its location in the path (other
-than the exit node), or the total length of the route.
-% FIXME we need to resolve this paragraph
+No MIX except the crossover point can distinguish forward messages from
+replies --- even the crossover point cannot be sure whether it is processing
+a reply or forward message, but it may be able to guess that crossover
+points are more frequent on forward paths than direct replies or
+anonymized reply paths.
+%The protocol doesn't allow a MIX to know its location in the path (other
+%than the exit node), or the total length of the route.
 
 \subsection{Multiple-message tagging attacks}
 \label{subsec:multi-tagging}
@@ -1087,7 +1090,7 @@ This ideal is not achieved by protocols like Mixmaster that use random
 delays: if the maximum latency of such a network is $t$, then the
 anonymity set of a message leaving the network may be much smaller
 than all messages that entered over a time $t$.
-% This is handwaving, and the problem is more that the distribtion
+% This is handwaving, and the problem is more that the distribution
 % isn't uniform rather than the actual size of the anonymity set.
 % It'll do for the time being. -DH
 
@@ -1100,7 +1103,7 @@ strategy called {\em synchronous batching}, that prevents these
 attacks even when free routes are used, as well as improving the
 trade-off between latency and anonymity.
 
-The network has a fixed {\em batch period}, $t_{batch}$, which is closely
+The network has a fixed {\em batch period}, $t_\mathrm{batch}$, which is closely
 related to the maximum desired latency; a typical value could be 3--6 hours.
 Messages entering the network in each batch period are queued until
 the beginning of the next period. They are then sent through the MIX-net
@@ -1112,10 +1115,11 @@ hop periods later. Each hop header of a message would specify the hop
 period in which it must be received, so that it cannot be delayed by an
 attacker (which would be fatal for this design).
 
-The latency is between $\ell t_{hop}$ and $t_{batch} + \ell t_{hop}$, depending
-on when the message was submitted.
-Typically we would have $t_{hop} < t_{batch}/n$, so the latency is at
-most $2t_{batch}$, independent of the path length $\ell$.
+The latency is between $\ell t_\mathrm{hop}$ and $t_\mathrm{batch} +
+\ell t_\mathrm{hop}$, depending on when the message was submitted.
+Typically we would have $t_\mathrm{hop} < t_\mathrm{batch}/n$, so the
+latency is at most $2t_\mathrm{batch}$, independent of the path length
+$\ell$.
 
 %The set of messages sent to a node in a given hop period is called a
 %mini-batch, to distinguish it from the set of messages being sent
