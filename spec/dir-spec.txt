@@ -1,7 +1,7 @@
-$Id: dir-spec.txt,v 1.21 2004/01/27 05:31:18 nickm Exp $
+$Id: dir-spec.txt,v 1.22 2004/07/27 04:47:06 nickm Exp $
 
 				MIX3:3
-           Type III (Mixminion) Mix Directory Specifications
+           Type III (Mixminion) Mix Directory Specification
 
                             George Danezis
                            Roger Dingledine

@@ -1,7 +1,7 @@
-$Id: minion-spec.txt,v 1.27 2004/07/27 04:43:45 nickm Exp $
+$Id: minion-spec.txt,v 1.28 2004/07/27 04:47:06 nickm Exp $
 
 				MIX3:1
-           Type III (Mixminion) Mix Protocol Specifications
+           Type III (Mixminion) Mix Protocol Specification
 
                             George Danezis
                            Roger Dingledine
