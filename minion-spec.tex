@@ -1,191 +1,201 @@
-Type III Remailer Protocol Specifications
+\title{Type III (Mixminion) MIX Protocol Specifications}
 
-Message Format
+\section{Message Format}
 
-Overview 
+\subsection{Overview}
 
-Type III remailer messages are composed of two main parts, the
-headers and the payload. For technical reasons the there exist in
-all messages two headers, the main header and the secondary header
-that have the same structure. Each of them is further composed of up
-to 16 sub headers, that are addressed and encrypted to the
-intermediate nodes (remailers). Different headers sub headers and the
-payload are encrypted under different keys when the message is created
-or travels through the network, so we shall proceed with explaining
-how the full message is structured but starting with the smallest
-building block. 
+Type III (Mixminion) MIX messages are composed of a header section and a
+payload.  For technical reasons, each message has a main header and a
+sectondary header, both of which have identical structure.  Each
+header is further composed of up to 16 subheaders, which are
+addressed and encrypted to the intermediate nodes (MIXes).  We
+begin by explaining how the full message is structured but starting
+with the smallest building block.
 
-Definitions & cryptographic primitives
+\subsection{Definitions and cryptographic primitives}
 
 - if B is a byte array, B[i:j] (j bytes) is sub array starting at 
   byte i with length j.
-- R(n) (n bytes) Generates n random bytes.
+- R(n) (n bytes) Generates n random bytes by any secure method.
 - Z(n) (n bytes) Generates n zero bytes
 - Len(M) (2 bytes) is the length of message M (* bytes)
 - x|y (Len(x)+Len(y) bytes) denotes x concatenated with y.
+
 - PAD(M,L) (L bytes) pads the message M (Len(M) <= L) to length L
   using zeroes.
-
 - H(M) (20 bytes) is the SHA-1 hash of M (* bytes)
-
-- RSA_OAEP_Encrypt(K,M) (128 bytes): the encryption of M (73
-  bytes) using the public key K as described in PKCS\#1.
-- RSA_OAEP_Decrypt(K,M) (73 bytes) Gives the decryption of the
+- PK_Encrypt(K,M) (128 bytes): the RSA-encryption of a header M 
+  using the public key K.  M is padded using RSA-OAEP+.
+- PK_Decrypt(K,M) (up to 86 bytes) Gives the decryption of the
   message M (128 bytes) under the private key corresponding to K.
-- Encrypt(K,M) (Len(M) bytes) Rijndael in Counter mode encryption 
+- Encrypt(K,M) (Len(M) bytes) Rijndael encryption (in Counter mode)
   of message M using key K. 
-- Decrypt(K,M,i,j) (j bytes) Rijndael counter mode decryption 
-  using the key material byte i to j. Len(M) = j.
-- PRNG(K, n) (n bytes) Produces n bytes of pseudo-random numbers.
+- Decrypt(K,M,i,j) (j-i bytes) Rijndael counter mode decryption 
+  using the key material byte i to j.
+- PRNG(K, n) (n bytes) Uses Rijndael in counter mode to produce N
+  bytes of pseudo-random numbers.
   PRNG(K, n) = Encrypt(K, Z(n))
+- SPRP(K, M) (Len(M) bytes) Uses LIONESS (A super-pseudorandom
+  permutation) to encrtypt M with key K.
+  
+RSA encryption and decryption is used with OAEP+ padding, using the 
+mask function MGF1 and hash function SHA1.  The security
+parameter P is set to be the hash of the following 84-character ASCII
+string (a quotation from Thomas Paine): 
 
-RSA encryption and decryption is used with OAEP padding, using the 
-mask function MGF1 and SHA1 as the hash function. The security
-parameter P is set to be the hash ... .
+     "He who would make his own liberty secure, must guard even his
+      enemy from oppression." 
 
-The sub-header structure and address extensions.
+All fields are packed in Internet (MSB first) order.
 
-The sub header contains all the information that a node needs to know
+\subsection{The subheader structure and address extensions}
+
+A subheader contains all the information that a MIX needs to know
 in order to check the integrity of a message and route it through the
-Internet. The sub header contains the following fields: 
+Internet. The subheader contains the following fields: 
 
-Sub-header fields:
+Subheader fields:
 
-Version Major: 1 byte
-Version Minor: 1 byte
-Shared Secret: 16 bytes
-Digest:        16 bytes
-Flags:         1 byte
-Address Size:  2 bytes
-Address Type:  2 bytes - total 39 bytes
-Address:       [Address Size] bytes
+Version Major:   1 byte
+Version Minor:   1 byte
+Shared Secret:   16 bytes
+Digest:          20 bytes
+Routing Size:    2 bytes
+Routing Type:    2 bytes  [total 43 bytes]
+Routing info:    [Routintg Size] bytes
 
 * The Version is present to manage concurrent versions of the
 protocol. If a packet is received with a version that is not supported
 it should be discarded. Nodes must advertise what versions of the
-protocol they support.
+protocol they support in their status blocks; see below.
+(Because having multiple versions makes messages more linkable, it is
+important to keep too many from existing at a time.)
 * The Shared Secret is the base secret that is used to generate all
 other keys for the operations of the node on the packet. It must be
 kept secret and discarded as soon as the packet has been processed. 
-* The Digest contains an integrity check of the remaining header (128*15
-bytes in total). It is calculated on the remailing sub-headers and the
-junk that will be present at then end of headers when the node will
-receive the message. 
-* The Flags can be either set or unset. Different bits mean different
-things: 
-bit 0 - SWAP: Perform the swap operation
-bit 1 - END:  Indicates the final node
-bit 2 - RTRN: Indicates the final node of a SURB (END must also be set)
-bit 3 - EXADDRS: Indicates that the next sub-header(s) is part of the
-address. 
-Each of the above have a specific significance when the node processes
-the message. 
-* The Address Size indicates the total size of the next address, while
-the type indicates how it should be parsed. Addresses can fill the
-whole space left in the sub-header and also use part of the next sub
-header(s) (the EXADDRS flag must be set). If a node receives an address
-type it does not recognize it should discard the message. Nodes should
-advertise what address types they support.
+* The Digest contains an integrity check of the remainder of the
+current header (128*15 bytes in total).  It is calculated on the
+remailing subheaders and the junk that will be present at then end 
+of headers when the node receives the message. 
+   [XXXX All the flags were redundant. 
+    I removed END because it's redundant with respect to routing type.
+    I removed EXTADDR because it's redundant with resped to routing
+      size.
+    I removed RTRN because it's redundant with respect to routing
+       type.
+    I removed SWAP because it makes address type redundant.   -NM]
 
-The sub header fields are encrypted using RSA after having been padded
-using OAEP (or should it be OAEP+ or Anonymous OAEP?), using a 1024
-bit key which results in a size of 128 bytes. The OAEP padding allows
-86 bytes to be used. If the address is longer than 86-39 bytes then
-additional blocks have to be added.
+* The Routing Type of a message defines how the MIX should deliver or
+  relay it.  Most routing methods require addition addressing information.
+  The Routing Size field indicates the total size of the routing
+  information.   If the information is too long to fit in a single
+  subheader, it may spill into subsequent subheaders.
 
-In case an additional block is added to fit the address it should be a
-multiple of 128 bytes and should have the following structure:
+  If a MIX receives a routing type it does not recognize, it must
+  discard the message. 
+
+  The subheader is are encrypted using RSA after having been padded
+  using OAEP+, using a 1024 bit key.  This results in an encrypted block
+  of 128 bytes.  If the routing info is longer than 86-42=44 bytes, then
+  additional subheader have to be added.
+
+  When additional block is added to fit the routing info, it must be be a
+  multiple of 128 bytes and should have the following structure:
  
-Address Extension:
+  Routing Extension:
 
-Magic number:     4 bytes
-Number of blocks: 1 byte
-Address Data:     Variable
-Padding:          Variable
+    Magic number:     4 bytes
+    Address Data:     Variable
+    Padding:          Variable
+
+  [XXXX I removed the number of blocks; it's redundant with respect to
+  routing size. -NM]
+
+  [XXXX What purpose does the magic number serve? -NM]
 
 * The magic number is set to be four zero bytes.
-* The number of blocks indicates how many additional blocks the address
-extension is using. The total number of bytes actually used by the
-address is indicated by the ``Address size'' filed of the sub-header.  
 * Padding of zeroes is used to make the size of the Address Extension a
 multiple of 128 bytes.  
 
-The Address Extension corresponding to a particular sub-header is
+The Address Extension corresponding to a particular subheader is
 encrypted using the Encrypt function with key=Hash(Shared Secret,
-``ADDRESS EXTENSION SECRET KEY'') and appended to the RSA encrypted
-sub-header.
+``ROUTING EXTENSION SECRET KEY'') and appended to the RSA encrypted
+subheader.
 
-We will formally refer to the sub header structure as:
+We will formally refer to the subheader structure as:
 SHS(V, SK, D, F, A)
-And to the RSA-OAEP encrypted sub-header structure as:
+And to the RSA-OAEP encrypted subheader structure as:
 ESHS(PK, SK, D, F, A)
 
-The address structure
+\subsection{Routing information}
 
-There are three predefined types of addresses:
+There are 5 predefined routing types:
 
-0x0001 TCP/IP4 (IP: 4 bytes, PORT: 2 bytes, KEYID: 16 bytes): 22 bytes
-0x0002 SMTP   (EMAIL ADDRESS: Variable): Variable bytes
-0x0003 RTRN   (NUM: 2 bytes, MASTER SECRET: 16 bytes): 18 bytes
+0x0000-0x00FF: PROTOCOL SUPPORT
 
-A TCP/IP4 address type indicates that the messge has to be transmitted
-using the custom Type III remailer transport protocol. The IP field of
-represents the IP v4 address in network order. The KEYID field
-represents the hash of the public verifucation key with which the
-ephemeral D.H. key has to be signed.
+0x0000 DROP    (0 bytes of routing information)
+0x0001 FWD/IP4 (IP: 4 bytes, PORT: 2 bytes, KEYID: 20 bytes): 26 bytes
+0x0002 SWAP-FWD/IPV4 (same info as FWD/IP4)
+
+0x0100-0x0FFF: PREDEFINED DELIVERY TYPES.
+
+0x0100 SMTP   (EMAIL ADDRESS: variable, TAG: variable) Variable bytes
+0x0101 LOCAL  (USER: variable, TAG: variable) Variable bytes
+
+0x1000-0xEFFF: UNALLOCATED
+
+0xF000-0xFFFF: FOR EXPERIMENTAL USE
+
+A DROP routing type indicates a dummy message, to be discarded.
+
+A FWD/IP4 routing type indicates that the message has to be
+retransmitted using the TLS/Mixmaster transport protocol. The IP field
+of represents the IPv4 address.  The KEYID field represents the hash of
+the next node's tranport public key.
+
+A SWAP routing type tells the node to exchange headers as described below.
 
 The EMAIL field in the SMTP type of address should be a valid email
-address [RFC2821].
+address [RFC2821].  It must be NUL-terminated.  The TAG field is
+appended to the message in an X-Remailer-Tag header.
 
-The address type RTRN should be used in conjunction with stateless
-reply blocks, to remind the recipient the master secret used to
-derive the keys distributed to all the intermediate nodes, and their
-number.
+The LOCAL routing type is used for messages to be delivered to a local
+user.  The USER field must be NUL-terminated; the TAG field is
+free-form.
 
-Replay Avoidance
+(Tag fields can be used to  implement stateless reply blocks by
+reminding recipients of the master secrets they used to generate the
+reply block.)
 
-The nodes MUST implement mechanism to make sure that messages or part
-of messages cannot be replayed. To do this a hash of the secret
-contained in the sub header is kept for as long as the public key
-under which it is encrypted is in use. The Hash to be kept is computed
-in the following way:
+\subsection{The header structure}
 
-X = H(SharedSecret, ``REPLAY PREVENTION'')
-
-The value X is not secret and should not be relied upon to be kept
-secret. The integrity of the list should be secured and the X values
-lists may be made public.
-
-The header structure:
-
-Two headers are present in a type III message: the main header and the
-secondary header, that are swap at the crossover point. They both have
-the same structure. 
+Each type III message has two identical headers that are swapped at
+the crossover point.
 
 A header is 16*128 bytes long and contains up to 16
-sub-headers. Assuming that we have N sub headers SH0..SHN containing
+subheaders. Assuming that we have N subheaders SH0..SHN containing
 secrets SK0..SKN, the header is constructed by appending headers
 SH0..SHN together and with some random padding to achieve a total size
-of 126*16 bytes. Then each sub header key is used to create a key
+of 126*16 bytes. Then, each subheader key is used to create a key
 Hash(SharedSecret, ``HEADER SECRET KEY'') with which the part of the
-header after the sub header (but including its address extension) is
+header after the subheader (but including its address extension) is
 encrypted with using the stream cipher. 
-In practice headers and sub headers are constructed in parallel since
-the Digest contained in the sub header is a hash of all the other
-encrypted sub headers and the random data they generate as the message
-travels through the network. 
 
-Formally:
+(In practice headers and subheaders are constructed in parallel since
+the Digest contained in the subheader is a hash of all the other
+encrypted subheaders and the random data they generate as the message
+travels through the network. )
+
+PROCEDURE: Create a single header.
 
 Inputs: A_1 .. A_N (addresses of intermediate nodes), 
 	PK_1 .. PK_N (Public keys of intermediate nodes),
 	SK_1 .. SK_N (Secret keys to be shared with intermediate nodes),
-	J (Random padding)
-	Type of header (END, SWAP, RTRN)
+        R Routing type and information of last header (FWD, DROP, SWAP, etc.)
 Output: H (The header)
 
 Process: 
-  // Calculate the sizes of the sub headers
+  // Calculate the sizes of the subheaders
   for i = 1 .. N
 	SIZE_i = Len(ESHS(PK_i, V, SK_i, Z(16), Z(1), A_i))
 
@@ -202,70 +212,65 @@ Process:
   for i = N .. 1
 	K = HASH(SK_i, ``HEADER SECRET KEY'')[0:16];
   	DIGEST = HASH( PRNG(K,Len(H_(N+1)) XOR H_(N+1) | J_i)
-	if i = N then (set appropriate flag END, SWAP, or RTRN)
+	if i = N then (set appropriate routing type)
 	H_i = ESHS(PK_i, V, SK_i, DIGEST, F, A_i) | PRNG(K,Len(H_(N+1))) XOR H_(N+1)
   end
 
 return H_1;
 
-Note that in order to create a reply block the last address needs to
-be of type RTRN, the address before the last needs to point to the
-address of the recipient and the secret keys have to be generated
-from a master secret in the RTRN address block. The header is
-otherwise encoded in the same way.
+\subsection{The Payload of messages}
 
-The Payload of messages:
+The payload of a Mixminion message has a fixed length of 32 kb
+- 2*16*128 bytes = 28kb.   Payloads indicate their size.
 
-The payload of a Type III remailer message has a fixed length of 32 kb
-- 2*16*128 bytes = 28kb. Some information needs to be contained at the
-beginning so that it can be redirected to the appropriate module:
-
-Payload structure:
+  [XXXX Shouldn't size info go into the header, or no place?  Size
+  info makes tagged payloads distinguishable from garbage.]
 
 Size:   2 bytes
-Module: 4 bytes
 Data:   (Variable)
 
-We should denote a payload as P.
+We denote a payload as P.
 
-Constructing whole messages
+\subsection{Constructing whole messages}
 
 Given two headers and a payload one can construct a whole
-message. The first header (main) must always contain a last sub header
-with the flag SWAP on. The second header should contain as the last
-sub header the RTRN or END flag.
+message. The first header (main) must always contain a last subheader
+with routing type SWAP.  
 
-Input: H1 (header containing keys H1K_1 .. H1K_N)
-       and H2 (if of type END then also H2K_1 .. H2K_N)
+PROCEDURE: Construct a message.
+
+Input: H1 (header containing keys SK1_1... SK1_N)
+       and H2 (header containing keys SK2_1... SK2_N.  Keys are unused
+            if we're using a reply block.)
        P (Payload)
 Output: M (the message)
 
 Process:
 	// Phase 1
-	if (H2 is Type END)
+	if (H2 is a reply block)
 		for i = N .. 0
-			P = BEAR(HASH(H2K_i, ``PAYLOAD ENCRYPT''),P)
+			P = BEAR(HASH(SK2_i, ``PAYLOAD ENCRYPT''),P)
 		end
 
 	// Phase 2
-	H2 = BEAR(HASH(P, ``HIDE HEADER''), H2)
+	H2 = SPRP(HASH(P, ``HIDE HEADER''), H2)
 
 	for i = N .. 1
-		H2 = BEAR(HASH(H1K_i, ``HEADER ENCRYPT''),H2)
-		P = BEAR(HASH(H1K_i, ``PAYLOAD ENCRYPT''),P)
+		H2 = SPRP(HASH(SK1_i, ``HEADER ENCRYPT''),H2)
+		P = SPRP(HASH(SK1_i, ``PAYLOAD ENCRYPT''),P)
 	end
 
-Processing of Messages
+\section{Processing of Messages}
 
 Messages are transfered from node to node using the custom Type III
-transport protocol or email. A node with private key PK receiving
+transport protocol or email.  A node with private key PK receiving
 message M = (H1, H2, P) performs the following operations:
 
-Process M:
-	SHS(V, SK, D, F, A) = RSA_OAEP_Decrypt(PK,H1[0:128]);
+PROCEDURE: Process a message M
+	SHS(V, SK, D, F, A) = PK_Decrypt(PK,H1[0:128]);
 	If there is any problem with the OAEP padding discard the message.
-	If the address spans accross many blocks extract them and
-		decrypt it.
+	If the routing info spans across many blocks extract them and
+		decrypt them.
 	Check that D = H(H1[128:15*128]);
 	H1 = H1[128:15*128] | PRNG(HASH(SK, ``RANDOM
 						JUNK'')[0:16])[0:128];
@@ -273,17 +278,18 @@ Process M:
 	H2 = BEAR(HASH(SK, ``HEADER ENCRYPT''),H2);
 	P = BEAR(HASH(SK, ``PAYLOAD ENCRYPT''),P);
 
-	if SWAP is set in F:
+	if routing type is is DROP:
+                End.
+	if routing type is SWAP-FWD:
 		H2 = BEAR(HASH(P, ``HIDE HEADER''), H2)
 		Swap H1 and H2;
-
-	if END is set in F:
+        if routing type is SWAP-FWD or FWD:
+	   	Put (H1, H2, P) in queue to be sent to A.
+        Otherwise:
 		Give (A, H(SK,``APPLICATION KEY''), (H1, H2, P)) to
 		Module manager. 
-	else
-	   	Put (H1, H2, P) in queue to be sent to A.
 
-Single Use Reply Block exchange formats
+\section{Single Use Reply Block exchange formats}
 
 [It should contain, use-by date, first hop address, 
  SURB block, public key, etc.
@@ -291,7 +297,7 @@ Single Use Reply Block exchange formats
  use part of the header. One only needs to specify the 
  blocks containing the SURB and a key to pad the junk]
 
-Email Transport exchange format
+\section{Email Transport exchange format}
 
 [Need to specify how we are going to wrap the message
  as an email. This is only intended for SURB use and
@@ -301,7 +307,20 @@ Email Transport exchange format
  able to block the service, for the recipient and to
  filter out messages arriving from the mix network.]
 
-Type III remailer forward secure protocol
+\subsection{Replay Avoidance}
+
+The nodes MUST implement a mechanism to make sure that messages cannot
+be replayed. To do this a hash of the secret contained in the
+subheader is kept for as long as the as public key under which it was
+encrypted is in use. The Hash should be computed in the following way:
+
+X = H(SharedSecret, ``REPLAY PREVENTION'')
+
+The value X is not secret, and its secrecy should not be relied upon.
+The integrity of the list should be secured and the X values lists may
+be made public.
+
+\section{Type III (Mixminion) forward secure protocol}
 
 [cut + paste from other document]
 
@@ -310,14 +329,27 @@ forward secrecy making it impossible to recognize or decrypt any
 message that went through it in the past. In order to establish this
 channel one of the two mixes initiates the connection but at the end
 of the key exchange protocol the channel is bi-directional. The
-protocol should be used when the TCP/IP4 address type is specified in
-a sub header.
+protocol should be used when the SWAP-FWD/IP4 or FWD/IP4 address type
+is specified in a subheader.
 
-SSL does not need to be modified in any way to provide forward secure
-communications. We will use a mix of ephemeral Diffie Hellman (DH)
-keys and key updating to achieve our protocol goals.
+The Mixminion protocol uses TLS (the IETF standardization of SSL) with
+the ciphersuite "TLS_DHE_RSA_WITH_AES_256_CBC_SHA" (defined in
+tls-ciphersuite-03.txt).  No other ciphersuite is permitted for
+MIX-to-MIX communications.
 
-Outline for SSL based protocol:
+  [XXXX Do we want to use DHE_DSS instead?  Or AES_128? -NM]
+
+X.509 certificates need not be signed; instead, they must only contain
+a key matching that used in the KEYID portion of the header's routing
+data.  
+
+Messages are sent from client to server; the client must send a
+ClientHello packet to renegotiate session key between all
+messages. [XXXX why so often? -NM] If the client does not do so, the
+server must close the connection.  [XXXX Is this so? -NM]
+
+Protocol outline: (Portions marked with '*' are normative; other
+portions are non-normative descriptions of TLS.)
 
 \begin{verbatim}
 - A invents a new Diffie Hellman key 
@@ -326,16 +358,16 @@ Outline for SSL based protocol:
   A then initiates the SSL Handshake protocol with B.
 - B invents a DH key and makes a certificate using his signing
   key.
-- A can check that the Hash of the signing key is the same as
-  the one contained in the Address of the sub header.
+* A checks that the Hash of the signing key is the same as
+  the one contained in the routing info of the subheader.
 - The SSL handshake protocol proceeds as normal until a session
   key has been established. All communications are then encrypted
   using this session key.
 
-- A sends "SEND", M, H(M,"SEND") (4 + 32k + 20 bytes)
-- B sends "RECEIVED", H(M,"RECEIVED") (8 + 20 bytes)
+* A sends "SEND", M, H(M,"SEND") (4 + 32k + 20 bytes)
+* B sends "RECEIVED", H(M,"RECEIVED") (8 + 20 bytes)
 
-- A sends an SSL handshake renegotiation message.
+* A sends an SSL handshake renegotiation message.
   (and MUST not reuse the same key for 
    transfering another message)
   This updates the session key and overrides the old ones.
@@ -345,11 +377,6 @@ Outline for SSL based protocol:
 
 The old keys must be permanently overwritten. Special care should be
 taken to permanently erase them from the Hard Disk and memory. 
-
-Only secure cipher suites should be accepted by any of the
-communicating parties. Diffie Hellman is used for the key exchange
-since it allows for quick key generation. The blowfish or 3DES cipher
-MAY be used fas the symmetric cipher.
 
 The standard transport mechanism over which the MixMinion Transfer
 Protocol is TCP over IP. The standard listening TCP port should be 
@@ -368,11 +395,23 @@ hash element in the Master Header is nonzero, the certificate of
 the communication partners must be signed using a key that hashes
 appropriately.
 
-Remailer Information Exchange format
+\section{Remailer Information Exchange format}
 
 [Need to provide signature + encryption keys, expiry dates, root of
 list of hashes, Address, services and modules, policies, ...]
 
-Statistics Information Exchange formats
+\section{Statistics Information Exchange formats}
 
 [Stats, reputation, ... Roger?]
+
+Accessing directory server?
+
+Uploading blocks
+
+Signing blocks ????
+
+Receiving a reply?
+
+Sending SMTP
+
+Local delivery
