@@ -1,4 +1,4 @@
-$Id: nym-spec.txt,v 1.8 2004/08/18 18:50:22 nickm Exp $
+$Id: nym-spec.txt,v 1.9 2004/08/18 23:59:03 nickm Exp $
 
                                Mix3:Nym
     Underhill: A Proposed Type 3 Nymserver Protocol Specification
@@ -506,7 +506,7 @@ Table of Contents
    To encrypt an octet sequence, the nymserver first compresses the
    octet sequence (as described in E2E-spec.txt).  Next, the nymserver
    pads the octet sequence to the nearest multiple of 128 octets in
-   length.  The nymserver then generates a random 128-bit key;
+   length.  The nymserver then generates a random 160-bit key;
    LIONESS-encrypts the padded compressed data with the key; and
    prepends to the encrypted data the RSA-encrypted key.  We use the
    same trick as minion-spec.txt to minimize wasted space.
@@ -521,9 +521,9 @@ Table of Contents
      Let PADDING_LEN = CEIL(LEN(M_C)/P)*P - LEN(M_C).
      Let M_P = M_C | Z(PADDING_LEN).
 
-     Let K = Rand(16).
+     Let K = Rand(20).
      Let M_Enc = SPRP_Encrypt(K, "", M_P)
-     Let RSA_LEN = Len(PK_nym) - PK_OVERHEAD_LEN - 16
+     Let RSA_LEN = Len(PK_nym) - PK_OVERHEAD_LEN - 20
      Let RSA_PART = PK_Encrypt(PK_nym, K | M_Enc[0:RSA_LEN])
 
      Return RSA_PART | M_Enc[RSA_LEN:Len(M_Enc)-RSA_LEN]
