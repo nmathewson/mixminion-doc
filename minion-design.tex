@@ -1,16 +1,9 @@
-% XXX remember to mention bodo moeller's crypto paper
-
 % \documentclass[10pt, twocolumn]{IEEEtran}
 \documentclass[final,inpress,inline]{ieee}
-
-% \documentclass{llncs}
 
 \usepackage{url}
 \usepackage{graphics}
 \usepackage{amsmath}
-
-\newcommand{\workingnote}[1]{}        % The version that hides the note.
-%\newcommand{\workingnote}[1]{(**#1)}   % The version that makes the note visible.
 
 \renewcommand\url{\begingroup \def\UrlLeft{<}\def\UrlRight{>}\urlstyle{tt}\Url}
 \newcommand\emailaddr{\begingroup \def\UrlLeft{<}\def\UrlRight{>}\urlstyle{tt}\Url}
@@ -39,8 +32,8 @@
 \title{Mixminion: Design of a Type III Anonymous Remailer Protocol}
 
 %\author{George Danezis\inst{1} \and Roger Dingledine\inst{2} \and Nick Mathewson\inst{2}}
-\author{George Danezis \\ University of Cambridge \\ george.danezis@cl.cam.ac.uk \and
-Roger Dingledine and Nick Mathewson \\ The Free Haven Project \\ \{arma,nickm\}@freehaven.net}
+\author{George Danezis \\ University of Cambridge \\ \emailaddr{george.danezis@cl.cam.ac.uk} \and
+Roger Dingledine and Nick Mathewson \\ The Free Haven Project \\ \emailaddr{{arma,nickm}@freehaven.net}}
 %\institute{Cambridge University
 %\email{\emailaddr{george.danezis@cl.cam.ac.uk}}
 %\and
@@ -81,7 +74,7 @@ The research community has since introduced many new
 designs and proofs
 \cite{abe}\cite{babel}\cite{flash-mix}\cite{kesdogan}\cite{shuffle}\cite{hybrid-mix}, 
 and discovered a variety of new attacks 
-\cite{back-traffic-analysis}\cite{langos02}\cite{disad-free-routes}\cite{desmedt}\cite{mitkuro}\cite{raymond00}.
+\cite{back01}\cite{langos02}\cite{disad-free-routes}\cite{desmedt}\cite{mitkuro}\cite{raymond00}.
 But because many of the newer designs require considerable coordination,
 synchronization, bandwidth, or processing resources, deployed remailers still use
 Cottrell's Mixmaster design from 1994
@@ -239,7 +232,7 @@ network, where senders choose from a set of fixed paths through the
 mix-net. Cascades can provide greater anonymity against an adversary
 who owns many mixes \cite{disad-free-routes}, but they are also more
 vulnerable to blending attacks such as trickle or flooding attacks
-\cite{batching-taxonomy}.
+\cite{trickle02}.
 Furthermore, cascade networks arguably have lower maximum anonymity because
 the number of people Alice can hide among (her \emph{anonymity set}) is limited
 to the number of messages the weakest node in her cascade can handle.
@@ -392,7 +385,7 @@ of the attacks and our defenses against them in Section \ref{sec:attacks}.
 Mixminion brings together the current best practical approaches
 for providing anonymity in a batching message-based free-route mix
 environment. We do not aim to provide a low-latency connection-oriented
-service like Freedom \cite{freedom} or Onion Routing \cite{goldschlag99}:
+service like Freedom \cite{freedom} or Onion Routing \cite{syverson_2000}:
 while those designs are more convenient for common activities like
 anonymous web browsing, their low latency necessarily implies smaller
 anonymity sets than with slower, message-based services. Indeed, we
@@ -560,33 +553,21 @@ indistinguishable, we cannot include hashes for forward messages either.
 Tagging attacks, and our approach to preventing them, are discussed in more
 detail in Section \ref{subsec:tagging-defenses}.
 
-% NNNN This is redundant now. -NM
-%% We require parties that benefit from anonymity properties to run dedicated
-%% software.  Specifically, senders generating forward messages must be able
-%% to create onions, and anonymous receivers must be able to create reply blocks
-%% and unwrap messages received through those reply blocks. Other
-%% parties, such as those receiving forward messages and those sending direct reply
-%% messages, do not need to run new software: they send and receive
-%% messages via e-mail gateways.
-%% We use the quoting
-%% performed by ordinary mail software to include the reply
-%% block in a direct reply; this is sent to a node at the {\tt Reply-To:}
-%% address, which extracts the reply block and constructs a properly
-%% formatted onion.
-
 Messages are composed of a header section and a payload. We divide
 a message's path into two \emph{legs}, and split the header section
 correspondingly into a main header and a secondary header. Each header
 is composed of up to 16 subheaders, one for each hop along the path.
-Each subheader contains a hash of the remainder of its header as
-seen by that mix, so we can do
-integrity-checking of the path (but not the payload) within each leg.
-Each subheader also contains a master secret, which is used to derive a
-symmetric key for decrypting the rest of the message. The mix also
-derives a padding seed from this master key. It uses this padding seed
-to place predictable padding at the end of the header, so the hash will
-match even though each hop must repad the header to maintain constant
-length. Each subheader also includes the address of the next node to which
+Each subheader contains a hash of the remainder of its header as seen
+by that mix, so we can do integrity-checking of the path (but not the
+payload) within each leg. Each subheader also contains a master secret,
+which is used to derive a symmetric key for decrypting the rest of the
+message. The mix appends an appropriate number of zero bits to the header
+after message decryption, and decrypts those also -- the decryption of
+the padding is predictable, and so the hash can match even though each
+hop must repad the header to maintain constant length. A proof for the
+security of this approach is given in \cite{BM:mixencrypt}.
+
+Each subheader also includes the address of the next node to which
 the message should be forwarded, along with its expected signature key
 fingerprint --- the mix refuses to deliver the message until the next
 hop has proved its identity.
@@ -631,11 +612,8 @@ to have certain properties:
 To fulfill the above requirements we use a variable-length block
 cipher adapted to the length of the payload --- that
 is, a cipher that acts as a permutation on a block the size of its
-input (a header or the payload).  Possible candidates
-include LIONESS \cite{BEAR-LIONESS} and SPC \cite{SPC}.
-% ???? What can anybody tell me about SPC?  I get no google hits 
-%      except for this paper.-NM  
-% dunno. good thing we have another candidate. -RD
+input (a header or the payload).  One candidate
+is LIONESS \cite{BEAR-LIONESS}.
 The cryptographic property required is that of a super-pseudo-random
 permutation (a.k.a. strong pseudo-random permutation) or SPRP \cite{sprp}.\footnote{
 The weaker PRP property may be sufficient, given that preventing
@@ -1189,7 +1167,7 @@ of opportunity for this attack.
 
 The Mixmaster protocol does not specify a means for clients to learn the
 locations, keys, capabilities, or performance statistics of mixes. Several
-\emph{ad hoc} schemes have grown to fill that void \cite{levien}, but as we
+\emph{ad hoc} schemes have grown to fill that void \cite{echolot}, but as we
 explain below, it is important that all clients learn this information in
 the same way.  (Omitting directory servers is not an option: without timely
 information, clients cannot respond to changes in the set of mixes, or to
@@ -1259,7 +1237,7 @@ help thwart trickle attacks.
 
 Directory servers compile node availability and performance information by
 sending traffic through mixes in their directories. This is currently
-similar to the current ping servers \cite{levien}, but in the
+similar to the current ping servers \cite{echolot}, but in the
 future we can investigate integrating more complex and attack-resistant
 reputation metrics.  But even this reputation information introduces
 vulnerabilities: for example, an adversary 
@@ -1371,7 +1349,7 @@ model.
 \label{subsec:batching}
 
 Low-latency systems like Onion Routing aim to provide anonymity against an
-adversary who is not watching both Alice and Bob \cite{onion-routing}. If
+adversary who is not watching both Alice and Bob \cite{syverson_2000}. If
 the adversary watches both, he can for instance count packets and observe
 packet timing to become confident that they are communicating. Because
 Mixminion aims to defeat even a global passive adversary, we must address
@@ -1382,11 +1360,11 @@ he can manipulate the batch of messages entering a mix so the only message
 unknown to him in the batch is the target message. This approach is
 known as the \emph{blending attack} because the adversary blends his
 own recognizable messages with the honest messages in the batch
-\cite{batching-taxonomy}. By repeatedly
+\cite{trickle02}. By repeatedly
 attacking each mix in the path, the adversary will link Alice and Bob.
 
 Mixminion nodes use a \emph{timed dynamic-pool} batching strategy
-\cite{batching-taxonomy} adapted from Mixmaster. Rather than simply
+\cite{trickle02} adapted from Mixmaster. Rather than simply
 processing each message as soon as it arrives, each mix keeps a pool of
 messages. New messages arrive, are decrypted, and enter the pool. The
 mix fires every $t$ seconds, but only if the pool contains at least a
@@ -1445,8 +1423,7 @@ messages are out --- but once the adversary has done so, he can be certain that 
 honest messages remain. In the second phase of the attack, he again
 needs to flush until the target message comes out, but once it does, he
 can be certain of recognizing it. To prevent this, Mixminion employs the following
-dummy policy, as suggested in \cite{batching-taxonomy}:
-%and analyzed in \cite{andrei-claudia}:
+dummy policy, as suggested in \cite{trickle02}:
 each time the mix
 fires, it also sends out a number of dummies chosen from a geometric
 distribution. These dummies travel a number of hops chosen uniformly
@@ -1529,7 +1506,7 @@ longer be decrypted.
 \item \emph{Delaying messages.} The adversary can delay messages and
 release them when certain network parameters (eg traffic volume) are
 different. The efficacy of this attack is poorly understood, but it may
-well be quite damaging \cite{batching-taxonomy}. Imposing a deadline on
+well be quite damaging \cite{trickle02}. Imposing a deadline on
 transmission at each hop may help \cite{mix-acc}.
 \item \emph{Dropping messages.} The adversary can drop messages with the
 hope that users will notice and resend. If the user must resend, he
@@ -1613,7 +1590,7 @@ design to peripheral design choices, need more attention:
 
 \begin{itemize}
 \item We need more research on batching strategies that resist blending
-attacks \cite{batching-taxonomy} as well as intersection
+attacks \cite{trickle02} as well as intersection
 attacks on asynchronous free routes \cite{disad-free-routes}. In
 particular the anonymity they provide during normal operation or
 under attack must be balanced with other properties such as latency

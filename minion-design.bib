@@ -1,17 +1,26 @@
-@article{ pfitzmann90how,
+@InProceedings{pfitzmann90how,
     author = "Birgit Pfitzmann and Andreas Pfitzmann",
     title = "How to Break the Direct {RSA}-Implementation of {MIXes}",
-    journal = "Lecture Notes in Computer Science",
-    volume = "434",
-    pages = "373--??",
-    year = "1990",
-    url = "citeseer.nj.nec.com/pfitzmann90how.html" }
+    booktitle = {Eurocrypt 89},
+    publisher = {Springer Verlag, LNCS 434},
+    year = {1990},
+    note = {\url{http://citeseer.nj.nec.com/pfitzmann90how.html}},
+}
 
 @Misc{mixminion-spec,
    author =      {Mixminion},
-   title =       {Type {III} ({M}ixminion) {M}IX Protocol Specifications},
-   note =        {\newline \url{http://mixminion.net/minion-spec.txt}},
-}  
+   title =       {Type {III} ({M}ixminion) Mix Protocol Specifications},
+   note =        {\url{http://mixminion.net/minion-spec.txt}},
+}
+
+@InProceedings{BM:mixencrypt,
+  author =       {M{\"o}ller, Bodo},
+  title =        {Provably Secure Public-Key Encryption for Length-Preserving Chaumian Mixes},
+  booktitle =    {{CT-RSA} 2003},
+  publisher =    {Springer Verlag, LNCS 2612},
+  year =         2003,
+  note =         {To appear}
+}
 
 % Would a more recent reference for SPRPs be more useful?
 @Article{sprp,
@@ -25,11 +34,15 @@
    pages =       {373--386},
 }
 
-@Misc{back-traffic-analysis,
-   author =      {Adam Back and Ulf M\"oller and Anton Stiglic},
-   title =       {Traffic Analysis Attacks and Trade-Offs in Anonymity Providing Systems},
-   howpublished = {Proceedings of the Information Hiding Workshop 2001},
-   note =        {\url{http://www.cypherspace.org/adam/pubs/traffic.pdf}},
+@InProceedings{back01,
+  author =       {Adam Back and Ulf M\"oller and Anton Stiglic},
+  title =        {Traffic Analysis Attacks and Trade-Offs in Anonymity Providing Systems},
+  booktitle =    {Information Hiding (IH 2001)},
+  pages =        {245--257},
+  year =         2001,
+  editor =       {Ira S. Moskowitz},
+  publisher =    {Springer-Verlag, LNCS 2137},
+  note =         {\url{http://www.cypherspace.org/adam/pubs/traffic.pdf}},
 }
 
 @InProceedings{rackoff93cryptographic,
@@ -38,41 +51,51 @@
    booktitle =   {{ACM} Symposium on Theory of Computing},
    pages =       {672--681},
    year =        {1993},
-   note =        {\newline \url{http://research.microsoft.com/crypto/dansimon/me.htm}},
+   note =        {\url{http://research.microsoft.com/crypto/dansimon/me.htm}},
 }
 
 @InProceedings{freehaven-berk,
    author =      {Roger Dingledine and Michael J. Freedman and David Molnar},
    title =       {The Free Haven Project: Distributed Anonymous Storage Service},
-   booktitle =   {Workshop on Design Issues in Anonymity and Unobservability},
+   booktitle =   {Designing Privacy Enhancing Technologies: Workshop
+                  on Design Issue in Anonymity and Unobservability},
    year =        {2000},
    month =       {July},
+   editor =      {H. Federrath},
+   publisher =   {Springer Verlag, LNCS 2009},
    note =        {\url{http://freehaven.net/papers.html}},
 }
 
 @InProceedings{raymond00,
-   author =      {J. Raymond},
-   title =       {Traffic Analysis: Protocols, Attacks, Design Issues, and Open Problems},
-   booktitle =   {Workshop on Design Issues in Anonymity and Unobservability},
-   year =        {2000},
-   month =       {July},
-   pages =       {10-29},
-   note =        {\url{http://citeseer.nj.nec.com/454354.html}},
+  author =       {J. F. Raymond},
+  title =        {{Traffic Analysis: Protocols, Attacks, Design Issues,
+                  and Open Problems}}, 
+  booktitle =    {Designing Privacy Enhancing Technologies: Workshop
+                  on Design Issue in Anonymity and Unobservability},  
+  year =         2000,
+  month =        {July},
+  pages =        {10-29},
+  editor =       {H. Federrath},
+  publisher =    {Springer Verlag, LNCS 2009},
 }
 
-@Misc{batching-taxonomy,
-   author =      {Andrei Serjantov and Roger Dingledine and Paul Syverson},
-   title =       {From a Trickle to a Flood: Active Attacks on Several Mix Types},
-   howpublished = {Proceedings of the Information Hiding Workshop 2002},
-   note =        {\url{http://freehaven.net/doc/batching-taxonomy/taxonomy.pdf}},
+@InProceedings{trickle02,
+  author =       {Andrei Serjantov and Roger Dingledine and Paul Syverson},
+  title =        {From a Trickle to a Flood: Active Attacks on Several
+                  Mix Types},
+  booktitle =    {Information Hiding (IH 2002)},
+  year =         {2002},
+  editor =       {Fabien Petitcolas},
+  publisher =    {Springer-Verlag, LNCS (forthcoming)},
 }
 
 @InProceedings{langos02,
-   author =      {Oliver Berthold and Heinrich Langos},
-   title =       {Dummy Traffic Against Long Term Intersection Attacks},
-   booktitle =   {Privacy Enhancing Technologies 2002},
-   year =        {2002},
-   publisher =   {Springer-Verlag},
+  author =      {Oliver Berthold and Heinrich Langos},
+  title =       {Dummy Traffic Against Long Term Intersection Attacks},
+  booktitle =    {Privacy Enhancing Technologies (PET 2002)},
+  year =         {2002},
+  editor =       {Roger Dingledine and Paul Syverson},
+  publisher =    {Springer Verlag, LNCS 2482}
 }
 
 @InProceedings{onion-discex00,
@@ -84,7 +107,7 @@
    publisher =   {IEEE CS Press},
    pages =       {34--40},
    volume =      {1},
-   note =        {\newline \url{http://www.onion-router.net/Publications.html}},
+   note =        {\url{http://www.onion-router.net/Publications.html}},
 }
 
 @Misc{TLS,
@@ -123,33 +146,30 @@
    note =        {\url{http://www.rfc-editor.org/rfc/rfc1939.txt}},
 }
 
-@Misc{onion-routing,
-   author =      {Naval Research Laboratory},
-   title =       {Onion Routing Publications},
-   note =        {\newline \url{http://www.onion-router.net/Publications.html}},
-}
-
-@Article{goldschlag99,
-   author =      {D. Goldschlag and M. Reed and P. Syverson},
-   title =       {Onion routing for anonymous and private Internet connections},
-   journal =     {Communications of the ACM},
-   volume =      {42},
-   number =      {2},
-   pages =       {39--41},
-   year =        {1999},
-   note =        {\newline \url{http://citeseer.nj.nec.com/goldschlag99onion.html}},
+@InProceedings{syverson_2000,
+  author =       {Paul F. Syverson and Gene Tsudik and Michael G. Reed
+                  and Carl E. Landwehr},
+  title =        {Towards an Analysis of Onion Routing Security},
+  booktitle =    {Designing Privacy Enhancing Technologies: Workshop
+                  on Design Issue in Anonymity and Unobservability},
+  year =         2000,
+  month =        {July},
+  pages =        {96--114},
+  editor =       {H. Federrath},
+  publisher =    {Springer Verlag, LNCS 2009},
+  note =         {\url{http://citeseer.nj.nec.com/syverson00towards.html}}
 }
 
 @InProceedings{shuffle,
-   author = 	 {C. Andrew Neff},
-   title = 	 {A Verifiable Secret Shuffle and its Application to E-Voting},
-   booktitle = 	 {8th ACM Conference on Computer and Communications
+   author =      {C. Andrew Neff},
+   title =       {A Verifiable Secret Shuffle and its Application to E-Voting},
+   booktitle =    {8th ACM Conference on Computer and Communications
                   Security (CCS-8)},
-   pages =	 {116--125},
-   year =	 2001,
-   editor =	 {P. Samarati},
-   month =	 {November},
-   publisher =	 {ACM Press},
+   pages =       {116--125},
+   year =        2001,
+   editor =      {P. Samarati},
+   month =       {November},
+   publisher =   {ACM Press},
    note =        {\url{http://www.votehere.net/ada_compliant/ourtechnology/
                        technicaldocs/shuffle.pdf}},
 }
@@ -178,20 +198,23 @@
    author =      {Oliver Berthold and Hannes Federrath and Stefan K\"opsell},
    title =       {Web {MIX}es: A system for anonymous and unobservable
                   {I}nternet access}, 
-   booktitle =   {Designing Privacy Enhancing Technologies, {LNCS} Vol. 2009},
+  booktitle =    {Designing Privacy Enhancing Technologies: Workshop
+                  on Design Issue in Anonymity and Unobservability},
+   editor =       {H. Federrath},
+   publisher =    {Springer Verlag, LNCS 2009},
    pages =       {115--129},
    year =        2000,
-   publisher =   {Springer-Verlag},
 }
 
 @InProceedings{disad-free-routes,
    author =      {Oliver Berthold and Andreas Pfitzmann and Ronny Standtke},
    title =       {The disadvantages of free {MIX} routes and how to overcome
                   them}, 
-   booktitle =   {Designing Privacy Enhancing Technologies, {LNCS} Vol. 2009},
+   booktitle =   {Designing Privacy Enhancing Technologies: Workshop
+                  on Design Issue in Anonymity and Unobservability},
    pages =       {30--45},
    year =        2000,
-   publisher =   {Springer-Verlag},
+   publisher =    {Springer Verlag, LNCS 2009},
    note =        {\url{http://www.tik.ee.ethz.ch/~weiler/lehre/netsec/Unterlagen/anon/
                        disadvantages_berthold.pdf}},
 }
@@ -231,37 +254,6 @@
    note =        {\newline \url{http://chacs.nrl.navy.mil/publications/CHACS/1998/}},
 }
 
-@Misc{goldschlag-etal,
-   author =      {David M. Goldschlag and Stuart G. Stubblebine and
-                  Paul F. Syverson},
-   title =       {Temporarily Hidden Bit Commitment and Lottery
-                  Applications},
-   note =        {Submitted for journal publication},
-}
-
-@Article{chaum-dc,
-   author =      {David Chaum},
-   title =       {The {D}ining {C}ryptographers {P}roblem: Unconditional Sender and
-                  Recipient Untraceability},
-   journal =     {Journal of Cryptology},
-   year =        {1988},
-   volume =      {1},
-   pages =       {65--75},
-   note =        {\newline \url{http://komarios.net/crypt/diningcr.htm}},
-}
-
-@Misc{mccoy-dcnets,
-   author =      {Jim McCoy},
-   title =       {Re: {DC}-net implementation via reputation capital},
-   note =        {\newline \url{http://www.privacy.nb.ca/cryptography/archives/coderpunks/new/1998-10/0114.html}},
-}
-
-@Misc{nymip,
-   author =      {John Bashinski et al},
-   title =       {The {NymIP} Effort},
-   note =        {\newline \url{http://nymip.velvet.com/}},
-}
-
 @Misc{shoup-iso,
    author =      {Victor Shoup},
    title =       {A Proposal for an {ISO} {S}tandard for Public Key Encryption (version 2.1)},
@@ -282,16 +274,10 @@
    note =        {\newline \url{http://eprint.iacr.org/2000/061/}},
 }
 
-@Misc{levien,
-   author =      {Tim May},
-   title =       {Description of {L}evien's pinging service},
-   note =        {\newline \url{http://www2.pro-ns.net/~crypto/chapter8.html}},
-}
-
-@Misc{mixmaster,
-   author =      {Electronic {F}rontiers {G}eorgia ({EFGA})},
-   title =       {Anonymous Remailer Information},
-   note =        {\newline \url{http://anon.efga.org/Remailers/}},
+@misc{echolot,
+  author = {Peter Palfrader},
+  title = {Echolot: a pinger for anonymous remailers},
+  note = {\url{http://www.palfrader.org/echolot/}},
 }
 
 @Misc{mixmaster-attacks,
@@ -345,36 +331,35 @@
    author =      {Masayuki Abe},
    title =       {Universally Verifiable {MIX} With Verification Work Independent of
                   The Number of {MIX} Servers},
-   booktitle =   {Advances in Cryptology - {EUROCRYPT} 1998, {LNCS} Vol. 1403},
+   booktitle =   {{EUROCRYPT} 1998},
    year =        {1998},
-   publisher =   {Springer-Verlag},
+   publisher =   {Springer-Verlag, LNCS 1403},
 }
 
 @InProceedings{desmedt,
    author =      {Yvo Desmedt and Kaoru Kurosawa},
    title =       {How To Break a Practical {MIX} and Design a New One},
-   booktitle =   {Advances in Cryptology - {EUROCRYPT} 2000, {LNCS} Vol. 1803},
+   booktitle =   {{EUROCRYPT} 2000},
    year =        {2000},
-   publisher =   {Springer-Verlag},
+   publisher =   {Springer-Verlag, LNCS 1803},
    note =        {\url{http://citeseer.nj.nec.com/447709.html}},
 }
 
 @InProceedings{mitkuro,
    author =      {M. Mitomo and K. Kurosawa},
    title =       {Attack for {F}lash {MIX}},
-   booktitle =   {Advances in Cryptology -\newline {ASIACRYPT} 2000,
-                  {LNCS} Vol. 1976},
+   booktitle =   {{ASIACRYPT} 2000},
    year =        {2000},
-   publisher =   {Springer-Verlag},
-   note =        {\newline \url{http://citeseer.nj.nec.com/450148.html}},
+   publisher =   {Springer-Verlag, LNCS 1976},
+   note =        {\url{http://citeseer.nj.nec.com/450148.html}},
 }
 
 @InProceedings{hybrid-mix,
    author =      {M. Ohkubo and M. Abe},
    title =       {A {L}ength-{I}nvariant {H}ybrid {MIX}},
-   booktitle =   {Advances in Cryptology - {ASIACRYPT} 2000, {LNCS} Vol. 1976},
+   booktitle =   {Advances in Cryptology - {ASIACRYPT} 2000},
    year =        {2000},
-   publisher =   {Springer-Verlag},
+   publisher =   {Springer-Verlag, LNCS 1976},
 }
 
 @InProceedings{PShuffle,
@@ -391,7 +376,7 @@
 }
 
 
-@misc{ jakobsson-optimally,
+@misc{jakobsson-optimally,
   author = "Markus Jakobsson and Ari Juels",
   title = "An Optimally Robust Hybrid Mix Network (Extended Abstract)",
   url = "citeseer.nj.nec.com/492015.html" }
@@ -400,9 +385,9 @@
    author =      {D. Kesdogan and M. Egner and T. B\"uschkes},
    title =       {Stop-and-Go {MIX}es Providing Probabilistic Anonymity in an Open 
                   System},
-   booktitle =   {Information Hiding Workshop 1998, {LNCS} Vol. 1525},
+   booktitle =   {Information Hiding (IH 1998)},
    year =        {1998},
-   publisher =   {Springer Verlag},
+   publisher =   {Springer Verlag, LNCS 1525},
    note =        {\newline \url{http://www.cl.cam.ac.uk/~fapp2/ihw98/ihw98-sgmix.pdf}},
 }
 
@@ -453,19 +438,24 @@
    note =        {\newline \url{http://citeseer.nj.nec.com/clarke00freenet.html}},
 }
 
-@Misc{dodis,
-   author =      {Yevgeniy Dodis},
-   title =       {Semantically Secure Homomorphic Encryption Schemes},
-   note =        {Manuscript},
-}
-
 @Misc{rprocess,
    author =      {RProcess},
    title =       {Selective Denial of Service Attacks},
    note =        {\newline \url{http://www.eff.org/pub/Privacy/Anonymity/1999\_09\_DoS\_remail\_vuln.html}},
 }
 
-@Misc{remailer-history,
+@Article{remailer-history,
+  author = {Sameer Parekh},
+  title = {Prospects for Remailers},
+  journal = {First Monday},
+  volume = {1},
+  number = {2},
+  month = {August},
+  year = {1996},
+  URL = {http://www.firstmonday.dk/issues/issue2/remailers/}
+}
+
+@Misc{remailer-history-old,
    author =      {Tim May},
    title =       {Description of early remailer history},
    howpublished = {E-mail archived at
@@ -484,10 +474,15 @@
    note =        {\newline \url{http://www.eskimo.com/~weidai/mix-net.txt}},
 }
 
-@Misc{nym-alias-net,
-   author =      {David Mazi\`eres and M. Frans Kaashoek},
-   title =       {The Design, Implementation and Operation of an Email Pseudonym Server},
-   note =        {\newline \url{http://www.cs.berkeley.edu/~daw/teaching/cs261-f98/papers/pnym.txt}},
+@InProceedings{nym-alias-net,
+  author =       {David Mazi\`{e}res and M. Frans Kaashoek}, 
+  title =        {{The Design, Implementation and Operation of an Email
+                  Pseudonym Server}},
+  booktitle =    {$5^{th}$ ACM Conference on Computer and
+                  Communications Security (CCS'98)},
+  year =         1998,
+  publisher =    {ACM Press},
+  note =        {\url{http://www.scs.cs.nyu.edu/~dm/}},
 }
 
 @Misc{timmay,
@@ -607,7 +602,7 @@
    school =      {{MIT}},
    title =       {Private {I}nformation {R}etrieval},
    year =        {2000},
-   note =        {\newline \url{http://toc.lcs.mit.edu/~tal/pubs.html}}
+   note =        {\url{http://toc.lcs.mit.edu/~tal/pubs.html}}
 }
 
 @Misc{zks,
@@ -664,26 +659,35 @@
                   Full version available from \newline \url{http://www-cse.ucsd.edu/users/mihir/}},
 }
 
-@Misc{mix-acc,
-   author =      {Roger Dingledine and Michael J. Freedman and David Hopwood and David Molnar},
-   title =       {A {R}eputation {S}ystem to {I}ncrease {MIX}-net {R}eliability},
-   howpublished = {Proceedings of the Information Hiding Workshop 2001},
-   note =        {\url{http://www.freehaven.net/papers.html}},
+
+@InProceedings{mix-acc, 
+  author =      {Roger Dingledine and Michael J. Freedman and David
+                  Hopwood and David Molnar},
+  title =       {{A Reputation System to Increase MIX-net
+                  Reliability}},
+  booktitle =   {Information Hiding (IH 2001)},
+  pages =       {126--141},
+  year =        2001,
+  editor =      {Ira S. Moskowitz},
+  publisher =   {Springer-Verlag, LNCS 2137},
+  note =        {\url{http://www.freehaven.net/papers.html}},
 }
 
-@Misc{casc-rep,
+@InProceedings{casc-rep,
    author =      {Roger Dingledine and Paul Syverson},
-   title =       {Reliable {MIX} {C}ascade {N}etworks through {R}eputation},
-   howpublished = {Proceedings of Financial Cryptography 2002},
-   note =        {\newline \url{http://www.freehaven.net/papers.html}},
+   title =       {{Reliable MIX Cascade Networks through Reputation}},
+  booktitle =    {Financial Cryptography (FC '02)},
+  year =         2002,
+  editor =       {Matt Blaze},
+  publisher =    {Springer Verlag, LNCS (forthcoming)},
 }
 
 @InProceedings{zhou96certified,
    author =      {Zhou and Gollmann},
    title =       {Certified Electronic Mail},
-   booktitle =   {{ESORICS}: {E}uropean {S}ymposium on {R}esearch in {C}omputer
-                  {S}ecurity, {LNCS} Vol. 1146},
-   publisher =   {Springer-Verlag},
+   booktitle =   {{ESORICS: European Symposium on Research in Computer
+                  Security}},
+   publisher =   {Springer-Verlag, LNCS 1146},
    year =        {1996},
    note =        {\newline \url{http://citeseer.nj.nec.com/zhou96certified.html}},
 }
@@ -691,15 +695,15 @@
 @Misc{realtime-mix,
    author =      {Anja Jerichow and Jan M\"uller and Andreas Pfitzmann and
                   Birgit Pfitzmann and Michael Waidner}, 
-   title =       {Real-{T}ime {MIX}es: A Bandwidth-Efficient Anonymity Protocol},
+   title =       {{Real-Time MIXes: A Bandwidth-Efficient Anonymity Protocol}},
    howpublished = {IEEE Journal on Selected Areas in Communications 1998.},
-   note =        {\newline \url{http://www.zurich.ibm.com/security/publications/1998.html}},
+   note =        {\url{http://www.zurich.ibm.com/security/publications/1998.html}},
 }
 
 @InProceedings{BEAR-LIONESS,
     author =     {Ross Anderson and Eli Biham},
     title =      {Two Practical and Provably Secure Block Ciphers: {BEAR} and {LION}},
-    booktitle =  {International Workshop on Fast Software Encryption, {LNCS}},
+    booktitle =  {International Workshop on Fast Software Encryption},
     year =       {1996},
     publisher =  {Springer-Verlag},
     note =       {\url{http://citeseer.nj.nec.com/anderson96two.html}},
