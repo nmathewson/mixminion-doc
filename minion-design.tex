@@ -203,6 +203,10 @@ research community currently has no answer).
 % i don't think it's a big deal to the academic folk. they certainly
 % don't care what some version of some piece of software intends to
 % do. let's leave it subtle. -RD
+%   Okay.  My concern is keeping other people from getting confused,
+% but if you think we're clear enough... -NM
+%
+% XXXX Mention that we have code and preliminary performance results? -NM
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -287,7 +291,7 @@ or ``Type II'' remailers, which added message padding, message pools,
 and other mix features lacking in the Cypherpunk remailers.
 
 \subsection{Known attacks against mix-nets}
-% ???? Move this to the end of section 3?
+% ???? Move this subsection to the end of section 3?
 
 Attacks against mix-nets aim to reduce the anonymity of users by
 linking anonymous senders with the messages they send, by linking
@@ -466,13 +470,10 @@ the processing for replies is exactly the same as for normal messages
 and it is therefore difficult to partition the anonymity sets by
 distinguishing between them. 
 
-
 % replies: we want to avoid partitioning by having reply messages be
 %   indistinguishable from forward messages, and just as secure.  To the
 %   extent possible, a mix should not be able to learn any more from a
 %   message's contents than from the fact of the message's receipt.
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -952,10 +953,12 @@ support.  (See Section \ref{subsec:delivery-modules} below.)
 \label{subsec:delivery-modules}
 
 %XXXX
-[I think it is important to say what modules get us in comparison to
-normal client side Mixminion (which servers can also use). In
-particular, access to some shared key material and plug-in for
-infrastructure critical services. -GD]
+%[I think it is important to say what modules get us in comparison to
+%  normal client side Mixminion (which servers can also use). In
+%  particular, access to some shared key material and plug-in for
+%  infrastructure critical services. -GD]
+%[Most significantly IMO is that modules can be advertised via the
+%  regular capabilities mechanism. -NM]
 
 Once a Mixminion packet reaches the final mix in its path, it must
 either be delivered to its intended recipient, dropped if it is an
@@ -968,7 +971,7 @@ standard.  Others may be added by future extensions, to
 implement abuse-resistant exit policies (see Section
 \ref{subsec:exitpolicies}), to administer nymservers (see Section
 \ref{sec:nymservers}), to publish anonymously to Usenet, to relay
-messages to older remailers, or to support other protocols.
+messages to older remailers, or to support other protocols.  
 
 Nearly all delivery methods require additional information beyond the
 message type and its payload.  The SMTP module, for example, requires
@@ -1161,6 +1164,9 @@ of opportunity for this attack.
 
 \section{Directory Servers}
 \label{sec:dir-servers}
+%XXXX Motivate this a bit earlier; be explicit about why ad hoc
+%      schemes are unacceptable. (Not just because of partitioning,
+%      but also because of support for rotation.) I can write this. -NM
 
 The Mixmaster protocol does not specify a means for clients to learn the
 locations, keys, capabilities, or performance statistics of mixes. Several
@@ -1371,6 +1377,11 @@ with a heartbeat to detect delays.
 % XXXX Huh? Heartbeat? -NM
 % spoke to you about this on the phone. feel free to add clarifying
 % text if you like. there's another place we say heartbeat too. -RD
+% XXXX Ah.  Roger tells me that this means checking for some kind of
+%    regular 'keepalive' along the TLS connection, and suspecting
+%    foul play if it's missing.  I think we may not to make such a
+%    strong claim here; need to think more. -NM
+
 
 This batching strategy also increases the cost of intersection attacks by
 providing large anonymity sets for each message in the network. Because
@@ -1416,7 +1427,9 @@ or when there are the normal number of messages but most of them are
 created by the adversary.
 
 \subsection{Transmitting many messages}
+%XXXX Rename: ``choosing paths when transmitting many messages'' -NM
 \label{subsec:many-messages}
+%XXXX Mention large messages too. -NM
 
 When Alice (the owner of a pseudonym) downloads her mail from a
 nymserver, she will likely receive many separate messages. Similarly, if
@@ -1579,7 +1592,9 @@ Mixminion payload size there is a need for a strategy to fragment
 it and reconstruct it at the recipient's end. In case some of the
 messages are lost retransmission strategies or forward error
 correction codes can be used to recover the message. 
-\item We claim that we use conservative techniques, but an all-or-nothing
+\item We claim that we use conservative techniques,
+% XXXX Oops!  We no longer claim this.  What to say here instead?-NM
+but an all-or-nothing
 variable-length block cipher is pushing it. Can we keep indistinguishable
 forward messages and replies using a simpler design? It would be
 relieving if the design can be proven to provide unlinkability between
@@ -1592,15 +1607,14 @@ more rational approach needs to be developed on who and when to insert
 such dummy messages.
 %\item We intend to draw up a more complete specification, which can lead
 %to implementation and deployment of the Mixminion design.
-% We'll have to get another spec cobbled together before anybody can review
-% this system thorougly.  Should we mention some place for people to
-% get a more formal spec?  I wouldn't be able to review our system at
-% the level that I'd want to without one.  -Nick 
+% XXXX Mention our spec?  Cite our spec? -NM
 \end{itemize}
 
 As detailed in the introduction the principal aim has 
 been to include in Mixminion only techniques that are well
-understood. Although some people have speculated about the positive
+understood.
+% XXXX Um... do we even still say that? -NM
+Although some people have speculated about the positive
 effects of the techniques described as open issues above we have not
 yet seen a thorough enough analysis to be convinced. For this reason
 while Mixminion is flexible enough to support them it does not use
@@ -1608,6 +1622,8 @@ them until their effects on anonymity are better understood. As the
 engineering effort to implement the specification into a robust system
 proceeds, undoubtedly the researchers associated or inspired by this
 project will try to shine some light on the open questions above.
+
+% XXXX Mention code and performance? -NM
 
 We invite interested developers to join the {\tt mixminion-dev}
 mailing list and examine the more detailed Mixminion
