@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.24 2003/10/21 17:51:56 nickm Exp $
+$Id: minion-spec.txt,v 1.25 2003/12/17 00:44:07 nickm Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -494,6 +494,7 @@ Table of Contents
    0x0101 MBOX      [See "E2E-spec.txt"]
    0x0102 MIX2      (EMAIL ADDRESS: variable).  Type II remailer support.
    0x0103 FRAGMENT  (Fragment to be reassembled by exit node; see E2E-spec)
+   0x0104 NEWS      [See "E2E-spec.txt"]
 
    0x1000-0xEFFF: UNALLOCATED
 

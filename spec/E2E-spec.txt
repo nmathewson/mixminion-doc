@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.17 2003/11/20 08:32:35 nickm Exp $
+$Id: E2E-spec.txt,v 1.18 2003/12/17 00:44:07 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -65,7 +65,11 @@ Table of Contents
    3.3.4.   Server descriptor section
    3.4.     Fragments
    3.4.1.   Server descriptor section
-
+   3.5.     News
+   3.5.1.   Formatting: routing information
+   3.5.2.   Formatting: message body
+   3.5.3.   Delivery
+   3.5.4.   Server descriptor section
    A.1.     Appendix: Versioning and alphas
 
 1. Introduction
@@ -851,10 +855,14 @@ Table of Contents
    The routing information for an SMTP header MUST contain a 20-octet
    decoding handle, followed by a variable-width mailbox.
 
-   A mailbox MUST be the "username@host" part of an RFC2821 mailbox.
-   (Using full RFC2822 allows too much distinguishability between
-   senders, and makes blacklisting hard.)  A mailbox MUST obey the
-   following format:
+   A mailbox MUST be a list of at least one but no more than eight addresses,
+   separated by NUL characters ([00]).  Each address MUST be the
+   "username@host" part of an RFC2821 mailbox.  (Using full RFC2822 allows
+   too much distinguishability between senders, and makes blacklisting hard.)
+   A mailbox MUST obey the following format:
+
+   [XXXX Mixminion through 0.0.6 does not support multiple destination
+     addresses.]
 
       MAILBOX ::= LOCALPART AT HOSTPART
       LOCALPART ::= ATOM | LOCALPART DOT ATOM
@@ -873,9 +881,14 @@ Table of Contents
    [XXXX It is possible that an email address is in fact
          example@[192.186.2.1], so it really should be SHOULD NOT.
          Also can we reach all possible mail addresses using this
-         strict syntax?  Do we care? -PP] 
+         strict syntax?  Do we care? -PP]
    [XXXX Using IP addresses does, as noted above, make blacklisting
          hard.  But we should review RFC2821 to see if we care. -NM]
+
+   Software that allows users to send a message to multiple recipients SHOULD
+   automatically place the recipient mailboxes in lexicographical order,
+   eliminate duplicates, and divide them into groups of eight (with one short
+   group at the end).
 
 3.3.2. Formatting: Message body
 
@@ -886,8 +899,11 @@ Table of Contents
 
    To deliver an SMTP message, an exit node that supports the SMTP
    delivery type SHOULD construct an RFC2822 message as described in
-   3.2.3 above, additionally setting the 'To' line to the mailbox
+   3.2.3 above, additionally setting the 'To' line to the mailboxes
    given in the message header.
+
+   [XXXX Should a separate outgoing message be created for each incoming
+      address? -NM]
 
    Implementations SHOULD allow exit node operators to configure
    additional fields, and to block specific 'To' addresses.
@@ -920,6 +936,23 @@ Table of Contents
    containing the maximum size (in fragments) of a message that the
    server is willing to reconstruct.
 
+3.5. News
+
+   [XXXX expand this from notes.]
+
+3.5.1. Formatting: routing information
+
+   [RI must contain 1-3 newsgroups, 0-8 mailboxes, and a subject.]
+
+3.5.2. Formatting: message body
+
+   [Headers are followup-to, reply-to, references, from, (in-reply-to?),
+   x-no-archive, (messageid?) ]
+
+3.5.3. Delivery
+
+3.5.4. Server descriptor section
+
 A.1. Apendix: versioning and alphas
 
    Today's alpha code does not publish its version as '1.0'; it uses
@@ -939,7 +972,7 @@ A.2. Appendix: storing client secrets
    re-stored---often less securely---by other applications.  Peter
    Gutmann describes several instances of this somewhere, and I'm not
    the kind of guy to argue with Peter Gutmann. -NM]
-   
+
    [XXX This format is supported by Mixminion 0.0.6 and later: earlier
    versions of the software use a more Python-specific format that
    you really shouldn't try to read.]
@@ -947,7 +980,7 @@ A.2. Appendix: storing client secrets
    First, the keyring itself is stored with RFC2440-style ASCII armor,
    with header text "BEGIN TYPE III KEYRING" and an armor header
    "Version" with a value "0.1".  The contents to be encoded are:
-   
+
          magic       [8 octets]
          format type [1 octet == 0]
          salt        [8 octets]
@@ -967,7 +1000,7 @@ A.2. Appendix: storing client secrets
    The format of the actual data is as follows:
 
          KeyData ::= Item *
-         Item ::= ItemType [1 octet] 
+         Item ::= ItemType [1 octet]
                   ItemLen  [2 octets]
                   ItemVal  [ItemLen octets]
 
