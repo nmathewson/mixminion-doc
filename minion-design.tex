@@ -267,30 +267,29 @@ and other mix features lacking in the Cypherpunk remailers.
 
 \subsection{Known attacks against mix-nets}
 
-Attacks against mix-nets aim at reducing the anonymity of users by
+Attacks against mix-nets aim to reduce the anonymity of users by
 linking anonymous senders with the messages they send, by linking
 anonymous recipients with the messages they receive, or by linking
-anonymous messages with one another.  Attackers may
+anonymous messages with one another \cite{raymond00}.  Attackers may
 try to trace messages through the network by observing network
 traffic, compromising mixes, compromising keys, delaying messages
-do they stand out from other traffic, or altering messages
-in transit.  Attackers may attempt to learn a message's destinations
-by flooding the network with dummy messages, replaying multiple copies
-of a message, or shaping traffic to isolate a target message from
-other unknown traffic.  Attackers may try to keep users from using
-the system securely by subverting route selection; or even analyze
+so they stand out from other traffic, or altering messages
+in transit.  Attackers may attempt to learn a given message's destination
+by flooding the network with messages, replaying multiple copies
+of a message, or shaping traffic to isolate the target message from
+other unknown traffic. Attackers may try to discourage users from
+using honest mixes by making them unreliable. They might analyze
 intercepted message text to look for commonalities between otherwise
 unlinked senders.
-
 Finally, even if all other attacks are foiled, a passive adversary can
 mount a long-term \emph{intersection attack} to correlate the times at
-which senders and receivers are active.
+which senders and receivers are active \cite{disad-free-routes}.
 % Mention that no defense short of N^2 padding is known, and that N^2
 % padding doesn't work?
 
-We discuss each one of these attacks in more detail below, along with the
-aspects of the Mixminion design that try to defend against it.  In
-Section \ref{sec:attacks}, we summarize attacks and defenses.
+We discuss each of these attacks in more detail below, along with the
+aspects of the Mixminion design that provide defense. We provide a summary
+of the attacks and our defenses against them in Section \ref{sec:attacks}.
 
 %% try to subvert the process of
 %% selecting routes or hiding the correspondence by corrupting mixes, or
@@ -369,7 +368,7 @@ Section \ref{sec:attacks}, we summarize attacks and defenses.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Design goals and assumptions}
-v\label{sec:assumptions}
+\label{sec:assumptions}
 
 Mixminion brings together the current best practical approaches
 for providing anonymity in a batching message-based free-route mix
@@ -1439,7 +1438,7 @@ open problem.
 
 %XXXX WRITE SOMETHING HERE! -NM
 
-\subsection{Passive attacks}
+\subsubsection{Passive attacks}
 \label{subsec:passive-attacks}
 
 \begin{description}
@@ -1447,7 +1446,7 @@ open problem.
 \item \emph{Textual analysis} XXXX
 \end{description}
 
-\subsection{Mix attacks}
+\subsubsection{Mix attacks}
 \label{subsec:mix-attacks}
 
 \begin{description}
@@ -1467,7 +1466,7 @@ open problem.
   batching strategy limits the effectiveness of these attacks.
 \end{description}
 
-\subsection{Exit-based attacks}
+\subsubsection{Exit-based attacks}
 \label{subsec:attacks-exitbased}
 
 \begin{description}
@@ -1475,7 +1474,7 @@ open problem.
 \item \emph{Use servers' exit capabilities to partition traffic.} XXXX
 \end{description}
 
-\subsection{Directory-based attacks}
+\subsubsection{Directory-based attacks}
 \label{subsec:attacks-dirbased}
 
 \begin{description}
