@@ -1108,11 +1108,14 @@ but his solution (which is proposed again in Babel\footnote{
 is valid --- also has problems. Specifically, it introduces a new class
 of \emph{partitioning} attacks, where the adversary can distinguish and
 track messages based on timestamps. If messages have short lifetimes,
-legitimate messages may arrive after their expiration date and be
-dropped. But if we specify expiration dates well after when we expect
-messages to arrive, messages arriving near their expiration date will be
-rare: an adversary can delay a message until near its expiration date,
-then release it and trace it through the network.
+meaning messages that take more than the average transit time through the
+mix expire before they reach the end of their path, then some legitimate
+messages will be dropped. But if messages have long lifetimes, meaning
+almost no messages in the system will be close to expiring, then messages
+arriving near their expiration date will be rare. An adversary can exploit
+this fact by intentionally delaying a message until near its expiration
+date and then releasing it. If he owns a mix later in the path he can
+recognize the message because it will stand out.
 
 % need to read stop & go mix paper here. -RRD
 
