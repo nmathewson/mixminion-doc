@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.18 2003/10/06 19:06:12 nickm Exp $
+$Id: minion-spec.txt,v 1.19 2003/10/07 19:55:40 nickm Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specifications
@@ -597,7 +597,7 @@ Table of Contents
    headers are swapped at the crossover point. [XXXX describe crossover]
 
    A header is HEADER_LEN=2048 octets long and contains up to
-   2048/(OAEP_OVERHEAD+MIN_SH)=24 subheaders. Starting with N
+   2048/(PK_OVERHEAD_LEN+MIN_SH)=24 subheaders. Starting with N
    subheaders SH_0..SH_N containing secrets SK_0..SK_N (and placing
    routing extension blocks directly after their respective
    subheaders), the header is constructed by appending random padding
@@ -617,7 +617,7 @@ Table of Contents
 
    The constructor then determines the amount of data (SIZE_i) that will
    be added for each node's subheader.  This amount is equal to
-   MIN_SH, plus OAEP_OVERHEAD, plus the length of the routing
+   MIN_SH, plus PK_OVERHEAD_LEN, plus the length of the routing
    information for the following node (or the 'delivery' routing
    information if this node is last).  The constructor generates a
    chunk of random padding, equal in length to HEADER_LEN minus the
@@ -660,7 +660,13 @@ Table of Contents
      // Calculate the sizes of the subheaders.
      for i = 1 .. N
         // OAEP Padding plus invariant parts plus routing info.
-        SIZE_i = MIN_SH + OAEP_OVERHEAD + Len(RI_i)
+	if i = N then
+	   Set RI from R
+        else
+           Set RI = RI_(i+1)
+        endif
+
+        SIZE_i = MIN_SH + PK_OVERHEAD_LEN + Len(RI)
         JUNK_KEY_i = SubKey(SK_i, "RANDOM JUNK")
         K_i = SubKey(SK_i, "HEADER SECRET KEY")
      end
@@ -691,19 +697,19 @@ Table of Contents
         if i = N then
              Set RT and RI from R.
         else
-             Let RT = RT_(i+1), RI = RI(i+1)
+             Let RT = RT_(i+1), RI = RI_(i+1)
         endif
 
-        SH0 = SHS(V, SK_i, Z(20), len(RI_(i+1)), RT_(i+1), RI(i+1))
+        SH0 = SHS(V, SK_i, Z(20), len(RI), RT, RI)
         SH_LEN = LEN(SH0)
         H0 = SH0 | H_(i+1)
 
-        REST = H0[PK_MAX_DATA_LEN : Len(REST) - PK_MAX_DATA_LEN]
+        REST = H0[PK_MAX_DATA_LEN : Len(H0) - PK_MAX_DATA_LEN]
 
-        EREST = Encrypt(K, REST)
+        EREST = Encrypt(K_i, REST)
         DIGEST = HASH(EREST | J_i)
 
-        SH = SHS(V, SK_i, DIGEST, len(RI_(i+1)), RT_(i+1), RI(i+1))
+        SH = SHS(V, SK_i, DIGEST, len(RI), RT, RI)
         UNDERFLOW = Min(PK_MAX_DATA_LEN - SH_LEN, 0)
         RSA_PART = SH | H0[PK_MAX_DATA_LEN - UNDERFLOW : UNDERFLOW]
 
@@ -812,7 +818,7 @@ Table of Contents
 
         JUNK_KEY = SubKey(SK, "RANDOM JUNK")
         H1 = H1[PK_ENC_LEN : 2048-PK_ENC_LEN] |
-             PRNG(JUNK_KEY, OAEP_OVERHEAD + MIN_SH + RS)
+             PRNG(JUNK_KEY, PK_OVERHEAD_LEN + MIN_SH + RS)
         HEADER_KEY = SubKey(SK, "HEADER SECRET KEY")
         H1 = H1 ^ PRNG(HEADER_KEY, Len(H1))
 
