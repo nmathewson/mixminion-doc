@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.12 2003/09/03 14:34:03 nickm Exp $
+$Id: dir-spec.txt,v 1.13 2003/09/03 16:01:43 nickm Exp $
 
 				Mix3:3
            Type III (Mixminion) Mix Directory Specifications
@@ -278,9 +278,7 @@ Table of Contents
         'Packet-Versions': A comma-separated list of allowable
             major.minor versions for packets this server will process.
             In a production network, only one value should be used for
-            this field. [Added in Mixminion 0.0.3]
-
-         
+            this field.
 
     The 'Server' section MAY contain the following entries, at most
     once each:
@@ -299,7 +297,7 @@ Table of Contents
         'Software': A string description of the software this server is
             running.  Must be less than 256 characters.  Softare SHOULD
             NOT take any action based on this field, other than to
-            display it.  [Added in Mixminion 0.0.3]
+            display it.
 
         'Secure-Configuration': A boolean value.  If true, the server
             must not be running in an insecure operating mode. [XXXX
