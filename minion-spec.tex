@@ -200,7 +200,7 @@ There are 5 predefined routing types:
 
 0x0100 SMTP   (TAG: 20 bytes, EMAIL ADDRESS: variable, TAG: variable) Variable bytes
 0x0101 MBOX   (TAG: 20 bytes, USER: variable) Variable bytes
-0x0102 MIX2   (EMAIL ADDRESS: variable).  Type-2 remailer support.
+0x0102 MIX2   (EMAIL ADDRESS: variable).  Type II remailer support.
 
 0x1000-0xEFFF: UNALLOCATED
 
@@ -684,7 +684,8 @@ the entries:
          which resolves to the provided IP for the entire lifetime of
          this Descriptor block.  It must be no more than 128
          characters.  It may contain only the characters 
-         [A-Za-z0-9_.!@#] and '-'.
+         [A-Za-z0-9_.!@#] and '-'.  It should be treated as
+         case-insensitive.
      'Identity': The modulus of this Mix node's long-term signing key,
          represented in ASN.1, and encoded in BASE64.  Whitespace in
          this field is ignored, to allow the key to span multiple
@@ -939,50 +940,50 @@ The TAG field is appended to the message in an X-Remailer-Tag header.
 [XXXX Until we have better answers about abuse prevention, nobody should
   actually implement an SMTP module. :) -NM]
 
-\section{Appendix: Backward compatibility with type-II remailers}
+\section{Appendix: Backward compatibility with Type II remailers}
 
-In order to share anonymity sets with type-III remailers while
-retaining type-II support, some remailers may wish to use Mixminion to
-deliver type-II messages.  This is done as follows:
+In order to share anonymity sets with Type III remailers while
+retaining type II support, some remailers may wish to use Mixminion to
+deliver type II messages.  This is done as follows:
 
-Nodes that accept both type-II and type-III messages may advertise the
+Nodes that accept both type II and type III messages may advertise the
 fact in their server descriptor by including a section of the form:
  
          [Incoming/Mix2]
-         Address: (type-II remailer's email address)
-         Key: (type-II key)
-	 KeyID: (type-II keyid)
-         Signature: (signature of identity key with type-II key)
+         Address: (type II remailer's email address)
+         Key: (type II key)
+	 KeyID: (type II keyid)
+         Signature: (signature of identity key with type II key)
 	 (Optionally, KeyID and Signature repeated any number of
                       times.)
 
-This section advertises that the mix can handle type-II messages
-intended for a given type-II identity (email address) and set of keys.
+This section advertises that the mix can handle type II messages
+intended for a given type II identity (email address) and set of keys.
 
 The value of 'key' is the base-64 representation of the ASN.1 encoding
-of the Mix node's type-II key. The value of 'Signature' must be the
+of the Mix node's type II key. The value of 'Signature' must be the
 base-64 representation of the RSA-OAEP/PKCS1 signature (using the
-type-II remailer key) of the SHA-1 hash of the ASN.1 representation of
+type II remailer key) of the SHA-1 hash of the ASN.1 representation of
 this node's identity key.
 
 Directory servers and bridging nodes _must_ verify that keyid and
 signature are correctly computed.
 
-Upon receiving a type-II message via SMTP, a bridging node checks
-whether the destination node is also a type-III node, by looking for a
-type-III node whose KeyID matches the KeyID for the packet. [See below]
-If it finds one, the bridging node unbase64's the type-II message's 
+Upon receiving a type II message via SMTP, a bridging node checks
+whether the destination node is also a type III node, by looking for a
+type III node whose KeyID matches the KeyID for the packet. [See below]
+If it finds one, the bridging node unbase64's the type II message's 
 contents, and uses them (plus random padding) as the payload
-of a type-III message for that node.  The routing type must be 'MIX2'
+of a type III message for that node.  The routing type must be 'MIX2'
 (0x0102); the routing info must be equal to the destination mix's
-type-II address.
+type II address.
 
 \subsection{Non-normative note: extracting KeyID and message contents}
 
-(This information is included in the Type-II remailer spec; it is included
+(This information is included in the Type II remailer spec; it is included
 here only for reference.)
 
-A type-II message follows the format:
+A type II message follows the format:
 
 "-----BEGIN REMAILER MESSAGE-----" NL
 PacketLength NL
@@ -995,16 +996,16 @@ decimal integer."Checksum" is equal to the MD5 hash of the packet,
 encoded in Base 64.  The packet is also encoded in base 64; The first
 16 bytes of the packet are the KeyID of the recipient.
 
-The KeyID of a type-II node is calculated by taking the public key
+The KeyID of a type II node is calculated by taking the public key
 <n,e>, expressing n and e as zero-padded, big-endian integers,
 concatenating them, and taking the MD5 hash of the result.
 
-When encoding a type-II message for transmission in a type-III payload,
-a type-III node should include:
+When encoding a type II message for transmission in a type III payload,
+a type III node should include:
 
 S   [2 bytes] (Size, big-endian)
-CHK [16 bytes] (MD5 checksum as given in type-II packet, base-64 decoded)
-PKT [S bytes] (Packet as given in in type-II packet, base-64 decoded)
+CHK [16 bytes] (MD5 checksum as given in type II packet, base-64 decoded)
+PKT [S bytes] (Packet as given in in type II packet, base-64 decoded)
 PAD [28KB-16-2-S bytes] (Random padding)
 
 \section{Appendix: Versioning and alphas}

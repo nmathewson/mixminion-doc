@@ -1,7 +1,7 @@
 END TO END MIXMINION
 
 This document attempts to motivate a set of requirements for
-end-to-end message transport on type-III (Mixminion) remailers, and
+end-to-end message transport on Type III (Mixminion) remailers, and
 to provide a design meeting those requirements.  The first design[1]
 was sent to mixminion-dev on on September 20; the second design[2] on
 October 11 2002.
