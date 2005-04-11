@@ -1,4 +1,4 @@
-$Id: nym-spec.txt,v 1.9 2004/08/18 23:59:03 nickm Exp $
+$Id: nym-spec.txt,v 1.10 2005/04/11 16:24:55 nickm Exp $
 
                                Mix3:Nym
     Underhill: A Proposed Type 3 Nymserver Protocol Specification
@@ -604,7 +604,8 @@ Table of Contents
 
    The body of a CREATE command has the following structure:
          NNym  Number of candidate nyms  (1 octet)
-         PW    Proof of work             (??? octets)
+	 PWL   Proof of work Length	 (1 octet)
+         PW    Proof of work             (variable length; PWL octets)
        Sequence of:
          NL    Candidate Nym Length      (1 octet)
          Nym   Candidate Nym             (variable length; NL octets)
@@ -616,7 +617,9 @@ Table of Contents
    given in the NEWPK command.  The nymserver replies with a CREATED
    command, which the nymholder confirms with a CREATE2 command.)
 
-   [XXXX specify a proof-of-work system.]
+   The PW field MUST be empty and the corresponding PWL field set to
+   0. Future version of the protocol MAY understand a non-empty PW
+   field.
 
 4.3.2. CREATE2 [0x01]
 
@@ -645,8 +648,8 @@ Table of Contents
      ID   Identity key          (variable length; ID_L octets)
      ENC  Encryption key        (variable length; remainder of command)
 
-   The key length fields MUST be 128 or 256.  The key fields hold
-   ASN.1 encoded RSA public keys.  Their exponents must be 65537.
+   The key fields hold ASN.1 encoded RSA public keys.  Their exponents
+   must be 65537. Their modulus must have a size of 2048 bits.
 
    Because the nymserver may not receive the message, the nymholder
    should continue to sign commands with its previous identity key
