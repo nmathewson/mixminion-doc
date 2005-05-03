@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.31 2004/12/13 06:01:56 nickm Exp $
+$Id: dir-spec.txt,v 1.32 2005/05/03 03:33:56 nickm Exp $
 
                                 MIX3:3
            Type III (Mixminion) Mix Directory Specification
@@ -531,7 +531,8 @@ Table of Contents
    by version.  Because the version numbering scheme will be different for
    each implementation, lines within 'Recommended-Software' are implementation-
    specific.  Other implementations of Type-III should generate similar
-   entries in 'Recommended-Software'.
+   entries in 'Recommended-Software'. [XXXX compatibility for other
+   implementations!]
 
    The server descriptors in the directory MUST be sorted by nickname
    (case-insensitive), then by Valid-After date, then by digest.  Each
@@ -756,6 +757,24 @@ Table of Contents
    URLs and public key fingerprints for all of the directory servers in
    their "voting clique".  All servers in the clique must agree about the
    members of the voting clique.
+
+7.1.1. Intermediate server lists
+
+   It is possible that a mix will upload its descriptor to some but not all
+   of the directory servers.  When this happens, it is possible for directory
+   knowledge to become fragmented.
+
+   To prevent this directory servers SHOULD continually publish a list of
+   known server descriptors, concatenated, at B/current-raw-servers.gz ,
+   where B/ is the directory server's base URL.  (This list has no signatures
+   or additional information from the directory server.) It should
+   list AT LEAST all the server descriptors that the directory server would
+   include in a vote directory, if the directory server had approved every
+   identity.  (See 7.2 below for rules.)
+
+   A directory server MAY download this list from other servers periodically;
+   when it does, it should treat each encountered server descriptor as if it
+   had just been published normally.
 
 7.2. Voting
 
