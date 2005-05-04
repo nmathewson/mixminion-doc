@@ -1,4 +1,4 @@
-$Id: nym-spec.txt,v 1.10 2005/04/11 16:24:55 nickm Exp $
+$Id: nym-spec.txt,v 1.11 2005/05/04 10:49:46 nickm Exp $
 
                                Mix3:Nym
     Underhill: A Proposed Type 3 Nymserver Protocol Specification
@@ -380,9 +380,9 @@ Table of Contents
          XXXX]
 
       2. The nymserver then forms a synopsis of the email; generates a
-         random 20-octet message ID for the email; encrypts the email
-         for receipt by the nymholder, and decrements the email's size
-         from the user's available quota.
+         cryptographically random 20-octet message ID for the email;
+         encrypts the email for receipt by the nymholder, and
+         decrements the email's size from the user's available quota.
 
 2.3. Relaying emails to the user
 
@@ -506,10 +506,10 @@ Table of Contents
    To encrypt an octet sequence, the nymserver first compresses the
    octet sequence (as described in E2E-spec.txt).  Next, the nymserver
    pads the octet sequence to the nearest multiple of 128 octets in
-   length.  The nymserver then generates a random 160-bit key;
-   LIONESS-encrypts the padded compressed data with the key; and
-   prepends to the encrypted data the RSA-encrypted key.  We use the
-   same trick as minion-spec.txt to minimize wasted space.
+   length.  The nymserver then generates a cryptographically random
+   160-bit key; LIONESS-encrypts the padded compressed data with the
+   key; and prepends to the encrypted data the RSA-encrypted key.  We
+   use the same trick as minion-spec.txt to minimize wasted space.
 
    PROCEDURE: Encrypt an octet sequence to a nymholder.
    INPUTS:
@@ -547,7 +547,7 @@ Table of Contents
    by prepending to each one the following 22 octet header, and then
    concatenating the synopses.
 
-        ID     [20 octets]   (A randomly generated message ID.)
+        ID     [20 octets]   (A cryptographically random message ID.)
         LEN    [2 octets]    (Length of the synopsis, in octets.)
 
    (Note that the nymserver must associate with each encrypted set of
@@ -578,11 +578,11 @@ Table of Contents
             CS    Command data size (3 octets)
             CD    Command data      (variable length; CS octets)
 
-   The 'Signature' field is equal to the RSA-OAEP signature of a
-   SHA-1 hash of the remainder of the message.  The NL field is equal
-   to the length of NYM.  The NYM field is equal to the Nym to which
-   these commands apply.  The SEQNO field holds a random value used
-   by the nymserver later to acknowledge this message.
+   The 'Signature' field is equal to the RSA-OAEP signature of a SHA-1
+   hash of the remainder of the message.  The NL field is equal to the
+   length of NYM.  The NYM field is equal to the Nym to which these
+   commands apply.  The SEQNO field holds a cryptographically random
+   value used by the nymserver later to acknowledge this message.
 
    The value of each 'CS' field must be the big-endian representation
    of the size of the immediately following CD field.
@@ -756,8 +756,8 @@ Table of Contents
             CD    Command data      (variable length; CS octets)
 
    The NYM field is equal to the Nym to which these commands apply.
-   The NONCE field holds a random value used by the nymserver later to
-   acknowledge this message.
+   The NONCE field holds a cryptographically random value used by the
+   nymserver later to acknowledge this message.
 
    The value of each 'CS' field must be the big-endian representation
    of the size of the immediately following CD field.
