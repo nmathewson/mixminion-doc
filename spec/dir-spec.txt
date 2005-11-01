@@ -1,4 +1,4 @@
-$Id: dir-spec.txt,v 1.32 2005/05/03 03:33:56 nickm Exp $
+$Id: dir-spec.txt,v 1.33 2005/11/01 18:19:52 nickm Exp $
 
                                 MIX3:3
            Type III (Mixminion) Mix Directory Specification
@@ -497,9 +497,9 @@ Table of Contents
        midnight GMT on this date.  This date SHOULD be exactly one day
        after the date in 'Valid-After'.
 
-     - 'Recommended-Servers' : A sorted list of server nicknames.  Items are
-       separated by a comma and a single space.  Clients SHOULD NOT depend on
-       servers whose nicknames are not on this list to be reliable or
+     - 'Recommended-Servers' : A sorted list of lower-case server nicknames.
+       Items are separated by a comma and a single space.  Clients SHOULD NOT
+       depend on servers whose nicknames are not on this list to be reliable or
        trustworthy.
 
    The 'Directory-Info' section MUST contain at least one of the following
