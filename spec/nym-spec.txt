@@ -1,4 +1,18 @@
-$Id: nym-spec.txt,v 1.11 2005/05/04 10:49:46 nickm Exp $
+$Id: nym-spec.txt,v 1.12 2005/11/28 17:58:02 nickm Exp $
+
+============================================================
+
+HEY!
+
+This is no longer the canonical location for the Underhill protocol
+specification.  Instead, look in
+
+     http://svn.conuropsis.org/nym3/trunk/doc/nym-spec.txt
+
+
+============================================================
+
+
 
                                Mix3:Nym
     Underhill: A Proposed Type 3 Nymserver Protocol Specification
