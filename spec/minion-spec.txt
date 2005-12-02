@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.29 2004/07/27 07:48:53 arma Exp $
+$Id: minion-spec.txt,v 1.30 2005/12/02 19:04:06 nickm Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specification
@@ -1040,18 +1040,21 @@ Table of Contents
     must initiate key renegotiation.  If it has not, the server must
     close the connection.
 
-   NOTE:
+   NOTES:
 
    The old keys must be permanently overwritten. Special care should be
    taken to permanently erase them from the Hard Disk and memory.
 
-   The standard transport mechanism over which the MixMinion Transfer
+   The standard transport mechanism over which the Mixminion Transfer
    Protocol talks is TCP over IP. The standard listening TCP port should be
    number 48099 (until we register a port with www.iana.org)
 
-   All possible checks should be performed during the transfer protocol
-   and if any fail the connection MUST stop and all state MUST
-   be deleted. An error MAY be logged.
+   All possible checks should be performed during the transfer protocol and
+   if any fail the connection MUST stop and all state MUST be deleted. An
+   error MAY be logged.
+
+   Current implementations do not report their version as 1.0.  See appendix
+   A.3.
 
 A.1. Appendix: A suggested pooling rule
 
