@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.19 2004/08/06 19:35:07 nickm Exp $
+$Id: E2E-spec.txt,v 1.20 2006/01/06 16:38:38 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -222,7 +222,7 @@ Table of Contents
        Let K = Min(16, 2**CEIL(Log2(M_SIZE)))
        Let NUM_CHUNKS = CEIL(M_SIZE / K)
 
-       Let M = M | PRNG(Len(M) - NUM_CHUNKS*PS*K)
+       Let M = M | PRNG(Rand(KEY_LEN), Len(M) - NUM_CHUNKS*PS*K)
 
        For i from 1 to NUM_CHUNKS:
           Let CHUNK_i = M[(i-1)*PS*K : i*PS*K]
