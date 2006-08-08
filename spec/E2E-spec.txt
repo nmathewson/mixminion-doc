@@ -1,4 +1,4 @@
-$Id: E2E-spec.txt,v 1.20 2006/01/06 16:38:38 nickm Exp $
+$Id: E2E-spec.txt,v 1.21 2006/08/08 23:30:17 nickm Exp $
 
                                 MIX3:2
          Type-III Remailers: End-to-end Encoding and Delivery
@@ -564,7 +564,7 @@ Table of Contents
    For all SEC_i:
       If H(TAG | SEC_i | "Validate") ends with a zero octet:
          K = H(TAG | SEC_i | "Generate")
-         STREAM = ENC(K, Z(MAX_PATH * KEY_LEN))
+         STREAM = PRNG(K, MAX_PATH * KEY_LEN)
          Let P_t = P.
          For j in 0 ... MAX_PATH-1:
             Let P_t = SPRP_Encrypt(STREAM[j * KEY_LEN : KEY_LEN],
