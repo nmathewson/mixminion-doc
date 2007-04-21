@@ -1,4 +1,4 @@
-$Id: minion-spec.txt,v 1.30 2005/12/02 19:04:06 nickm Exp $
+$Id: minion-spec.txt,v 1.31 2007/04/21 16:57:47 arma Exp $
 
 				MIX3:1
            Type III (Mixminion) Mix Protocol Specification
@@ -863,12 +863,12 @@ Table of Contents
 
    The value X is not secret, and its secrecy should not be relied
    upon.  The integrity of the list should be secured and the X values
-   lists may be made public.
+   may be made public.
 
 3.2.5.2. Packet pooling and delivery
 
    Instead of processing and delivering packets immediately upon
-   receipt, a node SHOULD packets as soon as possible (in order to
+   receipt, a node SHOULD process packets as soon as possible (in order to
    prevent linking in the case of compromise), but MUST accumulate a
    batch of deliverable packets before delivering any of them (in
    order to frustrate traffic analysis).
@@ -879,7 +879,7 @@ Table of Contents
 
    If a packet or message cannot be delivered immediately due to a
    (possibly) transient error, the node SHOULD retry the packet or
-   message periodically until either it can be delivered, or a until a
+   message periodically until either it can be delivered, or until a
    given interval has passed.  After the interval, the packet or
    message is discarded.
 
@@ -1165,3 +1165,4 @@ A.3. Appendix: Versioning and alphas
    '0.x' instead (currently '0.3' for packets, '0.3' for MMTP, and
    '0.1' for everything else).  Production versions MUST NOT retain
    backward compatibility with pre-production releases.
+
